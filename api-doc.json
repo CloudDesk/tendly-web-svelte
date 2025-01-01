@@ -1,0 +1,932 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Tendly API",
+    "description": "API documentation for Tendly",
+    "version": "1.0.0"
+  },
+  "definitions": {},
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": ["email", "password"],
+              "properties": {
+                "email": { "type": "string", "format": "email" },
+                "password": { "type": "string" }
+              }
+            }
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": ["email"],
+              "properties": { "email": { "type": "string", "format": "email" } }
+            }
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": ["token", "password"],
+              "properties": {
+                "token": { "type": "string" },
+                "password": { "type": "string", "minLength": 6 }
+              }
+            }
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/users/": {
+      "get": {
+        "parameters": [
+          {
+            "type": "number",
+            "minimum": 1,
+            "default": 1,
+            "required": false,
+            "in": "query",
+            "name": "page"
+          },
+          {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10,
+            "required": false,
+            "in": "query",
+            "name": "limit"
+          },
+          {
+            "type": "string",
+            "required": false,
+            "in": "query",
+            "name": "search"
+          },
+          {
+            "type": "boolean",
+            "required": false,
+            "in": "query",
+            "name": "active"
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      },
+      "post": {
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": [
+                "name",
+                "email",
+                "password",
+                "roleId",
+                "departmentId"
+              ],
+              "properties": {
+                "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+                "email": { "type": "string", "format": "email" },
+                "password": { "type": "string", "minLength": 6 },
+                "roleId": { "type": "string" },
+                "departmentId": { "type": "string" },
+                "biometricId": { "type": "string", "maxLength": 20 },
+                "active": { "type": "boolean", "default": true }
+              }
+            }
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "parameters": [
+          { "type": "string", "required": true, "in": "path", "name": "id" }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      },
+      "put": {
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+                "email": { "type": "string", "format": "email" },
+                "password": { "type": "string", "minLength": 6 },
+                "roleId": { "type": "string" },
+                "departmentId": { "type": "string" },
+                "biometricId": { "type": "string", "maxLength": 20 },
+                "active": { "type": "boolean" }
+              }
+            }
+          },
+          { "type": "string", "required": true, "in": "path", "name": "id" }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      },
+      "delete": {
+        "parameters": [
+          { "type": "string", "required": true, "in": "path", "name": "id" }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/attendance/swipe": {
+      "post": {
+        "description": "Record swipe",
+        "tags": ["Biometric"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": ["biometricId"],
+              "properties": {
+                "biometricId": { "type": "string", "maxLength": 20 },
+                "timestamp": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/attendance/status/{userId}": {
+      "get": {
+        "description": "Get today attendance status for a user",
+        "tags": ["Biometric"],
+        "parameters": [
+          {
+            "type": "string",
+            "format": "date",
+            "required": false,
+            "in": "query",
+            "name": "date"
+          },
+          { "type": "string", "required": true, "in": "path", "name": "userId" }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/attendance/records/search": {
+      "post": {
+        "description": "Get attendance records for multiple users in a date range",
+        "tags": ["Biometric"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": ["startDate", "endDate"],
+              "properties": {
+                "startDate": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Start date in UTC (e.g. 2024-01-29T18:30:00.000Z for IST 2024-01-30 00:00:00)"
+                },
+                "endDate": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "End date in UTC (e.g. 2024-01-30T18:29:59.999Z for IST 2024-01-31 23:59:59.999)"
+                },
+                "userIds": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Array of user IDs. If not provided, returns records for all users"
+                },
+                "page": { "type": "number", "minimum": 1, "default": 1 },
+                "limit": {
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 100,
+                  "default": 10
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "userId": { "type": "string" },
+                      "userName": { "type": "string" },
+                      "shiftDay": { "type": "string", "format": "date" },
+                      "shiftNo": { "type": "number" },
+                      "status": { "type": "string" },
+                      "overtime": { "type": "string" },
+                      "shortTime": { "type": "string" },
+                      "firstSwipe": {
+                        "type": ["null", "string"],
+                        "format": "date-time",
+                        "nullable": true
+                      },
+                      "lastSwipe": {
+                        "type": ["null", "string"],
+                        "format": "date-time",
+                        "nullable": true
+                      }
+                    }
+                  }
+                },
+                "meta": {
+                  "type": "object",
+                  "properties": {
+                    "page": { "type": "number" },
+                    "limit": { "type": "number" },
+                    "total": { "type": "number" },
+                    "totalPages": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leaves/leave-summary": {
+      "get": {
+        "summary": "Get leave summary for logged-in user",
+        "tags": ["Leave Summary"],
+        "parameters": [
+          {
+            "type": "number",
+            "description": "Year for leave summary",
+            "default": 2024,
+            "required": false,
+            "in": "query",
+            "name": "year"
+          }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "userId": { "type": "string" },
+                "year": { "type": "number" },
+                "annual": {
+                  "type": "object",
+                  "properties": {
+                    "alloted": { "type": "number" },
+                    "availed": { "type": "number" },
+                    "remaining": { "type": "number" },
+                    "leaveRequests": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                },
+                "sick": {
+                  "type": "object",
+                  "properties": {
+                    "alloted": { "type": "number" },
+                    "availed": { "type": "number" },
+                    "remaining": { "type": "number" },
+                    "leaveRequests": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                },
+                "compOff": {
+                  "type": "object",
+                  "properties": {
+                    "alloted": { "type": "number" },
+                    "availed": { "type": "number" },
+                    "remaining": { "type": "number" },
+                    "leaveRequests": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                },
+                "lossOfPay": {
+                  "type": "object",
+                  "properties": {
+                    "alloted": { "type": "number" },
+                    "availed": { "type": "number" },
+                    "remaining": { "type": "number" },
+                    "leaveRequests": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                },
+                "otherPaid": {
+                  "type": "object",
+                  "properties": {
+                    "alloted": { "type": "number" },
+                    "availed": { "type": "number" },
+                    "remaining": { "type": "number" },
+                    "leaveRequests": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                },
+                "otherUnpaid": {
+                  "type": "object",
+                  "properties": {
+                    "alloted": { "type": "number" },
+                    "availed": { "type": "number" },
+                    "remaining": { "type": "number" },
+                    "leaveRequests": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leaves/leave-summaries": {
+      "get": {
+        "summary": "Get leave summaries for multiple users",
+        "tags": ["Leave Summary"],
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Comma-separated list of user IDs",
+            "required": true,
+            "in": "query",
+            "name": "userIds"
+          },
+          {
+            "type": "number",
+            "description": "Year for leave summary",
+            "default": 2024,
+            "required": false,
+            "in": "query",
+            "name": "year"
+          }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "object",
+                    "properties": {
+                      "_id": { "type": "string" },
+                      "name": { "type": "string" },
+                      "email": { "type": "string" }
+                    }
+                  },
+                  "year": { "type": "number" },
+                  "annual": {
+                    "type": "object",
+                    "properties": {
+                      "alloted": { "type": "number" },
+                      "availed": { "type": "number" },
+                      "remaining": { "type": "number" },
+                      "leaveRequests": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      }
+                    }
+                  },
+                  "sick": {
+                    "type": "object",
+                    "properties": {
+                      "alloted": { "type": "number" },
+                      "availed": { "type": "number" },
+                      "remaining": { "type": "number" },
+                      "leaveRequests": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": { "message": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "/leaves/": {
+      "post": {
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": ["leaveTypeId", "startDate", "endDate"],
+              "properties": {
+                "leaveTypeId": { "type": "string" },
+                "startDate": { "type": "string", "format": "date" },
+                "endDate": { "type": "string", "format": "date" },
+                "remarks": { "type": "string" }
+              }
+            }
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      },
+      "get": {
+        "parameters": [
+          {
+            "type": "string",
+            "required": false,
+            "in": "query",
+            "name": "userId"
+          },
+          {
+            "type": "string",
+            "enum": ["Pending", "Approved", "Rejected"],
+            "required": false,
+            "in": "query",
+            "name": "status"
+          },
+          {
+            "type": "string",
+            "format": "date",
+            "required": false,
+            "in": "query",
+            "name": "startDate"
+          },
+          {
+            "type": "string",
+            "format": "date",
+            "required": false,
+            "in": "query",
+            "name": "endDate"
+          },
+          {
+            "type": "number",
+            "minimum": 1,
+            "default": 1,
+            "required": false,
+            "in": "query",
+            "name": "page"
+          },
+          {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10,
+            "required": false,
+            "in": "query",
+            "name": "limit"
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/leaves/{id}/status": {
+      "put": {
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": ["status"],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["Approved", "Rejected"]
+                },
+                "remarks": { "type": "string" }
+              }
+            }
+          },
+          { "type": "string", "required": true, "in": "path", "name": "id" }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/leaves/{id}": {
+      "delete": {
+        "parameters": [
+          { "type": "string", "required": true, "in": "path", "name": "id" }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/leaves/balance/{leaveTypeId}": {
+      "get": {
+        "parameters": [
+          {
+            "type": "string",
+            "required": true,
+            "in": "path",
+            "name": "leaveTypeId"
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/overtime/": {
+      "post": {
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": ["date", "hours"],
+              "properties": {
+                "date": { "type": "string", "format": "date" },
+                "hours": { "type": "number", "minimum": 1, "maximum": 24 },
+                "remarks": { "type": "string" }
+              }
+            }
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      },
+      "get": {
+        "parameters": [
+          {
+            "type": "string",
+            "enum": ["Pending", "Approved", "Rejected"],
+            "required": false,
+            "in": "query",
+            "name": "status"
+          },
+          {
+            "type": "string",
+            "format": "date",
+            "required": false,
+            "in": "query",
+            "name": "startDate"
+          },
+          {
+            "type": "string",
+            "format": "date",
+            "required": false,
+            "in": "query",
+            "name": "endDate"
+          },
+          {
+            "type": "number",
+            "minimum": 1,
+            "default": 1,
+            "required": false,
+            "in": "query",
+            "name": "page"
+          },
+          {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10,
+            "required": false,
+            "in": "query",
+            "name": "limit"
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/overtime/{id}/status": {
+      "put": {
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": ["status"],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["Approved", "Rejected"]
+                },
+                "remarks": { "type": "string" }
+              }
+            }
+          },
+          { "type": "string", "required": true, "in": "path", "name": "id" }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/payroll/salary-structure/current": {
+      "get": { "responses": { "200": { "description": "Default Response" } } }
+    },
+    "/payroll/salary-structure/history": {
+      "get": { "responses": { "200": { "description": "Default Response" } } }
+    },
+    "/payroll/calculate/{month}": {
+      "get": {
+        "parameters": [
+          { "type": "string", "required": true, "in": "path", "name": "month" }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/lovs/": {
+      "get": {
+        "parameters": [
+          {
+            "type": "string",
+            "required": false,
+            "in": "query",
+            "name": "type"
+          },
+          {
+            "type": "string",
+            "required": false,
+            "in": "query",
+            "name": "search"
+          },
+          {
+            "type": "number",
+            "minimum": 1,
+            "default": 1,
+            "required": false,
+            "in": "query",
+            "name": "page"
+          },
+          {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10,
+            "required": false,
+            "in": "query",
+            "name": "limit"
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      },
+      "post": {
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": ["name", "type", "values"],
+              "properties": {
+                "name": { "type": "string", "maxLength": 50 },
+                "type": { "type": "string", "maxLength": 50 },
+                "values": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["label", "value"],
+                    "properties": {
+                      "label": { "type": "string", "maxLength": 100 },
+                      "value": { "type": "string", "maxLength": 100 },
+                      "description": { "type": "string" },
+                      "isActive": { "type": "boolean", "default": true }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/lovs/type/{type}": {
+      "get": {
+        "parameters": [
+          { "type": "string", "required": true, "in": "path", "name": "type" }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/shifts/": {
+      "get": {
+        "parameters": [
+          {
+            "type": "string",
+            "required": false,
+            "in": "query",
+            "name": "search"
+          },
+          {
+            "type": "boolean",
+            "required": false,
+            "in": "query",
+            "name": "isActive"
+          },
+          {
+            "type": "string",
+            "required": false,
+            "in": "query",
+            "name": "roleId"
+          },
+          {
+            "type": "string",
+            "format": "date",
+            "required": false,
+            "in": "query",
+            "name": "validOn"
+          },
+          {
+            "type": "number",
+            "minimum": 1,
+            "default": 1,
+            "required": false,
+            "in": "query",
+            "name": "page"
+          },
+          {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10,
+            "required": false,
+            "in": "query",
+            "name": "limit"
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      },
+      "post": {
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": [
+                "name",
+                "code",
+                "startTime",
+                "endTime",
+                "applicableForRoles",
+                "validFrom"
+              ],
+              "properties": {
+                "name": { "type": "string", "maxLength": 100 },
+                "code": { "type": "string", "maxLength": 20 },
+                "startTime": {
+                  "type": "string",
+                  "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$"
+                },
+                "endTime": {
+                  "type": "string",
+                  "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$"
+                },
+                "applicableForRoles": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "validFrom": { "type": "string", "format": "date" },
+                "validTill": { "type": "string", "format": "date" },
+                "description": { "type": "string" },
+                "graceTimeInMinutes": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 60
+                }
+              }
+            }
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/shifts/assignments": {
+      "post": {
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": ["userId", "shiftId", "startDate"],
+              "properties": {
+                "userId": { "type": "string" },
+                "shiftId": { "type": "string" },
+                "startDate": { "type": "string", "format": "date" },
+                "endDate": { "type": "string", "format": "date" }
+              }
+            }
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/shifts/current": {
+      "get": { "responses": { "200": { "description": "Default Response" } } }
+    },
+    "/organizations/": {
+      "post": {
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": ["name", "code"],
+              "properties": {
+                "name": { "type": "string", "maxLength": 100 },
+                "code": { "type": "string", "maxLength": 20 },
+                "parentId": { "type": "string" }
+              }
+            }
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    },
+    "/organizations/hierarchy": {
+      "get": {
+        "parameters": [
+          {
+            "type": "string",
+            "required": false,
+            "in": "query",
+            "name": "rootId"
+          }
+        ],
+        "responses": { "200": { "description": "Default Response" } }
+      }
+    }
+  },
+  "host": "localhost:3000",
+  "schemes": ["http"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "securityDefinitions": {
+    "bearerAuth": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "JWT token"
+    }
+  },
+  "security": [{ "bearerAuth": [] }],
+  "tags": [
+    { "name": "Auth", "description": "Authentication endpoints" },
+    { "name": "Users", "description": "User management endpoints" },
+    { "name": "Attendance", "description": "Attendance management endpoints" },
+    { "name": "Leaves", "description": "Leave management endpoints" },
+    {
+      "name": "Leave Summary",
+      "description": "Leave summary and balance endpoints"
+    },
+    { "name": "Overtime", "description": "Overtime management endpoints" },
+    { "name": "Payslips", "description": "Payslip management endpoints" },
+    { "name": "LOV", "description": "List of values endpoints" },
+    { "name": "Shifts", "description": "Shift management endpoints" },
+    { "name": "Biometric", "description": "Biometric attendance endpoints" }
+  ]
+}

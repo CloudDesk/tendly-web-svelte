@@ -1,0 +1,20 @@
+# Create project structure
+src/
+  ├── lib/
+  │   ├── components/
+  │   │   ├── common/
+  │   │   ├── employee/
+  │   │   ├── shifts/
+  │   │   ├── attendance/
+  │   │   ├── leave/
+  │   │   └── payroll/
+  │   ├── services/
+  │   │   └── api.ts
+  │   └── stores/
+  ├── routes/
+  │   ├── employees/
+  │   ├── shifts/
+  │   ├── attendance/
+  │   ├── leave/
+  │   └── payroll/
+  └── app.html 
