@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { auth } from '$lib/stores/auth';
-  import { api } from '$lib/services/api';
+  import { authApi } from '$lib/services/api';
   import { fade, fly } from 'svelte/transition';
   import { onMount } from 'svelte';
 
@@ -9,7 +9,7 @@
   let password = '';
   let error = '';
   let loading = false;
-  let redirectTo = '/employees';
+  let redirectTo = '';
 
   onMount(() => {
     // Get redirect path from cookie if exists
@@ -28,7 +28,20 @@
     error = '';
 
     try {
-      const response = await api.auth.login(email, password);
+      const response = await authApi.login(email, password);
+      const userRole = response.data.user.roleId?.toUpperCase();
+      
+      // Set default redirect based on role if no specific redirect is set
+      if (!redirectTo) {
+        if (userRole === 'ADMIN') {
+          redirectTo = '/admin/dashboard';
+        } else if (userRole === 'MANAGER') {
+          redirectTo = '/manager/dashboard';
+        } else {
+          redirectTo = '/my/dashboard';
+        }
+      }
+
       await auth.login(response.data.token, response.data.user);
       goto(redirectTo);
     } catch (e: any) {

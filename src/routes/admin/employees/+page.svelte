@@ -1,8 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { api } from '$lib/services/api';
+  import { employeesApi } from '$lib/services/api';
   import Table from '$lib/components/common/Table.svelte';
   import type { User, PaginationMeta } from '$lib/types';
+  import { goto } from '$app/navigation';
 
   let employees: User[] = [];
   let loading = true;
@@ -28,14 +29,12 @@
       key: '_id',
       label: 'Actions',
       render: (user: User) => `
-        <div class="actions">
-          <a href="/employees/${user._id}" class="btn-action">
-            View
-          </a>
-          <button class="btn-action">
-            Edit
-          </button>
-        </div>
+        <a href="/admin/employees/${user._id}" class="btn-action" data-sveltekit-preload>
+          View
+        </a>
+        <button class="btn-action">
+          Edit
+        </button>
       `
     }
   ];
@@ -45,7 +44,7 @@
     error = null;
     
     try {
-      const response = await api.employees.list(params);
+      const response = await employeesApi.list(params);
       employees = response.data;
       meta = response.meta;
     } catch (e: any) {
@@ -98,16 +97,16 @@
     });
   }
 
-  function handleRowClick(event: CustomEvent<User>) {
+  async function handleRowClick(event: CustomEvent<User>) {
     const user = event.detail;
-    window.location.href = `/employees/${user._id}`;
+    await goto(`/admin/employees/${user._id}`);
   }
 </script>
 
 <div class="employees-page">
   <header>
     <h1>Employees</h1>
-    <a href="/employees/new" class="btn-primary">Add Employee</a>
+    <a href="/admin/employees/new" class="btn-primary" data-sveltekit-preload>Add Employee</a>
   </header>
 
   <Table

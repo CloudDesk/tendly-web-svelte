@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { attendanceApi } from '$lib/services/api';
+    import { trainingAttendanceApi } from '$lib/services/api';
 
     export let employeeId: string | null = null;
     export let employeeIds: string[] = [];
@@ -9,9 +9,9 @@
     let loading = true;
     let error: string | null = null;
 
-    type AttendanceRecord = {
-      shiftDay: string;
-      shiftCode: string;
+    type TrainingAttendanceRecord = {
+      trainingDay: string;
+      trainingCode: string;
       status: 'present' | 'absent' | 'missing_checkout' | 'holiday' | 'weekend';
       overtime: string;
       shortTime: string;
@@ -20,7 +20,7 @@
       attendanceStatus: string[];
     };
 
-    type AttendanceSummary = {
+    type TrainingAttendanceSummary = {
       totalDays: number;
       lateDays: number;
       presentDays: number;
@@ -28,22 +28,20 @@
       leaveDays: number;
     };
 
-    type AttendanceResponse = {
+    type TrainingAttendanceResponse = {
       userId: string;
       userName: string;
-      records: AttendanceRecord[];
-      summary: AttendanceSummary;
+      records: TrainingAttendanceRecord[];
+      summary: TrainingAttendanceSummary;
     };
 
-    let attendanceData: AttendanceResponse[] = [];
+    let trainingAttendanceData: TrainingAttendanceResponse[] = [];
     
     // Set default date range to current month
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     let startDate: string = firstDayOfMonth.toISOString().split('T')[0];
     let endDate: string = today.toISOString().split('T')[0];
-
-    let datesInRange: string[] = [];
 
     const toUTCString = (dateStr: string) => {
         const date = new Date(dateStr);
@@ -56,6 +54,7 @@
         date.setHours(23, 59, 59, 999);
         return date.toISOString();
     };
+
     const getDatesInRange = (startDate: string, endDate: string) => {
         const dates = [];
         const start = new Date(startDate);
@@ -65,24 +64,25 @@
         }
         return dates;
     }
+    let datesInRange: string[] = [];
     async function fetchAttendance() {
         loading = true;
         datesInRange = getDatesInRange(startDate, endDate);
         try {
             if(mode === 'single') {
-                const response = await attendanceApi.search({
+                const response = await trainingAttendanceApi.search({
                     userIds: [employeeId || ''],
                     startDate: toUTCString(startDate),
                     endDate: toEndOfDayUTCString(endDate)
                 });
-                attendanceData = response.data;
+                trainingAttendanceData = response.data;
                 return;
             }else{
-                const response = await attendanceApi.searchAll({ 
+                const response = await trainingAttendanceApi.searchAll({ 
                     startDate: toUTCString(startDate),
                     endDate: toEndOfDayUTCString(endDate)
                 });
-                attendanceData = response.data;
+                trainingAttendanceData = response.data;
                 return;
             }
             
@@ -107,10 +107,10 @@
         <div class="loading">Loading attendance data...</div>
     {:else if error}
         <div class="alert alert-error">{error}</div>
-    {:else if attendanceData.length > 0}
-        
+    {:else if trainingAttendanceData.length > 0}
             {#if mode === 'single'}
-            {#each attendanceData as data}
+        {#each trainingAttendanceData as data}
+
                 <div class="mb-8">
                     <div class="summary">
                         <div class="stat">
@@ -149,8 +149,8 @@
                     <tbody>
                         {#each data.records as record}
                             <tr class:late={record.attendanceStatus.includes('Late')}>
-                                <td>{new Date(record.shiftDay).toLocaleDateString()}</td>
-                                <td>{record.shiftCode}</td>
+                                <td>{new Date(record.trainingDay).toLocaleDateString()}</td>
+                                <td>{record.trainingCode}</td>
                                 <td>{new Date(record.firstSwipe).toLocaleTimeString()}</td>
                                 <td>{record.lastSwipe !== record.firstSwipe ? new Date(record.lastSwipe).toLocaleTimeString() : '-'}</td>
                                 <td>
@@ -175,7 +175,8 @@
                     </tbody>
                 </table>
             </div>
-            {/each}
+        {/each}
+
             {:else}
                 <div class="mb-8">
                     <div class="table-container">
@@ -189,16 +190,16 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {#each attendanceData as data}
+                                {#each trainingAttendanceData as data}
                                     <tr>
                                         <td class="sticky-col">{data.userName}</td>
                                         {#each datesInRange as dt}
-                                            {@const record = data.records.find(r => r.shiftDay.substring(0, 10) === dt.substring(0, 10))}
+                                            {@const record = data.records.find(r => r.trainingDay.substring(0, 10) === dt.substring(0, 10))}
                                             <td>
                                                 <div class="relative group">
                                                     <div class="attendance-card {record ? record.status : 'empty'} {record?.attendanceStatus?.includes('Late') ? 'late' : ''}">
                                                         {#if record}
-                                                            <div class="shift-code">{record.shiftCode}</div>
+                                                            <div class="training-code">{record.trainingCode}</div>
                                                             {#if record.attendanceStatus.length > 0}
                                                                 <div class="status-badges">
                                                                     {#each record.attendanceStatus as status}
@@ -484,7 +485,7 @@
         background: #666;
     }
 
-    .shift-code {
+    .training-code {
         position: absolute;
         left: -20px;
         top: 50%;

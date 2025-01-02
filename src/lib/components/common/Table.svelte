@@ -84,6 +84,19 @@
   function handleRowClick(item: any) {
     dispatch('rowClick', item);
   }
+
+  function handleActionClick(event: MouseEvent) {
+    const button = (event.target as HTMLElement).closest('button');
+    if (!button) return;
+
+    const action = button.dataset.action;
+    const id = button.dataset.id;
+    
+    if (action && id) {
+      event.stopPropagation();
+      dispatch('action', { action, id });
+    }
+  }
 </script>
 
 <div class="table-container">
@@ -145,7 +158,7 @@
             class="clickable"
           >
             {#each columns as column}
-              <td>
+              <td on:click={handleActionClick}>
                 {#if column.render}
                   {@html column.render(item)}
                 {:else}

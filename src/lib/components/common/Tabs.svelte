@@ -1,45 +1,31 @@
 <script lang="ts">
+  import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
+
   export let tabs: { id: string; label: string }[];
-  export let activeTab: string;
+  export let urlParam = 'tab';  // Allow custom URL parameter name
+  
+  // Get active tab from URL or default to first tab
+  $: activeTab = $page.url.searchParams.get(urlParam) || tabs[0]?.id;
+
+  function handleTabClick(tabId: string) {
+    const url = new URL(window.location.href);
+    url.searchParams.set(urlParam, tabId);
+    goto(url.toString(), { replaceState: true });
+  }
 </script>
 
-<div class="tabs">
+<div class="tabs tabs-boxed bg-base-100 p-1">
   {#each tabs as tab}
     <button
-      class="tab-button"
-      class:active={activeTab === tab.id}
-      on:click={() => activeTab = tab.id}
+      class="tab transition-all {activeTab === tab.id ? 'tab-active bg-primary text-primary-content shadow-sm' : 'hover:bg-base-200 text-neutral-600'}"
+      on:click={() => handleTabClick(tab.id)}
     >
       {tab.label}
     </button>
   {/each}
 </div>
 
-<style>
-  .tabs {
-    display: flex;
-    border-bottom: 1px solid var(--border-color);
-    margin-bottom: 1.5rem;
-    gap: 0.5rem;
-  }
-
-  .tab-button {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    background: none;
-    color: #6b7280;
-    font-weight: 500;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-  }
-
-  .tab-button:hover {
-    color: var(--primary-color);
-  }
-
-  .tab-button.active {
-    color: var(--primary-color);
-    border-bottom-color: var(--primary-color);
-  }
-</style> 
+<div class="mt-6">
+  <slot {activeTab} />
+</div> 

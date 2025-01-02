@@ -1,500 +1,324 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { api } from '$lib/services/api';
+    import { leavesApi } from '$lib/services/api';
+    import Tabs from '$lib/components/common/Tabs.svelte';
+    import Modal from '$lib/components/common/Modal.svelte';
+    import type { LeaveRequest, LeaveCategory, LeaveSummary } from '$lib/services/api/leaves';
 
     export let employeeId: string;
-    let loading = true;
+    export let showEditAllotments = true;
+    
+    let loading = false;
     let error: string | null = null;
-    let showRequestForm = false;
+    let showEditModal = false;
+    let editingAllotments: Record<LeaveType, number> = {} as Record<LeaveType, number>;
 
-    type LeaveType = {
-        _id: string;
-        name: string;
-        description: string;
-        daysPerYear: number;
-        carryForward: boolean;
-        paid: boolean;
-    };
+    // Current year for filtering
+    const currentYear = new Date().getFullYear();
 
-    type LeaveRequest = {
-        _id: string;
-        startDate: string;
-        endDate: string;
-        status: 'approved' | 'pending' | 'rejected';
-        reason: string;
-        appliedOn: string;
-        approvedBy?: string;
-        rejectionReason?: string;
-    };
+    const leaveTypes = {
+        annual: { label: 'Annual Leave', isEditable: true },
+        sick: { label: 'Sick Leave', isEditable: true },
+        lossOfPay: { label: 'Loss of Pay', isEditable: false },
+        otherPaid: { label: 'Other Paid', isEditable: true },
+        otherUnpaid: { label: 'Other Unpaid', isEditable: true }
+    } as const;
 
-    type LeaveCategory = {
+    type LeaveType = keyof typeof leaveTypes;
+    
+    let leaveSummary: Array<{
+        type: LeaveType;
         alloted: number;
         availed: number;
         remaining: number;
         leaveRequests: LeaveRequest[];
-    };
+    }> = [];
 
-    type LeaveSummary = {
-        userId: {
-            _id: string;
-            name: string;
-            email: string;
-        };
-        year: number;
-        annual: LeaveCategory;
-        sick: LeaveCategory;
-    };
+    let compOffRequests: Array<{
+        _id: string;
+        date: string;
+        hours: number;
+        status: 'approved' | 'pending' | 'rejected';
+        reason: string;
+        appliedOn: string;
+    }> = [];
 
-    let leaveSummary: LeaveSummary | null = null;
-    let leaveTypes: LeaveType[] = [];
-    let formError: string | null = null;
-    let formLoading = false;
-    let activeCategory: 'annual' | 'sick' = 'annual';
+    const tabs = [
+        { id: 'leaves', label: 'Leave Requests' },
+        { id: 'compoff', label: 'Comp Off Requests' }
+    ];
 
-    // Form data
-    let selectedType = '';
-    let startDate = '';
-    let endDate = '';
-    let reason = '';
+    function processLeaveSummary(summary: LeaveSummary): Array<{
+        type: LeaveType;
+        alloted: number;
+        availed: number;
+        remaining: number;
+        leaveRequests: LeaveRequest[];
+    }> {
+        return (Object.entries(summary) as Array<[LeaveType, LeaveCategory]>)
+            .filter(([key]) => key in leaveTypes)
+            .map(([key, value]) => ({
+                type: key,
+                alloted: value.alloted,
+                availed: value.availed,
+                remaining: value.remaining,
+                leaveRequests: value.leaveRequests
+            }));
+    }
 
-    async function loadData() {
+    async function loadLeaveSummary() {
         try {
-            const [summaryResponse, typesResponse] = await Promise.all([
-                api.leaves.getSummary(employeeId),
-                api.leaves.getTypes()
-            ]);
-            leaveSummary = summaryResponse.data[0]; // Get first summary
-            leaveTypes = typesResponse.data;
-        } catch (e: any) {
-            error = e.message;
+            loading = true;
+            const response = await leavesApi.getSummary(employeeId);
+            leaveSummary = processLeaveSummary(response.data);
+        } catch (err) {
+            error = 'Failed to load leave summary';
+            console.error(err);
         } finally {
             loading = false;
         }
     }
 
-    async function handleSubmit(e: SubmitEvent) {
-        e.preventDefault();
-        formError = null;
-        formLoading = true;
-
+    async function loadCompOffRequests() {
         try {
-            await api.leaves.create({
-                userId: employeeId,
-                type: selectedType,
-                startDate,
-                endDate,
-                reason
-            });
-
-            // Reset form
-            selectedType = '';
-            startDate = '';
-            endDate = '';
-            reason = '';
-            showRequestForm = false;
-
-            // Reload data
-            await loadData();
-        } catch (e: any) {
-            formError = e.message;
+            loading = true;
+            const response = await leavesApi.getCompOffRequests(employeeId);
+            compOffRequests = response.data;
+        } catch (err) {
+            error = 'Failed to load comp off requests';
+            console.error(err);
         } finally {
-            formLoading = false;
+            loading = false;
         }
     }
 
-    async function cancelRequest(requestId: string) {
+    function handleEditAllotments() {
+        editingAllotments = Object.fromEntries(
+            leaveSummary.map(leave => [leave.type, leave.alloted])
+        ) as Record<LeaveType, number>;
+        showEditModal = true;
+    }
+
+    async function handleAllotmentUpdate() {
         try {
-            await api.leaves.cancel(requestId);
-            await loadData();
-        } catch (e: any) {
-            error = e.message;
+            loading = true;
+            await leavesApi.updateAllotments(employeeId, currentYear, editingAllotments);
+            showEditModal = false;  
+            editingAllotments = {} as Record<LeaveType, number>;
+            await loadLeaveSummary();
+            console.log(leaveSummary);
+        } catch (err) {
+            error = 'Failed to update leave allotments';
+            console.error(err);
+        } finally {
+            loading = false;
         }
     }
 
-    function formatDate(dateStr: string) {
-        return new Date(dateStr).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
+    function handleApplyLeave(type: LeaveType) {
+        // TODO: Implement apply leave functionality
+        console.log('Apply leave for type:', type);
     }
 
-    $: currentCategory = leaveSummary ? leaveSummary[activeCategory] : null;
-    $: allLeaveRequests = leaveSummary ? 
-        [...leaveSummary.annual.leaveRequests, ...leaveSummary.sick.leaveRequests]
-            .sort((a, b) => new Date(b.appliedOn).getTime() - new Date(a.appliedOn).getTime()) : [];
-
-    onMount(loadData);
+    onMount(() => {
+        loadLeaveSummary();
+        //loadCompOffRequests();
+    });
 </script>
 
-<div class="leaves-section">
-    {#if loading}
-        <div class="loading">Loading leave summary...</div>
-    {:else if error}
-        <div class="error">{error}</div>
-    {:else if leaveSummary}
-        <div class="header">
-            <h3>Leave Summary ({leaveSummary.year})</h3>
-            <button class="btn-primary" on:click={() => showRequestForm = !showRequestForm}>
-                {showRequestForm ? 'Cancel Request' : 'Request Leave'}
-            </button>
-        </div>
-
-        {#if showRequestForm}
-            <form class="leave-form" on:submit={handleSubmit}>
-                {#if formError}
-                    <div class="error">{formError}</div>
-                {/if}
-
-                <div class="form-group">
-                    <label for="type">Leave Type</label>
-                    <select id="type" bind:value={selectedType} required>
-                        <option value="">Select a type</option>
-                        {#each leaveTypes as type}
-                            <option value={type._id}>{type.name}</option>
-                        {/each}
-                    </select>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="start-date">Start Date</label>
-                        <input type="date" id="start-date" bind:value={startDate} required />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="end-date">End Date</label>
-                        <input type="date" id="end-date" bind:value={endDate} required min={startDate} />
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="reason">Reason</label>
-                    <textarea id="reason" bind:value={reason} required rows="3"></textarea>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary" disabled={formLoading}>
-                        {formLoading ? 'Submitting...' : 'Submit Request'}
+<div class="space-y-6">
+    <!-- Leave Summary Section -->
+    <div class="card bg-base-100">
+        <div class="card-body">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="card-title text-lg font-semibold">Leave Summary ({currentYear})</h3>
+                {#if showEditAllotments}
+                    <button 
+                        class="btn btn-primary btn-sm"
+                        on:click={handleEditAllotments}
+                    >
+                        Edit Allotments
                     </button>
-                </div>
-            </form>
-        {/if}
-
-        <div class="category-tabs">
-            <button 
-                class="tab-button" 
-                class:active={activeCategory === 'annual'}
-                on:click={() => activeCategory = 'annual'}
-            >
-                Annual Leave
-            </button>
-            <button 
-                class="tab-button" 
-                class:active={activeCategory === 'sick'}
-                on:click={() => activeCategory = 'sick'}
-            >
-                Sick Leave
-            </button>
-        </div>
-
-        {#if currentCategory}
-            <div class="summary">
-                <div class="stat">
-                    <span class="label">Alloted</span>
-                    <span class="value">{currentCategory.alloted}</span>
-                </div>
-                <div class="stat">
-                    <span class="label">Availed</span>
-                    <span class="value">{currentCategory.availed}</span>
-                </div>
-                <div class="stat">
-                    <span class="label">Remaining</span>
-                    <span class="value">{currentCategory.remaining}</span>
-                </div>
+                {/if}
             </div>
-        {/if}
-
-        <div class="leave-history">
-            <h4>Leave History</h4>
-            <table class="leaves-table">
-                <thead>
-                    <tr>
-                        <th>Type</th>
-                        <th>Duration</th>
-                        <th>Status</th>
-                        <th>Reason</th>
-                        <th>Applied On</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {#each allLeaveRequests as request}
-                        <tr class={request.status}>
-                            <td>{activeCategory.toUpperCase()}</td>
-                            <td>
-                                {formatDate(request.startDate)}
-                                {#if request.startDate !== request.endDate}
-                                    - {formatDate(request.endDate)}
-                                {/if}
-                            </td>
-                            <td>
-                                <span class="status-badge {request.status}">
-                                    {request.status}
-                                </span>
-                            </td>
-                            <td>
-                                <div class="reason-cell">
-                                    <span class="reason">{request.reason}</span>
-                                    {#if request.rejectionReason}
-                                        <span class="rejection-reason">
-                                            Rejection reason: {request.rejectionReason}
+            
+            {#if loading}
+                <div class="loading">Loading...</div>
+            {:else if error}
+                <div class="alert alert-error">{error}</div>
+            {:else}
+                <div class="overflow-x-auto">
+                    <table class="table w-full">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Alloted</th>
+                                <th>Availed</th>
+                                <th>Remaining</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {#each leaveSummary as leave}
+                                {@const leaveType = leaveTypes[leave.type]}
+                                <tr>
+                                    <td class="font-medium">{leaveType.label}</td>
+                                    <td>{leave.alloted}</td>
+                                    <td>{leave.availed}</td>
+                                    <td>
+                                        <span class="font-medium {leave.remaining > 0 ? 'text-success' : 'text-error'}">
+                                            {leave.remaining}
                                         </span>
-                                    {/if}
-                                </div>
-                            </td>
-                            <td>{formatDate(request.appliedOn)}</td>
-                            <td>
-                                {#if request.status === 'pending'}
-                                    <button 
-                                        class="btn-text" 
-                                        on:click={() => cancelRequest(request._id)}
-                                    >
-                                        Cancel
-                                    </button>
-                                {/if}
-                            </td>
-                        </tr>
-                    {/each}
-                </tbody>
-            </table>
+                                    </td>
+                                    <td>
+                                        {#if leave.remaining > 0}
+                                            <button 
+                                                class="btn btn-sm btn-primary"
+                                                on:click={() => handleApplyLeave(leave.type)}
+                                            >
+                                                Apply
+                                            </button>
+                                        {/if}
+                                    </td>
+                                </tr>
+                            {/each}
+                        </tbody>
+                    </table>
+                </div>
+            {/if}
         </div>
-    {/if}
+    </div>
+
+    <!-- Requests Section -->
+    <div class="card bg-base-100">
+        <div class="card-body">
+            <Tabs tabs={tabs} urlParam="request-type" let:activeTab>
+                {#if activeTab === 'leaves'}
+                    <div class="overflow-x-auto">
+                        <table class="table w-full">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Period</th>
+                                    <th>Days</th>
+                                    <th>Status</th>
+                                    <th>Applied On</th>
+                                    <th>Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {#each leaveSummary as leave}
+                                    {@const leaveType = leaveTypes[leave.type]}
+                                    {#each leave.leaveRequests.filter(req => new Date(req.startDate).getFullYear() === currentYear) as request}
+                                        <tr>
+                                            <td>{leaveType.label}</td>
+                                            <td>
+                                                {new Date(request.startDate).toLocaleDateString()} - 
+                                                {new Date(request.endDate).toLocaleDateString()}
+                                            </td>
+                                            <td>
+                                                {Math.ceil((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1}
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-{request.status === 'approved' ? 'success' : request.status === 'rejected' ? 'error' : 'warning'}">
+                                                    {request.status}
+                                                </span>
+                                            </td>
+                                            <td>{new Date(request.appliedOn).toLocaleDateString()}</td>
+                                            <td class="max-w-xs truncate">{request.reason}</td>
+                                        </tr>
+                                    {/each}
+                                {/each}
+                            </tbody>
+                        </table>
+                    </div>
+                {:else}
+                    <div class="overflow-x-auto">
+                        <table class="table w-full">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Hours</th>
+                                    <th>Status</th>
+                                    <th>Applied On</th>
+                                    <th>Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {#each compOffRequests as request}
+                                    <tr>
+                                        <td>{new Date(request.date).toLocaleDateString()}</td>
+                                        <td>{request.hours}</td>
+                                        <td>
+                                            <span class="badge badge-{request.status === 'approved' ? 'success' : request.status === 'rejected' ? 'error' : 'warning'}">
+                                                {request.status}
+                                            </span>
+                                        </td>
+                                        <td>{new Date(request.appliedOn).toLocaleDateString()}</td>
+                                        <td class="max-w-xs truncate">{request.reason}</td>
+                                    </tr>
+                                {/each}
+                            </tbody>
+                        </table>
+                    </div>
+                {/if}
+            </Tabs>
+        </div>
+    </div>
 </div>
 
+<Modal
+    show={showEditModal}
+    title="Edit Leave Allotments"
+    onClose={() => {
+        showEditModal = false;
+    }}
+>
+    <form on:submit|preventDefault={handleAllotmentUpdate} class="space-y-4">
+        {#each leaveSummary as leave}
+            {@const leaveType = leaveTypes[leave.type]}
+            {#if leaveType.isEditable}
+                <div class="form-control">
+                    <label class="label">{leaveType.label}</label>
+                    <input 
+                        type="number" 
+                        class="input input-bordered" 
+                        bind:value={editingAllotments[leave.type]}
+                        min="0"
+                        required
+                    />
+                </div>
+            {/if}
+        {/each}
+
+        <div class="flex justify-end gap-2">
+            <button 
+                type="button" 
+                class="btn btn-ghost"
+                on:click={() => {
+                    showEditModal = false;
+                }}
+            >
+                Cancel
+            </button>
+            <button type="submit" class="btn btn-primary" disabled={loading}>
+                {loading ? 'Saving...' : 'Save'}
+            </button>
+        </div>
+    </form>
+</Modal>
+
 <style>
-    .leaves-section {
-        padding: 1rem;
+    .badge {
+        @apply px-2 py-1 rounded-full text-xs font-medium;
     }
-
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
+    .badge-success {
+        @apply bg-success/10 text-success;
     }
-
-    .header h3 {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #111827;
-        margin: 0;
+    .badge-error {
+        @apply bg-error/10 text-error;
     }
-
-    .leave-form {
-        background: #f9fafb;
-        padding: 1.5rem;
-        border-radius: 0.5rem;
-        margin-bottom: 2rem;
-        border: 1px solid #e5e7eb;
-    }
-
-    .form-group {
-        margin-bottom: 1rem;
-    }
-
-    .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-    }
-
-    label {
-        display: block;
-        font-size: 0.875rem;
-        color: #374151;
-        margin-bottom: 0.5rem;
-    }
-
-    input, select, textarea {
-        width: 100%;
-        padding: 0.5rem;
-        border: 1px solid #d1d5db;
-        border-radius: 0.375rem;
-        font-size: 0.875rem;
-    }
-
-    textarea {
-        resize: vertical;
-    }
-
-    .form-actions {
-        margin-top: 1.5rem;
-        display: flex;
-        justify-content: flex-end;
-    }
-
-    .summary {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-
-    .stat {
-        background: #f3f4f6;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        text-align: center;
-    }
-
-    .stat .label {
-        display: block;
-        font-size: 0.875rem;
-        color: #6b7280;
-        margin-bottom: 0.5rem;
-    }
-
-    .stat .value {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: #111827;
-    }
-
-    .leave-history h4 {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #374151;
-        margin-bottom: 1rem;
-    }
-
-    .leaves-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .leaves-table th,
-    .leaves-table td {
-        padding: 0.75rem;
-        text-align: left;
-        border-bottom: 1px solid #e5e7eb;
-        font-size: 0.875rem;
-    }
-
-    .leaves-table th {
-        background: #f9fafb;
-        font-weight: 500;
-        color: #374151;
-    }
-
-    .status-badge {
-        padding: 0.25rem 0.5rem;
-        border-radius: 9999px;
-        font-size: 0.75rem;
-        font-weight: 500;
-        text-transform: capitalize;
-    }
-
-    .status-badge.pending {
-        background: #fef3c7;
-        color: #92400e;
-    }
-
-    .status-badge.approved {
-        background: #d1fae5;
-        color: #065f46;
-    }
-
-    .status-badge.rejected {
-        background: #fee2e2;
-        color: #991b1b;
-    }
-
-    .reason-cell {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-
-    .rejection-reason {
-        font-size: 0.75rem;
-        color: #991b1b;
-    }
-
-    .btn-primary {
-        background: #4f46e5;
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 0.375rem;
-        font-size: 0.875rem;
-        font-weight: 500;
-        border: none;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-
-    .btn-primary:hover {
-        background: #4338ca;
-    }
-
-    .btn-primary:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .btn-text {
-        background: none;
-        border: none;
-        color: #4f46e5;
-        font-size: 0.875rem;
-        cursor: pointer;
-        padding: 0;
-    }
-
-    .btn-text:hover {
-        text-decoration: underline;
-    }
-
-    .loading {
-        text-align: center;
-        padding: 2rem;
-        color: #6b7280;
-    }
-
-    .error {
-        text-align: center;
-        padding: 1rem;
-        color: #991b1b;
-        background: #fee2e2;
-        border-radius: 0.5rem;
-        margin-bottom: 1rem;
-    }
-
-    .category-tabs {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-        border-bottom: 1px solid #e5e7eb;
-        padding-bottom: 0.5rem;
-    }
-
-    .tab-button {
-        background: none;
-        border: none;
-        padding: 0.5rem 1rem;
-        font-size: 0.875rem;
-        color: #6b7280;
-        cursor: pointer;
-        border-bottom: 2px solid transparent;
-        transition: all 0.2s;
-    }
-
-    .tab-button.active {
-        color: #4f46e5;
-        border-bottom-color: #4f46e5;
-    }
-
-    .tab-button:hover {
-        color: #4f46e5;
+    .badge-warning {
+        @apply bg-warning/10 text-warning;
     }
 </style> 

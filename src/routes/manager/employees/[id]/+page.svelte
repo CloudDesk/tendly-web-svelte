@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
-  import { api } from '$lib/services/api';
+  import { employeesApi } from '$lib/services/api';
   import Tabs from '$lib/components/common/Tabs.svelte';
   import EmployeeAttendance from '$lib/components/attendance/EmployeeAttendance.svelte';
   import EmployeeDetails from '$lib/components/employee/EmployeeDetails.svelte';
@@ -12,11 +12,18 @@
   let user: User | null = null;
   let loading = true;
   let error: string | null = null;
-  let activeTab = 'details';
+
+  const tabs = [
+    { id: 'details', label: 'Employee Details' },
+    { id: 'leaves', label: 'Leaves' },
+    { id: 'attendance', label: 'Attendance' }
+  ];
+
+  $: activeTab = $page.url.searchParams.get('tab') || tabs[0]?.id;
 
   onMount(async () => {
     try {
-      const response = await api.employees.getById(employeeId);
+      const response = await employeesApi.getById(employeeId);
       user = response.data;
     } catch (e: any) {
       error = e.message;
@@ -26,33 +33,30 @@
   });
 </script>
 
-<div class="employee-details">
+<div class="p-4">
   {#if loading}
-    <div class="loading">Loading...</div>
+    <div class="loading-spinner">Loading...</div>
   {:else if error}
-    <div class="error">{error}</div>
+    <div class="alert alert-error">{error}</div>
   {:else if user}
-    <header class="page-header">
-      <h2>{user.name}</h2>
-      <button class="btn-secondary">Edit Profile</button>
-    </header>
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold text-neutral">{user.name}</h1>
+      <button class="btn btn-primary">Edit Profile</button>
+    </div>
 
-    <Tabs
-      tabs={[
-        { id: 'details', label: 'Employee Details' },
-        { id: 'leave', label: 'Leave Summary' },
-        { id: 'attendance', label: 'Attendance' }
-      ]}
-      bind:activeTab
-    />
-
-    {#if activeTab === 'details'}
-      <EmployeeDetails {employeeId} />
-    {:else if activeTab === 'attendance'}
-      <EmployeeAttendance {employeeId} />
-    {:else if activeTab === 'leave'}
-      <EmployeeLeaves {employeeId} />
-    {/if}
+    <div class="card">
+      <div class="card-body">
+        <Tabs {tabs}>
+          {#if activeTab === 'details'}
+            <EmployeeDetails {employeeId} />
+          {:else if activeTab === 'attendance'}
+            <EmployeeAttendance {employeeId} />
+          {:else if activeTab === 'leaves'}
+            <EmployeeLeaves {employeeId} />
+          {/if}
+        </Tabs>
+      </div>
+    </div>
   {/if}
 </div>
 
