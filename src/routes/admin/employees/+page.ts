@@ -19,13 +19,13 @@ export const load: PageLoad = async ({ url }) => {
       ...filters,
       ...(sortBy && sortOrder && { sortBy, sortOrder })
     });
-
+    console.log(response);
     return {
-      employees: response.data.items,
+      employees: response.data,
       pagination: {
-        total: response.data.total,
-        page: response.data.page,
-        limit: response.data.limit
+        total: response.meta?.total || 0,
+        page: response.meta?.page || 1,
+        limit: response.meta?.limit || 20
       },
       filters,
       sort: sortBy && sortOrder ? { key: sortBy, direction: sortOrder } : null
