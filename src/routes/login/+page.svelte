@@ -1,26 +1,13 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import { auth } from '$lib/stores/auth';
-  import { authApi } from '$lib/services/api';
+  import { loginController } from './controller';
   import { fade, fly } from 'svelte/transition';
-  import { onMount } from 'svelte';
 
   let email = '';
   let password = '';
   let error = '';
   let loading = false;
-  let redirectTo = '';
 
-  onMount(() => {
-    // Get redirect path from cookie if exists
-    const cookies = document.cookie.split(';');
-    const redirectCookie = cookies.find(c => c.trim().startsWith('redirectTo='));
-    if (redirectCookie) {
-      redirectTo = redirectCookie.split('=')[1];
-      // Clear the redirect cookie
-      document.cookie = 'redirectTo=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    }
-  });
+
 
   async function handleLogin(e: SubmitEvent) {
     e.preventDefault();
@@ -28,24 +15,10 @@
     error = '';
 
     try {
-      const response = await authApi.login(email, password);
-      const userRole = response.data.user.roleId?.toUpperCase();
-      
-      // Set default redirect based on role if no specific redirect is set
-      if (!redirectTo) {
-        if (userRole === 'ADMIN') {
-          redirectTo = '/admin/dashboard';
-        } else if (userRole === 'MANAGER') {
-          redirectTo = '/manager/dashboard';
-        } else {
-          redirectTo = '/my/dashboard';
-        }
-      }
-
-      await auth.login(response.data.token, response.data.user);
-      goto(redirectTo);
-    } catch (e: any) {
-      error = e.message || 'Invalid credentials';
+      await loginController.login(email, password);
+    } catch (error) {
+      console.error(error);
+      error = 'Invalid email or password';
     } finally {
       loading = false;
     }

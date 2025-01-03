@@ -1,45 +1,53 @@
-import type { ApiResponse } from '$lib/types';
-import type { User } from '$lib/types';
 import { fetchApi } from './base';
-import type { ListParams } from './base';
+import type { ApiResponse } from '$lib/types/api';
+import type { User } from '$lib/types/user';
+
+export type EmployeeFilters = {
+  roleId?: string;
+  isActive?: boolean;
+  search?: string;
+  page?: number;
+  limit?: number;
+};
+
+export type EmployeeListResponse = {
+  items: User[];
+  total: number;
+  page: number;
+  limit: number;
+};
 
 export const employeesApi = {
-    list: (params?: ListParams): Promise<ApiResponse<User[]>> => {
-        const queryParams = new URLSearchParams();
-        if (params?.page) queryParams.set('page', params.page.toString());
-        if (params?.limit) queryParams.set('limit', params.limit.toString());
-        if (params?.search) queryParams.set('search', params.search);
-        if (params?.sortBy) queryParams.set('sortBy', params.sortBy);
-        if (params?.sortOrder) queryParams.set('sortOrder', params.sortOrder);
+  list: async (filters: EmployeeFilters): Promise<ApiResponse<EmployeeListResponse>> => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined) params.append(key, String(value));
+    });
+    
+    return await fetchApi<EmployeeListResponse>(`/users?${params.toString()}`);
+  },
 
-        return fetchApi('/users?' + queryParams.toString());
-    },
+  getById: async (id: string): Promise<ApiResponse<User>> => {
+    return await fetchApi<User>(`/users/${id}`);
+  },
 
-    search: (term: string): Promise<ApiResponse<User[]>> => {
-        return fetchApi('/users?search=' + encodeURIComponent(term));
-    },
+  create: async (employee: Omit<User, 'id'>): Promise<ApiResponse<User>> => {
+    return await fetchApi<User>('/users', {
+      method: 'POST',
+      body: JSON.stringify(employee)
+    });
+  },
 
-    getById: (id: string): Promise<ApiResponse<User>> => {
-        return fetchApi('/users/' + id);
-    },
+  update: async (id: string, updates: Partial<User>): Promise<ApiResponse<User>> => {
+    return await fetchApi<User>(`/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates)
+    });
+  },
 
-    create: (data: Partial<User>): Promise<ApiResponse<User>> => {
-        return fetchApi('/users', {
-            method: 'POST',
-            body: JSON.stringify(data)
-        });
-    },
-
-    update: (id: string, data: Partial<User>): Promise<ApiResponse<User>> => {
-        return fetchApi('/users/' + id, {
-            method: 'PUT',
-            body: JSON.stringify(data)
-        });
-    },
-
-    delete: (id: string): Promise<ApiResponse<void>> => {
-        return fetchApi('/users/' + id, {
-            method: 'DELETE'
-        });
-    }
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    return await fetchApi<void>(`/users/${id}`, {
+      method: 'DELETE'
+    });
+  }
 }; 

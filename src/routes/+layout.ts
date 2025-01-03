@@ -5,51 +5,47 @@ import { lovs } from '$lib/stores/lovs';
 import { get } from 'svelte/store';
 import { setCustomFetch } from '$lib/services/api/base';
 
-export const load = async ({ fetch }) => {
+export const load = async ({ fetch, url }) => {
   // Set the custom fetch function
   setCustomFetch(fetch);
-
+  
   if (browser) {
     const authState = get(auth);
     const isAuthenticated = !!authState.token;
-    const isLoginPage = window.location.pathname === '/login';
-    const userRole = authState.user?.roleId?.toUpperCase();
+    const currentPath = url.pathname;
+    const isLoginPage = currentPath === '/login';
 
-    // If we're not on the login page and there's no auth token, redirect to login
     if (!isAuthenticated && !isLoginPage) {
       await goto('/login');
-      return;
     }
 
-    // If we're authenticated and on the login page, redirect based on role
+    // If authenticated and on login page, redirect based on role
     if (isAuthenticated && isLoginPage) {
-      if (userRole === 'ADMIN') {
-        await goto('/admin/dashboard');
-      } else if (userRole === 'MANAGER') {
-        await goto('/manager/dashboard');
-      } else {
-        await goto('/my/dashboard');
-      }
-      return;
+      const userRole = authState.user?.roleId?.toUpperCase();
+      const redirectPath = userRole === 'ADMIN' 
+        ? '/admin/dashboard'
+        : userRole === 'MANAGER'
+          ? '/manager/dashboard'
+          : '/my/dashboard';
+      
+      await goto(redirectPath);
     }
 
-    // Initialize LOVs if authenticated
+    // Load LOVs if authenticated
     if (isAuthenticated) {
       await Promise.all([
         lovs.loadType('UserRole'),
-        // Add other essential LOVs here
       ]);
     }
 
-    // Return the auth state so it's available to all pages
     return {
-      authenticated: isAuthenticated,
-      userRole
+      isAuthenticated,
+      userRole: authState.user?.roleId?.toUpperCase() || null
     };
   }
   
   return {
-    authenticated: false,
+    isAuthenticated: false,
     userRole: null
   };
 }; 

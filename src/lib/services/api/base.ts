@@ -1,5 +1,4 @@
 import { browser } from '$app/environment';
-import { auth } from '$lib/stores/auth';
 import { navigationContext } from '$lib/stores/navigation';
 import { get } from 'svelte/store';
 import type { ApiResponse } from '$lib/types';
@@ -12,27 +11,44 @@ export function setCustomFetch(fn: typeof fetch) {
 }
 
 export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
-  const authToken = get(auth).token;
   const reqRole = get(navigationContext);
 
   const headers = {
     'Content-Type': 'application/json',
-    ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
     'reqRole': reqRole,
     ...(options.headers || {})
   };
 
-  const response = await customFetch(`${API_BASE_URL}${endpoint}`, {
+  // Include credentials to send cookies
+  const fetchOptions: RequestInit = {
     ...options,
-    headers
-  });
+    headers,
+    credentials: 'include'
+  };
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'An error occurred' }));
-    throw new Error(error.message || 'An error occurred');
+  try {
+    const response = await customFetch(`${API_BASE_URL}${endpoint}`, fetchOptions);
+
+    // Handle 401 (Unauthorized) - Token expired or invalid
+    if (response.status === 401) {
+      // Clear user data and redirect to login
+      throw new Error('Session expired. Please login again.');
+    }
+
+    // Handle other errors
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'An error occurred' }));
+      throw new Error(error.message || 'An error occurred');
+    }
+
+    return response.json();
+  } catch (error) {
+    // Handle network errors or other exceptions
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('An error occurred while making the request');
   }
-
-  return response.json();
 }
 
 export type ListParams = {

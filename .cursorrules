@@ -1,0 +1,27 @@
+## Core Architecture
+- Client-only Svelte app
+- Fetch only; no external HTTP libraries
+- Strict separation: API, stores, page modules, components
+
+## Responsibilities
+- API: HTTP + transforms, no state
+- Stores: Pure state, no side effects
+- Page Modules (+page.ts): Business logic + orchestration
+- Common Component Controllers: Scoped UI behavior
+- Components: UI + interactions only
+
+## Data Flow
+- Components → Page Modules → API → Stores
+- No API in stores, no logic in components
+- Trivial local state stays local (e.g., toggles)
+
+## Page Modules
+- Base: Error handling + cross-cutting logic
+- Load: Data fetching + state prep
+- Actions: Form handling + mutations
+- Common Component: Reusable, UI-scoped, no data-fetching
+
+## State & Auth
+- Stores: State only, external data via page modules
+- Tokens: HTTP-only cookies
+- Roles: Derived from stores

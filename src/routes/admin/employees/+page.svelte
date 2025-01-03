@@ -1,16 +1,12 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { employeesApi } from '$lib/services/api';
   import Table from '$lib/components/common/Table.svelte';
-  import type { User, PaginationMeta } from '$lib/types';
+  import type { User } from '$lib/types';
   import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
 
-  let employees: User[] = [];
-  let loading = true;
-  let error: string | null = null;
-  let meta: PaginationMeta | null = null;
-  let currentQuery = '';
-  let currentSort: { key: string; direction: 'asc' | 'desc' } | null = null;
+  export let data;
+
+  $: ({ employees, pagination, filters, sort } = data);
 
   const columns = [
     { key: 'name', label: 'Name', sortable: true },
@@ -39,67 +35,32 @@
     }
   ];
 
-  async function fetchEmployees(params = {}) {
-    loading = true;
-    error = null;
-    
-    try {
-      const response = await employeesApi.list(params);
-      employees = response.data;
-      meta = response.meta;
-    } catch (e: any) {
-      error = e.message;
-    } finally {
-      loading = false;
-    }
-  }
-
-  onMount(() => {
-    fetchEmployees({ page: 1, limit: 10 });
-  });
-
   function handleSearch(event: CustomEvent) {
     const { query } = event.detail;
-    currentQuery = query;
-    fetchEmployees({ 
-      page: 1, 
-      limit: meta?.limit || 10,
-      search: query,
-      ...(currentSort && { 
-        sortBy: currentSort.key,
-        sortOrder: currentSort.direction 
-      })
-    });
+    const url = new URL($page.url);
+    url.searchParams.set('search', query);
+    url.searchParams.set('page', '1'); // Reset to first page on new search
+    goto(url, { replaceState: true });
   }
 
   function handleSort(event: CustomEvent) {
     const { key, direction } = event.detail;
-    currentSort = { key, direction };
-    fetchEmployees({
-      page: meta?.page || 1,
-      limit: meta?.limit || 10,
-      ...(currentQuery && { search: currentQuery }),
-      sortBy: key,
-      sortOrder: direction
-    });
+    const url = new URL($page.url);
+    url.searchParams.set('sortBy', key);
+    url.searchParams.set('sortOrder', direction);
+    goto(url, { replaceState: true });
   }
 
   function handlePage(event: CustomEvent) {
-    const { page } = event.detail;
-    fetchEmployees({
-      page,
-      limit: meta?.limit || 10,
-      ...(currentQuery && { search: currentQuery }),
-      ...(currentSort && { 
-        sortBy: currentSort.key,
-        sortOrder: currentSort.direction 
-      })
-    });
+    const { page: newPage } = event.detail;
+    const url = new URL($page.url);
+    url.searchParams.set('page', newPage.toString());
+    goto(url, { replaceState: true });
   }
 
-  async function handleRowClick(event: CustomEvent<User>) {
+  function handleRowClick(event: CustomEvent<User>) {
     const user = event.detail;
-    await goto(`/admin/employees/${user._id}`);
+    goto(`/admin/employees/${user._id}`);
   }
 </script>
 
@@ -112,9 +73,9 @@
   <Table
     {columns}
     data={employees}
-    {loading}
-    {error}
-    {meta}
+    loading={$page.url.searchParams.toString() !== $page.url.searchParams.toString()}
+    pagination={pagination}
+    currentSort={sort}
     serverSide={true}
     on:search={handleSearch}
     on:sort={handleSort}
