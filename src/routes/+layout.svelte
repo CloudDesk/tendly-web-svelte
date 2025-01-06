@@ -6,6 +6,8 @@
   export let data;
   $: ({ isAuthenticated, userRole } = data);
   $: isPublicPage = ['/login'].includes($page.url.pathname);
+
+  export const ssr = false;
 </script>
 
 <div class="min-h-screen bg-base-200" data-theme="tendlyPro">

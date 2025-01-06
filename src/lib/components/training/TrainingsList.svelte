@@ -2,13 +2,12 @@
     import Table from '$lib/components/common/Table.svelte';
     import Modal from '$lib/components/common/Modal.svelte';
     import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
     import type { Training, User } from '$lib/types';
     import { trainingsApi, employeesApi } from '$lib/services/api/';
 
-    export let isTrainer = false;
-  
     let trainings: Training[] = [];
-    let employees: User[] = [];
+    let employees: EmployeeListResponse = [];
     let loading = false;
     let error: string | null = null;
     let showForm = false;
@@ -36,11 +35,6 @@
         key: 'window', 
         label: 'Window',
         render: (row: Training) => `${row.trainingWindowStart} - ${row.trainingWindowEnd}`
-      },
-      { 
-        key: 'validity', 
-        label: 'Validity',
-        render: (row: Training) => `${row.validFrom} - ${row.validTill || 'No end date'}`
       },
       { 
         key: 'graceTime', 
@@ -209,25 +203,18 @@
       };
       showForm = true;
     }
+
+    function handleRowClick(item: any) {
+      goto(`/admin/trainings/${item.detail._id}`);
+    }
   
     onMount(loadTrainings);
   </script>
   
   <div>
     <div class="flex justify-between items-center mb-4">
-      <h2 class="text-xl font-semibold">Trainings</h2>
-      {#if !isTrainer}<div class="flex gap-4">
-        <input 
-          type="text" 
-          class="input input-bordered" 
-          placeholder="Search trainings..."
-          bind:value={searchQuery}
-          on:input={() => loadTrainings()}
-        />
-        
-          <button class="btn btn-primary" on:click={handleAdd}>Add New Training</button>
-       
-      </div> {/if}
+      <h2 class="text-xl font-semibold">My Trainings</h2>
+     
     </div>
   
     {#if error}
@@ -237,7 +224,7 @@
     {#if loading}
       <div class="loading">Loading...</div>
     {:else}
-      <Table {columns} data={trainings} on:action={handleTableAction} />
+      <Table on:rowClick={handleRowClick} {columns} data={trainings} on:action={handleTableAction} />
       
       <div class="flex justify-center mt-4 gap-2">
         <button 

@@ -16,9 +16,11 @@
     ClipboardList,
     Briefcase,
     Bell,
-    ChevronDown
+    ChevronDown,
+    BookOpen
   } from 'lucide-svelte';
   import { writable } from 'svelte/store';
+  export const ssr = false;
 
   const isCollapsed = writable(false);
   
@@ -71,6 +73,11 @@
       label: 'Attendance', 
       href: '/admin/attendance', 
       icon: CalendarCheck
+    },
+    { 
+      label: 'Trainings', 
+      href: '/admin/trainings', 
+      icon: BookOpen
     },
     { 
       label: 'Leaves', 
@@ -322,7 +329,7 @@
         </div>
         <button 
           class="w-9 h-9 flex items-center justify-center text-neutral/60 hover:text-neutral rounded-lg hover:bg-base-200 transition-all hover:shadow-sm"
-          on:click={() => auth.logout()}
+          on:click={() => auth.clearAuth()}
         >
           <LogOut class="w-5 h-5" />
         </button>
@@ -331,7 +338,7 @@
   </div>
 </aside>
 
-<style lang="postcss">
+<style lang="postcss" prerender>
   :global(nav::-webkit-scrollbar) {
     width: 5px;
   }

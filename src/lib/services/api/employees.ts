@@ -18,6 +18,10 @@ export type EmployeeListResponse = {
 };
 
 export const employeesApi = {
+  me: async (): Promise<ApiResponse<User>> => {
+    return await fetchApi<User>('/users/me');
+  },
+
   list: async (filters: EmployeeFilters): Promise<ApiResponse<EmployeeListResponse>> => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
