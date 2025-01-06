@@ -8,8 +8,10 @@ import { employeesApi } from "$lib/services/api/employees";
 
 
 export const load = async ({ fetch, url }) => {
+  if(!browser) {
   // Set the custom fetch function
-  setCustomFetch(fetch);
+    setCustomFetch(fetch);
+  }
 
   // Ensure client-side execution
   if (browser) {
