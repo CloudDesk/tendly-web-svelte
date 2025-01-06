@@ -4,7 +4,7 @@
   import { page } from '$app/stores';
 
   export let data;
-  $: ({ isAuthenticated, userRole } = data);
+  $: ({ isAuthenticated } = data);
   $: isPublicPage = ['/login'].includes($page.url.pathname);
 
   export const ssr = false;

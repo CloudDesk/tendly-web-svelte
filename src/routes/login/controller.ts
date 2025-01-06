@@ -18,24 +18,14 @@ export const loginController = {
       }
 
       const { user, token } = response.data;
-      
       // Update store
-      auth.setUser(user, token);
+      auth.setAuth(user);
 
       // Set cookies if in browser
       if (browser) {
         document.cookie = `access_token=${token}; path=/; secure; samesite=strict`;
       }
-
-      // Handle navigation based on role
-      const userRole = user.roleId?.toUpperCase();
-      if (userRole === 'ADMIN') {
-        await goto('/admin/dashboard');
-      } else if (userRole === 'MANAGER') {
-        await goto('/manager/dashboard');
-      } else {
-        await goto('/my/dashboard');
-      }
+      goto("/");
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
@@ -65,27 +55,4 @@ export const loginController = {
       throw error;
     }
   },
-
-  refreshSession: async (): Promise<void> => {
-    try {
-      const response = await authApi.refreshUser();
-      
-      if (!response.success) {
-        handleApiError(response);
-      }
-
-      const { user, token } = response.data;
-      
-      // Update store
-      auth.setUser(user, token);
-      
-      // Update cookie if in browser
-      if (browser) {
-        document.cookie = `access_token=${token}; path=/; secure; samesite=strict`;
-      }
-    } catch (error) {
-      console.error('Session refresh failed:', error);
-      throw error;
-    }
-  }
 }; 

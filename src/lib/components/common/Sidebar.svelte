@@ -139,7 +139,7 @@
     { 
       label: 'Dashboard', 
       href: '/my/dashboard', 
-      icon: LayoutDashboard
+      icon: LayoutDashboard,
     },
     { 
       label: 'Profile', 
@@ -272,6 +272,7 @@
               <li>
                 <a 
                   href={item.href}
+                  data-sveltekit-preload-data="off"
                   class="group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all overflow-hidden
                     {getIsActive(item.href) 
                       ? 'bg-primary text-primary-content shadow-md shadow-primary/20' 

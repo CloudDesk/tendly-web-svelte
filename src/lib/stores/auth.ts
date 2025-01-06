@@ -1,25 +1,34 @@
 import { writable, derived } from 'svelte/store';
 import type { User } from '$lib/types/user';
+import { browser } from '$app/environment'; 
 import { lovs } from './lovs';
 
 type AuthState = {
   user: User | null;
-  token: string | null;
 };
 
 function createAuthStore() {
-  const { subscribe, set, update } = writable<AuthState>({
-    user: null,
-    token: null
+  const { subscribe, update, set } = writable<AuthState>({
+    user: browser ? localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user') || '{}') : null : null,
   });
 
   return {
     subscribe,
-    setUser: (user: User | null, token: string | null) => {
-      update(state => ({ ...state, user, token }));
+    update, // Expose update for fine-grained control
+    setAuth: (user: User | null) => {
+      update(state => {
+        if (user) {
+          localStorage.setItem('user', JSON.stringify(user));
+        } else {
+          localStorage.removeItem('user');
+        }
+
+        return { ...state, user };
+      });
     },
     clearAuth: () => {
-      set({ user: null, token: null });
+      localStorage.removeItem('user');
+      set({ user: null});
     }
   };
 }
@@ -32,4 +41,4 @@ export const userRole = derived([auth, lovs], ([$auth, $lovs]) => {
   if (!$auth.user?.roleId || !$lovs.UserRole) return '';
   const role = $lovs.UserRole.find(r => r.value === $auth.user?.roleId);
   return role?.label || '';
-}); 
+});

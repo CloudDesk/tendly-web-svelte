@@ -6,3 +6,4 @@ export * from './training';
 export * from './lovs';
 export * from './trainingAttendance';
 export * from './trainingMaterials';
+export * from './shifts';
