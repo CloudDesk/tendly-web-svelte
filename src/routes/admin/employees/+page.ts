@@ -3,7 +3,7 @@ import { employeesApi } from '$lib/services/api/employees';
 import type { ApiError } from '$lib/types/api';
 import type { EmployeeFilters } from '$lib/services/api/employees';
 
-
+export const prerender = true;
 export const load: PageLoad = async ({ url }) => {
   try {
     const filters: EmployeeFilters = {

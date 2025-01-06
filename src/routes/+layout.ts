@@ -7,6 +7,7 @@ import { setCustomFetch } from "$lib/services/api/base";
 import { employeesApi } from "$lib/services/api/employees";
 
 export const ssr = false;
+export const prerender = false;
 export const load = async ({ fetch, url }) => {
   if(!browser) {
   // Set the custom fetch function
