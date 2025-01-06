@@ -20,12 +20,17 @@ export const load = async ({ fetch, url }) => {
 
     // Check authentication state
     let isAuthenticated = !!authState.user;
-
+    console.log(isAuthenticated);
+    console.log(authState);
     // Fetch user info if not available but token exists
     if (!authState.user && isAuthenticated) {
+      console.log(1.1);
       try {
+        console.log(1.2);
         const userInfo = await employeesApi.me();
+        console.log(1.3);
         auth.setAuth(userInfo.data);
+        console.log(1.4);
         isAuthenticated = true;
       } catch (error) {
         console.error("Error fetching user info:", error);
@@ -33,15 +38,16 @@ export const load = async ({ fetch, url }) => {
         auth.setAuth(null);
       }
     }
-
+    console.log(1, isAuthenticated, isLoadingPage);
     // Redirect unauthenticated users to the login page
     if (!isAuthenticated && !isLoadingPage) {
+      console.log(2, isAuthenticated, isLoadingPage);
       await goto("/login");
       return { isAuthenticated: false, userRole: null };
     }
 
-    // Prevent infinite loop: Ensure redirect happens only if the current path doesn’t match the target path
     if (isAuthenticated && isLoadingPage) {
+      console.log(3, isAuthenticated, isLoadingPage);
       const userRole = authState.user?.roleId?.toUpperCase();
       const redirectPath =
         userRole === "ADMIN"
