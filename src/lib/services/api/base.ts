@@ -2,7 +2,8 @@ import { browser } from '$app/environment';
 import { navigationContext } from '$lib/stores/navigation';
 import { get } from 'svelte/store';
 import type { ApiResponse } from '$lib/types';
-
+import { goto } from '$app/navigation';
+import { auth } from '$lib/stores/auth';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 let customFetch = browser ? window.fetch : fetch;
 
@@ -31,8 +32,8 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
 
     // Handle 401 (Unauthorized) - Token expired or invalid
     if (response.status === 401) {
-      // Clear user data and redirect to login
-      throw new Error('Session expired. Please login again.');
+      auth.clearAuth();  
+      goto('/login');
     }
 
     // Handle other errors
