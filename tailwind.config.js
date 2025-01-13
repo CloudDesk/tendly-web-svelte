@@ -25,6 +25,10 @@ export default {
           DEFAULT: '#ff991f',
           light: '#fff4e5'
         },
+        info: {
+          DEFAULT: '#0B84FF',
+          light: '#E6F4FF'
+        },
         surface: {
           DEFAULT: '#ffffff',
           muted: '#F4F5F7',
@@ -54,6 +58,9 @@ export default {
         '6': '16px',
         '8': '24px',
         '12': '32px'
+      },
+      opacity: {
+        '10': '0.1'
       }
     }
   },

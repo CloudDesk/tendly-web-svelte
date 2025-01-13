@@ -123,7 +123,7 @@
     {/if}
 </div>
 
-<style>
+<!-- <style>
     .tabs-container {
         @apply -mx-6 px-6 py-2 bg-base-200 border-y border-base-300;
     }
@@ -144,4 +144,4 @@
     .loading {
         @apply flex justify-center items-center p-8 text-neutral-500;
     }
-</style> 
+</style>  -->

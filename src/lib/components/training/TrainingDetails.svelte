@@ -43,9 +43,9 @@
             case 'completed':
                 return 'badge-success';
             case 'cancelled':
-                return 'badge-error';
+                return 'badge-danger';
             default:
-                return 'badge-ghost';
+                return '';
         }
     }
     
@@ -171,24 +171,3 @@
         </div>
     </div>
 </div>
-
-<style>
-    .badge {
-        @apply px-2 py-1 text-xs font-medium capitalize;
-    }
-    .badge-info {
-        @apply bg-info/10 text-info;
-    }
-    .badge-warning {
-        @apply bg-warning/10 text-warning;
-    }
-    .badge-success {
-        @apply bg-success/10 text-success;
-    }
-    .badge-error {
-        @apply bg-error/10 text-error;
-    }
-    .badge-ghost {
-        @apply bg-base-200 text-base-content;
-    }
-</style>
