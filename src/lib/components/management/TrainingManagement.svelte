@@ -2,7 +2,7 @@
     import Table from '$lib/components/common/Table.svelte';
     import Modal from '$lib/components/common/Modal.svelte';
     import { onMount } from 'svelte';
-    import type { Training, User } from '$lib/types';
+    import type { Training, User } from '$lib/types_old';
     import { trainingsApi, employeesApi } from '$lib/services/api/';
 
     export let isTrainer = false;

@@ -1,100 +1,126 @@
 <script lang="ts">
-  import { page } from '$app/stores';
-  import { onMount } from 'svelte';
-  import { employeesApi } from '$lib/services/api';
-  import Tabs from '$lib/components/common/Tabs.svelte';
+  import type { User } from '$lib/types';
+  import { goto } from '$app/navigation';
   import EmployeeAttendance from '$lib/components/attendance/EmployeeAttendance.svelte';
-  import EmployeeDetails from '$lib/components/employee/EmployeeDetails.svelte';
   import EmployeeLeaves from '$lib/components/employee/EmployeeLeaves.svelte';
   import EmployeeTrainingAttendance from '$lib/components/attendance/EmployeeTrainingAttendance.svelte';
-  import type { User } from '$lib/types';
-  import { navigationContext } from '$lib/stores/navigation';
 
-  const employeeId = $page.params.id;
-  let user: User | null = null;
-  let loading = true;
-  let error: string | null = null;
+  export let data;
+  $: ({ employee } = data);
 
-  const tabs = [
-    { id: 'details', label: 'Employee Details' },
-    { id: 'leaves', label: 'Leaves' },
-    { id: 'attendance', label: 'Attendance' },
-    { id: 'training', label: 'Training Attendance' }
-  ];
+  let activeTab = 'overview';
 
-  $: activeTab = $page.url.searchParams.get('tab') || tabs[0]?.id;
+  function setActiveTab(tab: string) {
+    activeTab = tab;
+  }
 
-  onMount(async () => {
-    try {
-      navigationContext.set('admin');
-      const response = await employeesApi.getById(employeeId);
-      user = response.data;
-    } catch (e: any) {
-      error = e.message;
-    } finally {
-      loading = false;
-    }
-  });
+  function formatDate(date: string) {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
 </script>
 
-<div class="p-4">
-  {#if loading}
-    <div class="loading-spinner">Loading...</div>
-  {:else if error}
-    <div class="alert alert-error">{error}</div>
-  {:else if user}
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-neutral">{user.name}</h1>
-      <button class="btn btn-primary">Edit Profile</button>
-    </div>
-
-    <div class="card">
-      <div class="card-body">
-        <Tabs {tabs}>
-          {#if activeTab === 'details'}
-            <EmployeeDetails {employeeId} />
-          {:else if activeTab === 'attendance'}
-            <EmployeeAttendance {employeeId} />
-          {:else if activeTab === 'leaves'}
-            <EmployeeLeaves {employeeId} />
-          {:else if activeTab === 'training'}
-            <EmployeeTrainingAttendance {employeeId} />
-          {/if}
-        </Tabs>
+<div class="p-8 bg-surface-muted min-h-screen">
+  <header class="flex justify-between items-center mb-12">
+    <div class="flex items-center gap-6">
+      <button class="btn-icon" on:click={() => goto('/admin/employees')}>
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <div class="flex items-center gap-3">
+        <h1 class="text-xl font-semibold text-text m-0">{employee.name}</h1>
+        <div class="badge badge-success">{employee.roleId}</div>
       </div>
     </div>
-  {/if}
-</div>
+    <div class="flex gap-3">
+      <button class="btn btn-secondary">
+        <i class="fas fa-envelope"></i>
+        Message
+      </button>
+      <button class="btn btn-primary">
+        <i class="fas fa-pencil"></i>
+        Edit Profile
+      </button>
+    </div>
+  </header>
 
-<style>
-  .employee-details {
-    padding: 1rem;
-  }
+  <div class="space-y-8">
+    <div class="flex items-center gap-4 mb-8">
+      <div class="avatar avatar-lg">
+        {employee.name[0]}
+      </div>
+      <div class="badge {employee.active ? 'badge-success' : 'badge-danger'}">
+        {employee.active ? 'Active' : 'Inactive'}
+      </div>
+    </div>
 
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-  }
+    <div class="tab-container">
+      <nav class="tabs">
+        <button 
+          class="tab-item"
+          class:active={activeTab === 'overview'}
+          on:click={() => setActiveTab('overview')}>Overview</button>
+        <button 
+          class="tab-item"
+          class:active={activeTab === 'leaves'}
+          on:click={() => setActiveTab('leaves')}>Leaves History</button>
+        <button 
+          class="tab-item"
+          class:active={activeTab === 'attendance'}
+          on:click={() => setActiveTab('attendance')}>Attendance</button>
+        <button 
+          class="tab-item"
+          class:active={activeTab === 'training'}
+          on:click={() => setActiveTab('training')}>Training</button>
+      </nav>
+    </div>
 
-  .page-header h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #111827;
-  }
+    <div class="tab-content">
+      {#if activeTab === 'overview'}
+        <div class="info-grid">
+          <div class="info-card">
+            <h3 class="text-base font-medium text-text mb-6">Contact Information</h3>
+            <div class="space-y-4">
+              <div>
+                <div class="info-label">Email</div>
+                <div class="info-value">{employee.email}</div>
+              </div>
+              <div>
+                <div class="info-label">Last Login</div>
+                <div class="info-value">{employee.lastLoginAt ? formatDate(employee.lastLoginAt) : 'Never'}</div>
+              </div>
+            </div>
+          </div>
 
-  .loading {
-    text-align: center;
-    padding: 2rem;
-    color: #6b7280;
-  }
-
-  .error {
-    text-align: center;
-    padding: 2rem;
-    color: #991b1b;
-    background: #fee2e2;
-    border-radius: 0.5rem;
-  }
-</style> 
+          <div class="info-card">
+            <h3 class="text-base font-medium text-text mb-6">Employment Details</h3>
+            <div class="space-y-4">
+              <div>
+                <div class="info-label">Role</div>
+                <div class="info-value">{employee.roleId}</div>
+              </div>
+              <div>
+                <div class="info-label">Joined</div>
+                <div class="info-value">{formatDate(employee.createdAt)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {:else if activeTab === 'leaves'}
+        <div class="card">
+          <EmployeeLeaves employeeId={employee._id} />
+        </div>
+      {:else if activeTab === 'attendance'}
+        <div class="card">
+          <EmployeeAttendance employeeId={employee._id} />
+        </div>
+      {:else if activeTab === 'training'}
+        <div class="card">
+          <EmployeeTrainingAttendance employeeId={employee._id} />
+        </div>
+      {/if}
+    </div>
+  </div>
+</div> 

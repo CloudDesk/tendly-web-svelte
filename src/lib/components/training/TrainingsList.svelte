@@ -3,7 +3,7 @@
     import Modal from '$lib/components/common/Modal.svelte';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
-    import type { Training, User } from '$lib/types';
+    import type { Training, User } from '$lib/types_old';
     import { trainingsApi, employeesApi } from '$lib/services/api/';
 
     let trainings: Training[] = [];

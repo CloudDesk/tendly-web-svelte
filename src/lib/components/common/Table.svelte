@@ -137,16 +137,15 @@
               class:desc={sortKey === column.key && sortDirection === 'desc'}
               on:click={() => handleSort(column)}
             >
-              {column.label}
-              {#if column.sortable}
-                <span class="sort-icon">
-                  {#if sortKey === column.key}
-                    {sortDirection === 'asc' ? '↑' : '↓'}
-                  {:else}
-                    ↕
-                  {/if}
-                </span>
-              {/if}
+              <div class="th-content">
+                {column.label}
+                {#if column.sortable}
+                  <div class="sort-indicator">
+                    <i class="sort-arrow up"></i>
+                    <i class="sort-arrow down"></i>
+                  </div>
+                {/if}
+              </div>
             </th>
           {/each}
         </tr>
@@ -225,14 +224,20 @@
   }
 
   th {
-    background: #f9fafb;
+    background: #f6f7fb;
     padding: 0.75rem 1rem;
     text-align: left;
     font-weight: 500;
-    color: #374151;
+    color: #676879;
     border-bottom: 1px solid #e5e7eb;
     position: sticky;
     top: 0;
+  }
+
+  .th-content {
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
   th.sortable {
@@ -241,17 +246,45 @@
   }
 
   th.sortable:hover {
-    background: #f3f4f6;
+    background: #f0f1f5;
   }
 
-  .sort-icon {
-    display: inline-block;
-    margin-left: 0.5rem;
-    color: #9ca3af;
+  .sort-indicator {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-left: 4px;
+    height: 12px;
+    opacity: 0.3;
   }
 
-  th.sorted .sort-icon {
-    color: #4f46e5;
+  th.sortable:hover .sort-indicator {
+    opacity: 0.5;
+  }
+
+  th.sorted .sort-indicator {
+    opacity: 1;
+  }
+
+  .sort-arrow {
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+  }
+
+  .sort-arrow.up {
+    border-bottom: 4px solid #676879;
+  }
+
+  .sort-arrow.down {
+    border-top: 4px solid #676879;
+  }
+
+  th.asc .sort-arrow.up,
+  th.desc .sort-arrow.down {
+    border-bottom-color: #0073ea;
+    border-top-color: #0073ea;
   }
 
   td {

@@ -3,6 +3,8 @@
   import { auth } from '$lib/stores/auth';
   import { navigationContext } from '$lib/stores/navigation';
   import type { ComponentType } from 'svelte';
+  import logo from '$lib/assets/Tendly_logo_Full.png';
+  import logoSmall from '$lib/assets/Tendly_T_logo.png';
   import { 
     LayoutDashboard, 
     Users, 
@@ -229,114 +231,97 @@
   }
 </script>
 
-<aside class="fixed left-0 top-0 h-screen bg-base-100 border-r border-base-200 shadow-sm {$isCollapsed ? 'w-20' : 'w-64'} transition-all duration-200 z-20">
+<aside class="fixed left-0 top-0 h-screen bg-white border-r border-surface-border shadow-sm {$isCollapsed ? 'w-20' : 'w-64'} transition-all duration-200 z-20">
   <!-- Header -->
-  <div class="h-16 flex items-center px-4 border-b border-base-200 bg-base-100">
-    <div class="flex items-center gap-3 {$isCollapsed ? 'justify-center w-full' : ''}">
-      <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/20">
-        <span class="text-primary-content font-bold text-xl">T</span>
-      </div>
+  <div class="h-16 flex items-center justify-between px-4 border-b border-surface-border">
+    <div class="{$isCollapsed ? 'w-8' : 'w-[120px]'} transition-all duration-200">
       {#if !$isCollapsed}
-        <div>
-          <h1 class="font-bold text-lg text-neutral">Tendly</h1>
-          <p class="text-xs text-neutral/60">HR Management</p>
-        </div>
+        <img 
+          src={logo} 
+          alt="Tendly" 
+          class="w-full" 
+          style="aspect-ratio: 568/439;"
+        />
+      {:else}
+        <img 
+          src={logoSmall} 
+          alt="Tendly" 
+          class="w-full"
+          style="aspect-ratio: 1/1;"
+        />
       {/if}
     </div>
     <button
-      class="ml-auto w-8 h-8 flex items-center justify-center text-neutral/60 hover:text-neutral rounded-lg hover:bg-base-200 transition-colors"
+      class="w-8 h-8 flex items-center justify-center text-text-muted hover:text-text rounded-lg hover:bg-surface-muted transition-colors"
       on:click={toggleSidebar}
+      aria-label={$isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
     >
-      <svelte:component this={$isCollapsed ? ChevronRight : ChevronLeft} class="w-5 h-5" />
+      {#if $isCollapsed}
+        <ChevronRight size={20} />
+      {:else}
+        <ChevronLeft size={20} />
+      {/if}
     </button>
   </div>
 
   <!-- Navigation -->
-  <nav class="p-3 overflow-y-auto" style="height: calc(100vh - 9rem);">
-    {#each $navigationSections as section (section.label)}
+  <nav class="h-[calc(100vh-4rem)] overflow-y-auto py-4">
+    {#each $navigationSections as section}
       <div class="mb-6">
         {#if !$isCollapsed}
-          <button 
-            class="w-full px-3 mb-2 flex items-center justify-between text-xs font-semibold text-neutral/50 uppercase tracking-wider hover:text-neutral/70 transition-colors"
+          <div 
+            class="flex items-center justify-between px-4 mb-2 cursor-pointer"
             on:click={() => toggleSection(section.label)}
+            on:keydown={(e) => e.key === 'Enter' && toggleSection(section.label)}
           >
-            <span>{section.label}</span>
+            <span class="text-xs font-medium text-text-muted uppercase tracking-wider">
+              {section.label}
+            </span>
             <ChevronDown 
-              class="w-4 h-4 transform transition-transform duration-200 {$collapsedSections[section.label] ? 'rotate-180' : ''}"
+              size={16} 
+              class="text-text-muted transition-transform {$collapsedSections[section.label] ? '-rotate-90' : ''}"
             />
-          </button>
+          </div>
         {/if}
-        {#if !$collapsedSections[section.label]}
-          <ul class="space-y-1">
-            {#each section.items as item (item.href)}
-              <li>
-                <a 
-                  href={item.href}
-                  data-sveltekit-preload-data="off"
-                  class="group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all overflow-hidden
-                    {getIsActive(item.href) 
-                      ? 'bg-primary text-primary-content shadow-md shadow-primary/20' 
-                      : 'text-neutral/70 hover:text-neutral hover:bg-base-200'}"
-                >
-                  <div class="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <svelte:component this={item.icon} class="w-5 h-5 relative z-10" />
-                  {#if !$isCollapsed}
-                    <span class="relative z-10">{item.label}</span>
+        
+        {#if !$collapsedSections[section.label] || $isCollapsed}
+          <div class="space-y-1">
+            {#each section.items as item}
+              {@const isActive = getIsActive(item.href)}
+              <a
+                href={item.href}
+                class="flex items-center gap-3 px-4 py-2 text-sm {isActive ? 'text-primary bg-primary-light/10 font-medium' : 'text-text-muted hover:text-text hover:bg-surface-muted'} transition-colors"
+              >
+                <svelte:component this={item.icon} size={20} />
+                {#if !$isCollapsed}
+                  <span>{item.label}</span>
+                  {#if item.children}
+                    <ChevronDown 
+                      size={16} 
+                      class="ml-auto transition-transform {isActive ? '' : '-rotate-90'}"
+                    />
                   {/if}
-                </a>
-
-                {#if item.children && getIsActive(item.href) && !$isCollapsed}
-                  <ul class="mt-2 ml-4 pl-4 border-l-2 border-base-200">
-                    {#each item.children as child (child.href)}
-                      <li>
-                        <a 
-                          href={child.href}
-                          class="group relative flex items-center px-3 py-2 text-sm rounded-lg transition-all overflow-hidden
-                            {getIsChildActive(child.href)
-                              ? 'text-primary bg-primary/5 font-medium' 
-                              : 'text-neutral/70 hover:text-neutral hover:bg-base-200'}"
-                        >
-                          <div class="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                          <span class="relative z-10">{child.label}</span>
-                        </a>
-                      </li>
-                    {/each}
-                  </ul>
                 {/if}
-              </li>
+              </a>
+              {#if item.children && !$isCollapsed && isActive}
+                <div class="pl-12 space-y-1">
+                  {#each item.children as child}
+                    {@const isChildActive = getIsChildActive(child.href)}
+                    <a
+                      href={child.href}
+                      class="block py-2 text-sm {isChildActive ? 'text-primary font-medium' : 'text-text-muted hover:text-text'} transition-colors"
+                    >
+                      {child.label}
+                    </a>
+                  {/each}
+                </div>
+              {/if}
             {/each}
-          </ul>
+          </div>
         {/if}
       </div>
     {/each}
   </nav>
-
-  <!-- User Section -->
-  <div class="absolute bottom-0 left-0 right-0 border-t border-base-200 bg-base-100">
-    <div class="p-4 {$isCollapsed ? 'justify-center' : ''} flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-        <span class="text-primary font-medium">
-          {($auth.user?.name?.[0] || '?').toUpperCase()}
-        </span>
-      </div>
-      {#if !$isCollapsed}
-        <div class="flex-1 min-w-0">
-          <p class="font-medium text-neutral truncate">
-            {$auth.user?.name || 'User'}
-          </p>
-          <p class="text-sm text-neutral/60 truncate">
-            {$auth.user?.email || ''}
-          </p>
-        </div>
-        <button 
-          class="w-9 h-9 flex items-center justify-center text-neutral/60 hover:text-neutral rounded-lg hover:bg-base-200 transition-all hover:shadow-sm"
-          on:click={() => auth.clearAuth()}
-        >
-          <LogOut class="w-5 h-5" />
-        </button>
-      {/if}
-    </div>
-  </div>
 </aside>
 
 <style lang="postcss" prerender>

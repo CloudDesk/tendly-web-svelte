@@ -1,6 +1,6 @@
-import { fetchApi } from './base';
 import type { User } from '$lib/types';
 import type { ApiResponse, LoginResponseData } from '$lib/types/api';
+import { fetchApi } from './base';
 
 export const authApi = {
   login: async (email: string, password: string): Promise<ApiResponse<LoginResponseData>> => {

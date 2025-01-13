@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { employeesApi } from '$lib/services/api';
   import Table from '$lib/components/common/Table.svelte';
-  import type { User, PaginationMeta } from '$lib/types';
+  import type { User, PaginationMeta } from '$lib/types_old';
   import { goto } from '$app/navigation';
 
   let employees: User[] = [];

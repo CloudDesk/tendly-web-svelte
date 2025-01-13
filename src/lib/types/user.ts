@@ -7,7 +7,7 @@ export type User = {
   firstName: string;
   lastName: string;
   roleId: UserRole;
-  isActive: boolean;
+  active: boolean;
   createdAt: string;
   updatedAt: string;
   lastLoginAt?: string;

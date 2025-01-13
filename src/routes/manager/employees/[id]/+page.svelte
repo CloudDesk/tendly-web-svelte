@@ -6,7 +6,7 @@
   import EmployeeAttendance from '$lib/components/attendance/EmployeeAttendance.svelte';
   import EmployeeDetails from '$lib/components/employee/EmployeeDetails.svelte';
   import EmployeeLeaves from '$lib/components/employee/EmployeeLeaves.svelte';
-  import type { User } from '$lib/types';
+  import type { User } from '$lib/types_old';
 
   const employeeId = $page.params.id;
   let user: User | null = null;
