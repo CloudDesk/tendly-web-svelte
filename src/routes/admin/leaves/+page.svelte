@@ -25,7 +25,7 @@
       render: (leave: LeaveRequest) => new Date(leave.startDate).toLocaleDateString() },
     { key: 'endDate', label: 'End Date', sortable: true,
       render: (leave: LeaveRequest) => new Date(leave.endDate).toLocaleDateString() },
-    { key: 'reason', label: 'Reason', sortable: false },
+
     { 
       key: 'status', 
       label: 'Status', 
@@ -36,12 +36,7 @@
         </span>
       `
     },
-    {
-      key: 'appliedOn',
-      label: 'Applied On',
-      sortable: true,
-      render: (leave: LeaveRequest) => new Date(leave.appliedOn).toLocaleDateString()
-    },
+    
     {
       key: '_id',
       label: 'Actions',
@@ -83,7 +78,7 @@
   
   // Initialize editingLeave with default values
   let editingLeave = {
-    type: '',
+    leaveType: '',
     startDate: '',
     endDate: '',
     reason: '',
@@ -93,7 +88,7 @@
   // Define form fields configuration
   const fields = [
     {
-      key: 'type',
+      key: 'leaveType',
       label: 'Leave Type',
       required: true,
       inputType: 'select',
@@ -128,7 +123,8 @@
     event.preventDefault();
     loading = true;
     
-    let values ={...editingLeave ,leaveTypeId :editingLeave.type}
+    let values ={...editingLeave ,leaveTypeId :'6780fee780df6319c01c210b'}
+    
     try {
       console.log('Form data:', values);
     
@@ -137,7 +133,7 @@
       showApplyForm = false;
       // Reset form
       editingLeave = {
-        type: '',
+        leaveType: '',
         startDate: '',
         endDate: '',
         reason: '',
