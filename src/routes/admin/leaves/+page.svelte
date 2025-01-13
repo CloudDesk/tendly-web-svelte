@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { leavesApi } from '$lib/services/api/leaves';
+  import Modal from '$lib/components/common/Modal.svelte';
 
   export let data: {
     leaves: LeaveRequest[];
@@ -50,7 +51,6 @@
         </a>
       `
     }
- 
   ];
 
   function handleSearch(event: CustomEvent) {
@@ -76,32 +76,86 @@
     goto(url, { replaceState: true });
   }
 
+
+
   let showApplyForm = false;
-  let newLeave = {
-    type: 'annual',
+  let loading = false;
+  
+  // Initialize editingLeave with default values
+  let editingLeave = {
+    type: '',
     startDate: '',
     endDate: '',
-    reason: ''
+    reason: '',
+    status: 'Pending',
   };
 
-  async function handleApplyLeave() {
+  // Define form fields configuration
+  const fields = [
+    {
+      key: 'type',
+      label: 'Leave Type',
+      required: true,
+      inputType: 'select',
+      options: [
+        { value: 'annual', label: 'Annual Leave' },
+        { value: 'sick', label: 'Sick Leave' },
+        { value: 'compOff', label: 'Comp Off' },
+        { value: 'lossOfPay', label: 'Loss of Pay' }
+      ]
+    },
+    {
+      key: 'startDate',
+      label: 'Start Date',
+      required: true,
+      inputType: 'date'
+    },
+    {
+      key: 'endDate',
+      label: 'End Date',
+      required: true,
+      inputType: 'date'
+    },
+    {
+      key: 'reason',
+      label: 'Reason',
+      required: true,
+      inputType: 'textarea'
+    }
+  ];
+
+  async function handleSubmit(event: Event) {
+    event.preventDefault();
+    loading = true;
+    
+    let values ={...editingLeave ,leaveTypeId :editingLeave.type}
     try {
-      await leavesApi.create({
-        userId: $page.params.userId,
-        ...newLeave
-      });
+      console.log('Form data:', values);
+    
+        let res = await leavesApi.create(values)
+      console.log(res,"res handleSubmit");
       showApplyForm = false;
-      // Refresh the page to show new leave request
-      goto($page.url, { invalidateAll: true });
+      // Reset form
+      editingLeave = {
+        type: '',
+        startDate: '',
+        endDate: '',
+        reason: '',
+        status: ''
+      };
     } catch (error) {
-      console.error('Failed to apply leave:', error);
-      // Handle error (show toast notification, etc.)
+      console.error('Error submitting form:', error);
+      // Handle error (show toast, etc.)
+    } finally {
+      loading = false;
     }
   }
 
   function openApplyForm() {
+    console.log("apply")
     showApplyForm = true;
   }
+
 </script>
 
 <div class="leaves-page">
@@ -112,42 +166,79 @@
     </button>
   </header>
 
-  {#if showApplyForm}
-    <div class="modal" on:click|self={() => showApplyForm = false}>
-      <div class="modal-content">
-        <h2>Apply Leave</h2>
-        <form on:submit|preventDefault={handleApplyLeave}>
-          <div class="form-group">
-            <label for="leaveType">Leave Type</label>
-            <select id="leaveType" bind:value={newLeave.type}>
-              <option value="annual">Annual Leave</option>
-              <option value="sick">Sick Leave</option>
-              <option value="compOff">Comp Off</option>
-              <option value="lossOfPay">Loss of Pay</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="startDate">Start Date</label>
-            <input type="date" id="startDate" bind:value={newLeave.startDate} required>
-          </div>
-          <div class="form-group">
-            <label for="endDate">End Date</label>
-            <input type="date" id="endDate" bind:value={newLeave.endDate} required>
-          </div>
-          <div class="form-group">
-            <label for="reason">Reason</label>
-            <textarea id="reason" bind:value={newLeave.reason} required></textarea>
-          </div>
-          <div class="form-actions">
-            <button type="button" class="btn-secondary" on:click={() => showApplyForm = false}>
-              Cancel
-            </button>
-            <button type="submit" class="btn-primary">Apply</button>
-          </div>
-        </form>
-      </div>
-    </div>
+ {#if showApplyForm}
+    <Modal
+      show={showApplyForm}
+      title="Leave Details"
+      onClose={() => (showApplyForm = false)}
+    >
+      <form on:submit|preventDefault={handleSubmit} class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {#each fields as field}
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">{field.label}</span>
+                {#if field.required}
+                  <span class="text-error">*</span>
+                {/if}
+              </label>
+
+              {#if field.inputType === 'textarea'}
+                <textarea
+                  class="textarea textarea-bordered h-24"
+                  bind:value={editingLeave[field.key]}
+                  required={field.required}
+                ></textarea>
+              {:else if field.inputType === 'select'}
+                <select
+                  class="select select-bordered w-full"
+                  bind:value={editingLeave[field.key]}
+                  required={field.required}
+                >
+                  <option value="">Select {field.label}</option>
+                  {#each field.options || [] as option}
+                    <option value={option.value}>{option.label}</option>
+                  {/each}
+                </select>
+              {:else if field.inputType === 'date'}
+                <input
+                  type="date"
+                  class="input input-bordered"
+                  bind:value={editingLeave[field.key]}
+                  required={field.required}
+                />
+              {:else}
+                <input
+                  type="text"
+                  class="input input-bordered"
+                  bind:value={editingLeave[field.key]}
+                  required={field.required}
+                />
+              {/if}
+            </div>
+          {/each}
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button 
+            type="button" 
+            class="btn btn-ghost" 
+            on:click={() => (showApplyForm = false)}
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="btn btn-primary"
+            disabled={loading}
+          >
+            {loading ? 'Applying...' : 'Apply'}
+          </button>
+        </div>
+      </form>
+    </Modal>
   {/if}
+
 
   <Table
     {columns}
@@ -176,6 +267,98 @@
     margin-bottom: 2rem;
   }
 
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .modal-container {
+    background: white;
+    border-radius: 0.5rem;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-content {
+    padding: 2rem;
+  }
+
+  .modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #374151;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    background-color: white;
+  }
+
+  .form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  :global(.btn-primary) {
+    background-color: #3b82f6;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  :global(.btn-secondary) {
+    background-color: #e5e7eb;
+    color: #374151;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
   :global(.status) {
     padding: 0.25rem 0.75rem;
     border-radius: 9999px;
@@ -196,51 +379,5 @@
   :global(.status.rejected) {
     background: #fee2e2;
     color: #991b1b;
-  }
-
-  .modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-
-  .modal-content {
-    background: white;
-    padding: 2rem;
-    border-radius: 0.5rem;
-    width: 100%;
-    max-width: 500px;
-  }
-
-  .form-group {
-    margin-bottom: 1rem;
-  }
-
-  .form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-  }
-
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.375rem;
-  }
-
-  .form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    margin-top: 1.5rem;
   }
 </style>
