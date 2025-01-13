@@ -231,9 +231,9 @@
   }
 </script>
 
-<aside class="fixed left-0 top-0 h-screen bg-white border-r border-surface-border shadow-sm {$isCollapsed ? 'w-20' : 'w-64'} transition-all duration-200 z-20">
+<aside class="fixed left-0 top-0 h-screen bg-gradient-to-b from-[#F8FAFF] to-[#EDF3FF] border-r border-surface-border shadow-sm {$isCollapsed ? 'w-20' : 'w-64'} transition-all duration-200 z-20">
   <!-- Header -->
-  <div class="h-16 flex items-center justify-between px-4 border-b border-surface-border">
+  <div class="h-16 flex items-center justify-between px-4 border-b border-surface-border/50 backdrop-blur-sm bg-white/50">
     <div class="{$isCollapsed ? 'w-8' : 'w-[120px]'} transition-all duration-200">
       {#if !$isCollapsed}
         <img 
@@ -252,7 +252,7 @@
       {/if}
     </div>
     <button
-      class="w-8 h-8 flex items-center justify-center text-text-muted hover:text-text rounded-lg hover:bg-surface-muted transition-colors"
+      class="w-8 h-8 flex items-center justify-center text-text-muted hover:text-text rounded-lg hover:bg-white/50 transition-colors"
       on:click={toggleSidebar}
       aria-label={$isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
     >
@@ -290,7 +290,7 @@
               {@const isActive = getIsActive(item.href)}
               <a
                 href={item.href}
-                class="flex items-center gap-3 px-4 py-2 text-sm {isActive ? 'text-primary bg-primary-light/10 font-medium' : 'text-text-muted hover:text-text hover:bg-surface-muted'} transition-colors"
+                class="flex items-center gap-3 px-4 py-2 text-sm {isActive ? 'bg-white/70 text-primary font-medium shadow-sm' : 'text-text-muted hover:text-text hover:bg-white/50'} transition-all"
               >
                 <svelte:component this={item.icon} size={20} />
                 {#if !$isCollapsed}
@@ -304,7 +304,7 @@
                 {/if}
               </a>
               {#if item.children && !$isCollapsed && isActive}
-                <div class="pl-12 space-y-1">
+                <div class="pl-12 space-y-1 bg-white/30">
                   {#each item.children as child}
                     {@const isChildActive = getIsChildActive(child.href)}
                     <a
@@ -324,7 +324,7 @@
   </nav>
 </aside>
 
-<style lang="postcss" prerender>
+<style lang="postcss">
   :global(nav::-webkit-scrollbar) {
     width: 5px;
   }
@@ -332,11 +332,10 @@
     background: transparent;
   }
   :global(nav::-webkit-scrollbar-thumb) {
-    
-    border-radius: 20px;
+    @apply bg-surface-border/50 rounded-full;
   }
   nav {
     scrollbar-width: thin;
-    
+    scrollbar-color: var(--surface-border) transparent;
   }
 </style>
