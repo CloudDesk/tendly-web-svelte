@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { employeesApi } from '$lib/services/api';
-    import type { User } from '$lib/types';
+    import type { User } from '$lib/types_old';
     import Modal from '$lib/components/common/Modal.svelte';
     import { lovs } from '$lib/stores/lovs';
 

@@ -128,10 +128,10 @@
 
 <div class="space-y-6">
     <!-- Leave Summary Section -->
-    <div class="card bg-base-100">
+    <div class="card">
         <div class="card-body">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="card-title text-lg font-semibold">Leave Summary ({currentYear})</h3>
+                <h3 class="text-lg font-semibold text-text">Leave Summary ({currentYear})</h3>
                 {#if showEditAllotments}
                     <button 
                         class="btn btn-primary btn-sm"
@@ -148,7 +148,7 @@
                 <div class="alert alert-error">{error}</div>
             {:else}
                 <div class="overflow-x-auto">
-                    <table class="table w-full">
+                    <table class="table">
                         <thead>
                             <tr>
                                 <th>Type</th>
@@ -166,14 +166,14 @@
                                     <td>{leave.alloted}</td>
                                     <td>{leave.availed}</td>
                                     <td>
-                                        <span class="font-medium {leave.remaining > 0 ? 'text-success' : 'text-error'}">
+                                        <span class="font-medium {leave.remaining > 0 ? 'text-success' : 'text-danger'}">
                                             {leave.remaining}
                                         </span>
                                     </td>
                                     <td>
                                         {#if leave.remaining > 0}
                                             <button 
-                                                class="btn btn-sm btn-primary"
+                                                class="btn btn-primary btn-sm"
                                                 on:click={() => handleApplyLeave(leave.type)}
                                             >
                                                 Apply
@@ -190,12 +190,12 @@
     </div>
 
     <!-- Requests Section -->
-    <div class="card bg-base-100">
+    <div class="card">
         <div class="card-body">
             <Tabs tabs={tabs} urlParam="request-type" let:activeTab>
                 {#if activeTab === 'leaves'}
                     <div class="overflow-x-auto">
-                        <table class="table w-full">
+                        <table class="table">
                             <thead>
                                 <tr>
                                     <th>Type</th>
@@ -220,7 +220,7 @@
                                                 {Math.ceil((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1}
                                             </td>
                                             <td>
-                                                <span class="badge badge-{request.status === 'approved' ? 'success' : request.status === 'rejected' ? 'error' : 'warning'}">
+                                                <span class="badge {request.status === 'approved' ? 'badge-success' : request.status === 'rejected' ? 'badge-danger' : 'badge-warning'}">
                                                     {request.status}
                                                 </span>
                                             </td>
@@ -234,7 +234,7 @@
                     </div>
                 {:else}
                     <div class="overflow-x-auto">
-                        <table class="table w-full">
+                        <table class="table">
                             <thead>
                                 <tr>
                                     <th>Date</th>
@@ -250,7 +250,7 @@
                                         <td>{new Date(request.date).toLocaleDateString()}</td>
                                         <td>{request.hours}</td>
                                         <td>
-                                            <span class="badge badge-{request.status === 'approved' ? 'success' : request.status === 'rejected' ? 'error' : 'warning'}">
+                                            <span class="badge {request.status === 'approved' ? 'badge-success' : request.status === 'rejected' ? 'badge-danger' : 'badge-warning'}">
                                                 {request.status}
                                             </span>
                                         </td>
@@ -278,11 +278,11 @@
         {#each leaveSummary as leave}
             {@const leaveType = leaveTypes[leave.type]}
             {#if leaveType.isEditable}
-                <div class="form-control">
-                    <label class="label">{leaveType.label}</label>
+                <div class="form-group">
+                    <label class="form-label">{leaveType.label}</label>
                     <input 
                         type="number" 
-                        class="input input-bordered" 
+                        class="form-input" 
                         bind:value={editingAllotments[leave.type]}
                         min="0"
                         required
@@ -294,7 +294,7 @@
         <div class="flex justify-end gap-2">
             <button 
                 type="button" 
-                class="btn btn-ghost"
+                class="btn btn-secondary"
                 on:click={() => {
                     showEditModal = false;
                 }}
@@ -306,19 +306,4 @@
             </button>
         </div>
     </form>
-</Modal>
-
-<style>
-    .badge {
-        @apply px-2 py-1 rounded-full text-xs font-medium;
-    }
-    .badge-success {
-        @apply bg-success/10 text-success;
-    }
-    .badge-error {
-        @apply bg-error/10 text-error;
-    }
-    .badge-warning {
-        @apply bg-warning/10 text-warning;
-    }
-</style> 
+</Modal> 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { attendanceApi, employeesApi } from '$lib/services/api';
-  import type { User } from '$lib/types';
+  import type { User } from '$lib/types_old';
   import Tabs from '$lib/components/common/Tabs.svelte';
   import EmployeeAttendance from '$lib/components/attendance/EmployeeAttendance.svelte';
   import EmployeeTrainingAttendance from '$lib/components/attendance/EmployeeTrainingAttendance.svelte';

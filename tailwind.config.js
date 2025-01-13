@@ -3,38 +3,59 @@ export default {
   content: ['./src/**/*.{html,js,svelte,ts}'],
   theme: {
     extend: {
-      animation: {
-        'ripple': 'ripple 0.6s linear',
-      },
-      keyframes: {
-        ripple: {
-          '0%': { transform: 'scale(0)', opacity: '0.5' },
-          '100%': { transform: 'scale(4)', opacity: '0' },
+      colors: {
+        primary: {
+          light: '#4BA3FF',
+          DEFAULT: '#0066D6',
+          hover: '#0B84FF'
         },
+        text: {
+          DEFAULT: '#1B2B42',
+          muted: '#5E6C84'
+        },
+        success: {
+          DEFAULT: '#00875a',
+          light: '#e3fcef'
+        },
+        danger: {
+          DEFAULT: '#de350b',
+          light: '#ffebe6'
+        },
+        warning: {
+          DEFAULT: '#ff991f',
+          light: '#fff4e5'
+        },
+        surface: {
+          DEFAULT: '#ffffff',
+          muted: '#F4F5F7',
+          border: '#DFE1E6'
+        }
       },
-    },
+      boxShadow: {
+        card: '0 1px 3px rgba(0, 0, 0, 0.1)'
+      },
+      borderRadius: {
+        DEFAULT: '4px',
+        card: '8px',
+        badge: '12px',
+        full: '9999px'
+      },
+      fontSize: {
+        xs: '12px',
+        sm: '14px',
+        base: '16px',
+        lg: '18px',
+        xl: '24px'
+      },
+      spacing: {
+        '2': '4px',
+        '3': '8px',
+        '4': '12px',
+        '6': '16px',
+        '8': '24px',
+        '12': '32px'
+      }
+    }
   },
-  plugins: [require("daisyui")],
-  daisyui: {
-    themes: [
-      {
-        tendlyPro: {
-          "primary": "#0EA5E9",
-          "secondary": "#FD7065",
-          "accent": "#FACC15",
-          "neutral": "#27272A",
-          "base-100": "#FFFFFF",
-          "base-200": "#F8FAFC",
-          "base-300": "#F1F5F9",
-          "info": "#3ABFF8",
-          "success": "#36D399",
-          "warning": "#FBBD23",
-          "error": "#F87272"
-        },
-      },
-    ],
-    base: true,
-    styled: true,
-    utils: true,
-  }
-}; 
+  plugins: []
+} 
