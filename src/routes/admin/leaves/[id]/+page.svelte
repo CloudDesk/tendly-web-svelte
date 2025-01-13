@@ -1,182 +1,190 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { leavesApi } from '$lib/services/api/leaves';
-  import type { LeaveRequest } from '$lib/services/api/leaves';
+  import LeaveDetails from '$lib/components/leave/LeaveDetails.svelte';
 
-  let leave: LeaveRequest | null = null;
+  interface LeaveDetails {
+    id: string;
+    type: string;
+    startDate: string;
+    endDate: string;
+    status: string;
+    reason: string;
+    appliedBy: string;
+    appliedOn: string;
+    approvedBy?: string;
+    rejectedBy?: string;
+    rejectionReason?: string;
+  }
+  const leaveId = $page.params.id;
+  let leave: LeaveDetails | null = null;
   let isLoading = true;
   let error: string | null = null;
 
   onMount(async () => {
-    const { id } = $page.params;
     try {
-      leave = await leavesApi.getById(id);
+      // Fetch leave details using ID from URL params
+      const { id } = $page.params;
+      // Replace with your actual API call
+      const response = await fetch(`/api/leaves/${id}`);
+      leave = await response.json();
     } catch (err) {
-      error = 'Failed to load leave request';
+      error = 'Failed to load leave details';
       console.error(err);
     } finally {
       isLoading = false;
     }
   });
 
-  function formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
+  function formatDate(date: string): string {
+    return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
   }
 
-  function calculateDuration(startDate: string, endDate: string): number {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
+  function calculateDuration(start: string, end: string): number {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
   }
 </script>
 
-{#if isLoading}
-  <p>Loading...</p>
-{:else if error}
-  <p>{error}</p>
-{:else if leave}
-  <div class="leave-detail-page">
-    <header>
-      <div class="header-content">
-        <h1>Leave Request Details</h1>
-        <span class="status {leave.status.toLowerCase()}">{leave.status}</span>
-      </div>
-    </header>
-
-    <div class="detail-card">
-      <div class="detail-section">
-        <h2>Leave Information</h2>
-        <div class="detail-grid">
-          <div class="detail-item">
-            <label>Leave Type</label>
-            <span>{leave.type}</span>
-          </div>
-          <div class="detail-item">
-            <label>Duration</label>
-            <span>{calculateDuration(leave.startDate, leave.endDate)} days</span>
-          </div>
-          <div class="detail-item">
-            <label>Start Date</label>
-            <span>{formatDate(leave.startDate)}</span>
-          </div>
-          <div class="detail-item">
-            <label>End Date</label>
-            <span>{formatDate(leave.endDate)}</span>
-          </div>
-          <div class="detail-item">
-            <label>Applied On</label>
-            <span>{formatDate(leave.appliedOn)}</span>
-          </div>
-          {#if leave.status !== 'pending'}
-            <div class="detail-item">
-              <label>{leave.status === 'approved' ? 'Approved By' : 'Rejected By'}</label>
-              <span>{leave.approvedBy || leave.rejectedBy}</span>
-            </div>
-          {/if}
-        </div>
-      </div>
-
-      <div class="detail-section">
-        <h2>Reason</h2>
-        <p class="reason-text">{leave.reason}</p>
-      </div>
-
-      {#if leave.status === 'rejected' && leave.rejectionReason}
-        <div class="detail-section">
-          <h2>Rejection Reason</h2>
-          <p class="reason-text">{leave.rejectionReason}</p>
-        </div>
-      {/if}
-    </div>
-  </div>
-{/if}
+<div class="page-container">
+  {#if isLoading}
+    <div class="loading">Loading...</div>
+  {:else if error}
+    <div class="error">{error}</div>
+  {:else if leave}
+   <div class="card-body">
+   <LeaveDetails {leaveId}/>
+   </div>
+  {/if}
+</div>
 
 <style>
-  .leave-detail-page {
+  .page-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 1rem;
+    padding: 2rem;
   }
 
-  header {
+  .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 2rem;
   }
 
-  .header-content {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
   }
 
-  .detail-card {
+  .edit-button {
+    background-color: #3b82f6;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .edit-button:hover {
+    background-color: #2563eb;
+  }
+
+  .details-card {
     background: white;
     border-radius: 0.5rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     padding: 2rem;
   }
 
-  .detail-section {
+  .section {
     margin-bottom: 2rem;
   }
 
-  .detail-section:last-child {
+  .section:last-child {
     margin-bottom: 0;
   }
 
-  .detail-grid {
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 1rem;
+  }
+
+  .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem;
-    margin-top: 1rem;
   }
 
-  .detail-item {
+  .field {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
   }
 
-  .detail-item label {
+  .full-width {
+    grid-column: 1 / -1;
+  }
+
+  label {
     font-size: 0.875rem;
     color: #6b7280;
   }
 
-  .reason-text {
-    margin-top: 0.5rem;
-    line-height: 1.5;
+  span {
+    color: #111827;
   }
 
-  :global(.status) {
+  .reason {
+    line-height: 1.5;
+    color: #374151;
+  }
+
+  .status-badge {
+    display: inline-block;
     padding: 0.25rem 0.75rem;
     border-radius: 9999px;
     font-size: 0.875rem;
     font-weight: 500;
+    width: fit-content;
   }
 
-  :global(.status.approved) {
-    background: #dcfce7;
+  .status-badge.approved {
+    background-color: #dcfce7;
     color: #166534;
   }
 
-  :global(.status.pending) {
-    background: #fef9c3;
+  .status-badge.rejected {
+    background-color: #fee2e2;
+    color: #991b1b;
+  }
+
+  .status-badge.pending {
+    background-color: #fef9c3;
     color: #854d0e;
   }
 
-  :global(.status.rejected) {
-    background: #fee2e2;
-    color: #991b1b;
+  .loading {
+    text-align: center;
+    color: #6b7280;
+    padding: 2rem;
+  }
+
+  .error {
+    color: #dc2626;
+    text-align: center;
+    padding: 2rem;
   }
 </style>
