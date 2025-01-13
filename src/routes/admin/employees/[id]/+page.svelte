@@ -126,7 +126,7 @@
   </div>
 </div> 
 
-</style>
+<style>
   .loading {
     text-align: center;
     padding: 2rem;
