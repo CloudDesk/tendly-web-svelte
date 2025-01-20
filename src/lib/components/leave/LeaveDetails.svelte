@@ -3,6 +3,7 @@
     import { leavesApi } from '$lib/services/api/leaves';
     import type { LeaveRequest } from '$lib/types';
     import Modal from '$lib/components/common/Modal.svelte';
+    import LeaveForm from '$lib/components/leave/LeaveForm.svelte';
 
     export let leaveId: string;
     
@@ -47,6 +48,7 @@
         try {
             loading = true;
             const response = await leavesApi.getById(leaveId);
+            console.log(response.data, "response.data")
             leave = response.data;
         } catch (e: any) {
             error = e.message;
@@ -67,16 +69,18 @@
         }
     }
 
-    async function handleSubmit() {
+    async function handleLeaveSubmit(event: CustomEvent) {
+        loading = true;
+        const submittedData = event.detail;
+        console.log('Submitted data:', submittedData);
+    
         try {
-            loading = true;
-            // Convert dates back to ISO format for API
             const leaveData: Partial<LeaveRequest> = {
-                ...editingLeave,
-                startDate: editingLeave.startDate ? new Date(editingLeave.startDate).toISOString() : undefined,
-                endDate: editingLeave.endDate ? new Date(editingLeave.endDate).toISOString() : undefined
+                ...submittedData,
+                startDate: submittedData.startDate ? new Date(submittedData.startDate).toISOString() : undefined,
+                endDate: submittedData.endDate ? new Date(submittedData.endDate).toISOString() : undefined
             };
-            await leavesApi.update(leaveId, leaveData);
+            // await leavesApi.update(leaveId, leaveData);
             const updated = await leavesApi.getById(leaveId);
             leave = updated.data;
             showEditModal = false;
@@ -88,13 +92,8 @@
     }
 
     async function handleApprove() {
-       
-    let user = JSON.parse(localStorage.getItem('user'));   
-console.log(user._id, "user");
-
-     try {
+        try {
             loading = true;
-
             await leavesApi.updateStatus(leaveId, 'Approved', remarks );
             const updated = await leavesApi.getById(leaveId);
             leave = updated.data;
@@ -104,7 +103,6 @@ console.log(user._id, "user");
         } finally {
             loading = false;
         }
-        
     }
 
     async function handleReject() {
@@ -153,9 +151,9 @@ console.log(user._id, "user");
     <div class="flex justify-between items-center">
         <h3 class="text-lg font-semibold">Leave Details</h3>
         <div class="flex gap-2">
-            <button class="btn btn-primary btn-sm" on:click={handleEdit}>
+            <!-- <button class="btn btn-primary btn-sm" on:click={handleEdit}>
                 Edit Details
-            </button>
+            </button> -->
             <button class="btn btn-primary btn-sm" on:click={() => showApproveModal = true}>
                 Approve
             </button>
@@ -192,70 +190,12 @@ console.log(user._id, "user");
     title="Edit Leave Details"
     onClose={() => (showEditModal = false)}
 >
-    <form on:submit|preventDefault={handleSubmit} class="space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {#each fields as field}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{field.label}</span>
-                        {#if field.required}
-                            <span class="text-error">*</span>
-                        {/if}
-                    </label>
-
-                    {#if field.inputType === 'textarea'}
-                        <textarea
-                            class="textarea textarea-bordered h-24"
-                            bind:value={editingLeave[field.key]}
-                            required={field.required}
-                        ></textarea>
-                    {:else if field.inputType === 'select'}
-                        <select
-                            class="select select-bordered w-full"
-                            bind:value={editingLeave[field.key]}
-                            required={field.required}
-                        >
-                            <option value="">Select {field.label}</option>
-                            {#each field.options || [] as option}
-                                <option value={option.value}>{option.label}</option>
-                            {/each}
-                        </select>
-                    {:else if field.inputType === 'date'}
-                        <input
-                            type="date"
-                            class="input input-bordered"
-                            bind:value={editingLeave[field.key]}
-                            required={field.required}
-                        />
-                    {:else}
-                        <input
-                            type="text"
-                            class="input input-bordered"
-                            bind:value={editingLeave[field.key]}
-                            required={field.required}
-                        />
-                    {/if}
-                </div>
-            {/each}
-        </div>
-
-        <div class="flex justify-end gap-2">
-            <button 
-                type="button" 
-                class="btn btn-ghost" 
-                on:click={() => (showEditModal = false)}
-            >
-                Cancel
-            </button>
-            <button 
-                type="submit" 
-                class="btn btn-primary"
-                disabled={loading}
-            >
-                {loading ? 'Saving...' : 'Save Changes'}
-            </button>
-        </div>
-    </form>
+    <LeaveForm
+        {loading}
+        initialValues={editingLeave}
+        on:submit={handleLeaveSubmit}
+        on:cancel={() => (showEditModal = false)}
+    />
 </Modal>
 
 <Modal
@@ -265,10 +205,11 @@ console.log(user._id, "user");
 >
     <form on:submit|preventDefault={handleApprove} class="space-y-6">
         <div class="form-control">
-            <label class="label">
+            <label class="label" for="remarks">
                 <span class="label-text">Remarks (optional)</span>
             </label>
             <textarea
+                id="remarks"
                 class="textarea textarea-bordered h-24"
                 bind:value={remarks}
             ></textarea>
@@ -300,10 +241,11 @@ console.log(user._id, "user");
 >
     <form on:submit|preventDefault={handleReject} class="space-y-6">
         <div class="form-control">
-            <label class="label">
+            <label class="label" for="reject-remarks">
                 <span class="label-text">Remarks (optional)</span>
             </label>
             <textarea
+                id="reject-remarks"
                 class="textarea textarea-bordered h-24"
                 bind:value={remarks}
             ></textarea>
@@ -329,7 +271,185 @@ console.log(user._id, "user");
 </Modal>
 
 <style>
-    .loading {
-        @apply flex justify-center items-center p-8 text-neutral-500;
-    }
+  @import '$lib/styles/form.css';
+
+  .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+      color: #6b7280; /* Neutral-500 */
+  }
+
+  .space-y-6 > * + * {
+      margin-top: 1.5rem;
+  }
+
+  .flex {
+      display: flex;
+  }
+
+  .justify-between {
+      justify-content: space-between;
+  }
+
+  .items-center {
+      align-items: center;
+  }
+
+  .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      font-weight: 500;
+      cursor: pointer;
+  }
+
+  .btn-primary {
+      background-color: #3b82f6; /* Blue-500 */
+      color: white;
+  }
+
+  .btn-sm {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.875rem;
+  }
+
+  .alert {
+      padding: 1rem;
+      border-radius: 0.375rem;
+      font-weight: 500;
+  }
+
+  .alert-error {
+      background-color: #fee2e2; /* Red-100 */
+      color: #991b1b; /* Red-800 */
+  }
+
+  .grid {
+      display: grid;
+      gap: 1.5rem;
+  }
+
+  .grid-cols-1 {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  .md\:grid-cols-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lg\:grid-cols-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .card {
+      background-color: #ffffff; /* Base-100 */
+      border-radius: 0.375rem;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Shadow-sm */
+  }
+
+  .card-body {
+      padding: 1rem;
+  }
+
+  .text-lg {
+      font-size: 1.125rem;
+      line-height: 1.75rem;
+  }
+
+  .font-semibold {
+      font-weight: 600;
+  }
+
+  .text-sm {
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+  }
+
+  .text-neutral-500 {
+      color: #6b7280; /* Neutral-500 */
+  }
+
+  .mt-1 {
+      margin-top: 0.25rem;
+  }
+
+  .text-base {
+      font-size: 1rem;
+      line-height: 1.5rem;
+  }
+
+  .form-control {
+      margin-bottom: 1rem;
+  }
+
+  .label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+  }
+
+  .label-text {
+      font-size: 0.875rem;
+      color: #374151; /* Neutral-700 */
+  }
+
+  .text-error {
+      color: #b91c1c; /* Red-700 */
+  }
+
+  .input,
+  .select,
+  .textarea {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #e5e7eb; /* Gray-200 */
+      border-radius: 0.375rem;
+      background-color: white;
+  }
+
+  .textarea {
+      min-height: 6rem;
+      resize: vertical;
+  }
+
+  .flex.justify-end {
+      justify-content: flex-end;
+  }
+
+  .gap-2 > * + * {
+      margin-left: 0.5rem;
+  }
+
+  .btn-ghost {
+      background-color: transparent;
+      color: #374151; /* Neutral-700 */
+  }
+
+  .manager-search-results {
+      background-color: white;
+      border: 1px solid #e5e7eb; /* Gray-200 */
+      border-radius: 0.375rem;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Shadow-sm */
+  }
+
+  .manager-search-results ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+  }
+
+  .manager-search-results li {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+  }
+
+  .manager-search-results li:hover {
+      background-color: #f3f4f6; /* Gray-100 */
+  }
 </style>

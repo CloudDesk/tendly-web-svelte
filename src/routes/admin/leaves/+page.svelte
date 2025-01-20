@@ -5,6 +5,7 @@
   import { page } from '$app/stores';
   import { leavesApi } from '$lib/services/api/leaves';
   import Modal from '$lib/components/common/Modal.svelte';
+  import LeaveForm from '$lib/components/leave/LeaveForm.svelte';
 
   export let data: {
     leaves: LeaveRequest[];
@@ -16,10 +17,11 @@
     };
     filters: any;
     sort: { key: string; direction: 'asc' | 'desc' } | null;
+    leaveTypeId: string;
   };
 
-  $: ({ leaves, pagination, filters, sort } = data);
-
+  $: ({ leaves, pagination, filters, sort ,leaveTypeId } = data);
+console.log(leaveTypeId,"leaveTypeId")
   const columns = [
     { key: 'startDate', label: 'Start Date', sortable: true,
       render: (leave: LeaveRequest) => new Date(leave.startDate).toLocaleDateString() },
@@ -77,81 +79,47 @@
   let loading = false;
   
   // Initialize editingLeave with default values
-  let editingLeave = {
+  let formValues = {
     leaveType: '',
     startDate: '',
     endDate: '',
     reason: '',
     status: 'Pending',
+    leaveTypeId: leaveTypeId|| "678dec1789f768e0b1877aae"
   };
 
-  // Define form fields configuration
-  const fields = [
-    {
-      key: 'leaveType',
-      label: 'Leave Type',
-      required: true,
-      inputType: 'select',
-      options: [
-        { value: 'annual', label: 'Annual Leave' },
-        { value: 'sick', label: 'Sick Leave' },
-        { value: 'compOff', label: 'Comp Off' },
-        { value: 'lossOfPay', label: 'Loss of Pay' }
-      ]
-    },
-    {
-      key: 'startDate',
-      label: 'Start Date',
-      required: true,
-      inputType: 'date'
-    },
-    {
-      key: 'endDate',
-      label: 'End Date',
-      required: true,
-      inputType: 'date'
-    },
-    {
-      key: 'reason',
-      label: 'Reason',
-      required: true,
-      inputType: 'textarea'
-    }
-  ];
 
-  async function handleSubmit(event: Event) {
-    event.preventDefault();
+  async function handleLeaveSubmit(event: CustomEvent) {
     loading = true;
-    
-    let values ={...editingLeave ,leaveTypeId :'6780fee780df6319c01c210b'}
-    
+    const submittedData = event.detail;
+  console.log('Submitted data:', submittedData);
+  
     try {
-      console.log('Form data:', values);
-    
-        let res = await leavesApi.create(values)
-      console.log(res,"res handleSubmit");
-      showApplyForm = false;
-      // Reset form
-      editingLeave = {
-        leaveType: '',
-        startDate: '',
-        endDate: '',
-        reason: '',
-        status: ''
+      const values = {
+        ...submittedData,
+        leaveTypeId: leaveTypeId || "678dec1789f768e0b1877aae"
       };
+      
+      const res = await leavesApi.create(values);
+      console.log('Leave created:', res);
+      showApplyForm = false;
+    
+      // Refresh the page
+      goto($page.url, { replaceState: true });
+      
     } catch (error) {
-      console.error('Error submitting form:', error);
+      console.error('Error submitting leave:', error);
       // Handle error (show toast, etc.)
     } finally {
       loading = false;
     }
   }
-
   function openApplyForm() {
-    console.log("apply")
     showApplyForm = true;
   }
-
+  function handleFormUpdate(event: CustomEvent) {
+    formValues = event.detail;
+  }
 </script>
 
 <div class="leaves-page">
@@ -168,70 +136,13 @@
       title="Leave Details"
       onClose={() => (showApplyForm = false)}
     >
-      <form on:submit|preventDefault={handleSubmit} class="space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {#each fields as field}
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">{field.label}</span>
-                {#if field.required}
-                  <span class="text-error">*</span>
-                {/if}
-              </label>
-
-              {#if field.inputType === 'textarea'}
-                <textarea
-                  class="textarea textarea-bordered h-24"
-                  bind:value={editingLeave[field.key]}
-                  required={field.required}
-                ></textarea>
-              {:else if field.inputType === 'select'}
-                <select
-                  class="select select-bordered w-full"
-                  bind:value={editingLeave[field.key]}
-                  required={field.required}
-                >
-                  <option value="">Select {field.label}</option>
-                  {#each field.options || [] as option}
-                    <option value={option.value}>{option.label}</option>
-                  {/each}
-                </select>
-              {:else if field.inputType === 'date'}
-                <input
-                  type="date"
-                  class="input input-bordered"
-                  bind:value={editingLeave[field.key]}
-                  required={field.required}
-                />
-              {:else}
-                <input
-                  type="text"
-                  class="input input-bordered"
-                  bind:value={editingLeave[field.key]}
-                  required={field.required}
-                />
-              {/if}
-            </div>
-          {/each}
-        </div>
-
-        <div class="flex justify-end gap-2">
-          <button 
-            type="button" 
-            class="btn btn-ghost" 
-            on:click={() => (showApplyForm = false)}
-          >
-            Cancel
-          </button>
-          <button 
-            type="submit" 
-            class="btn btn-primary"
-            disabled={loading}
-          >
-            {loading ? 'Applying...' : 'Apply'}
-          </button>
-        </div>
-      </form>
+    <LeaveForm
+    {loading}
+    initialValues={formValues}
+    on:submit={handleLeaveSubmit}
+    on:update={handleFormUpdate}
+    on:cancel={() => (showApplyForm = false)}
+  />
     </Modal>
   {/if}
 
@@ -269,85 +180,11 @@
     margin: 0;
   }
 
-  .modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-
-  .modal-container {
-    background: white;
-    border-radius: 0.5rem;
-    width: 90%;
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-
-  .modal-content {
-    padding: 2rem;
-  }
-
-  .modal-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 1.5rem;
-  }
-
-  .form-group {
-    margin-bottom: 1.5rem;
-  }
-
-  .form-group label {
-    display: block;
-    font-size: 0.875rem;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-    color: #374151;
-  }
-
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.375rem;
-    background-color: white;
-  }
-
-  .form-group textarea {
-    min-height: 100px;
-    resize: vertical;
-  }
-
-  .form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    margin-top: 2rem;
-  }
+  
 
   :global(.btn-primary) {
     background-color: #3b82f6;
     color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 0.375rem;
-    border: none;
-    font-weight: 500;
-    cursor: pointer;
-  }
-
-  :global(.btn-secondary) {
-    background-color: #e5e7eb;
-    color: #374151;
     padding: 0.5rem 1rem;
     border-radius: 0.375rem;
     border: none;
@@ -377,3 +214,4 @@
     color: #991b1b;
   }
 </style>
+

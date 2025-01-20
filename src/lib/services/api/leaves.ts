@@ -20,7 +20,6 @@ export type LeaveCategory = {
 };
 
 export type LeaveSummary = {
-    userId: string;
     year: number;
     annual: LeaveCategory;
     sick: LeaveCategory;
@@ -45,7 +44,7 @@ export type LeaveFilters = {
     page?: number;
     limit?: number;
     sortOrder?: 'asc' | 'desc';
-  };
+};
 
 export const leavesApi = {
     getSummary: (employeeId: string): Promise<ApiResponse<LeaveSummary>> => {
@@ -68,11 +67,12 @@ export const leavesApi = {
     },
 
     create: (data: {
-        userId: string;
+
         type: string;
         startDate: string;
         endDate: string;
         reason: string;
+        userId?: string;
     }): Promise<ApiResponse<void>> => {
         return fetchApi('/leaves', {
             method: 'POST',
@@ -86,25 +86,25 @@ export const leavesApi = {
         });
     }
     ,
-    list: (filters:LeaveFilters): Promise<ApiResponse<LeaveRequest[]>> => {
+    list: (filters: LeaveFilters): Promise<ApiResponse<LeaveRequest[]>> => {
         const params = new URLSearchParams();
         Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined) params.append(key, String(value));
+            if (value !== undefined) params.append(key, String(value));
         });
-     
-        return fetchApi(`/leaves?${params.toString()}` )
+
+        return fetchApi(`/leaves?${params.toString()}`)
     },
     getById: (leaveId: string): Promise<ApiResponse<LeaveRequest>> => {
         return fetchApi(`/leaves/${leaveId}`, {
-          method: 'GET'
+            method: 'GET'
         });
-      },
-    
-      updateStatus: (leaveId: string, status: string, remarks?: string): Promise<ApiResponse<void>> => {
-        return fetchApi(`/leaves/${leaveId}/status`, {
-          method: 'PUT', 
-          body: JSON.stringify({ status, remarks })
-        });
-      }
+    },
 
-    } 
+    updateStatus: (leaveId: string, status: string, remarks?: string): Promise<ApiResponse<void>> => {
+        return fetchApi(`/leaves/${leaveId}/status`, {
+            method: 'PUT',
+            body: JSON.stringify({ status, remarks })
+        });
+    }
+
+} 

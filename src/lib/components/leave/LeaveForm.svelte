@@ -1,0 +1,184 @@
+<script lang="ts">
+    import { createEventDispatcher } from 'svelte';
+    import '../../styles/form.css'
+    interface LeaveFormData {
+      leaveType: string;
+      startDate: string;
+      endDate: string;
+      reason: string;
+      status: string;
+      leaveTypeId: string;
+    }
+  
+    export let loading = false;
+    export let initialValues: LeaveFormData;
+    
+    const dispatch = createEventDispatcher<{
+      submit: LeaveFormData;
+      cancel: void;
+    }>();
+    
+    // Create a writable store for form data
+    let formData = initialValues;
+    
+    const leaveTypeOptions = [
+      { value: 'annual', label: 'Annual Leave' },
+      { value: 'sick', label: 'Sick Leave' },
+      { value: 'compOff', label: 'Comp Off' },
+      { value: 'lossOfPay', label: 'Loss of Pay' },
+      { value: 'otherPaid', label: 'Other Paid' },
+      { value: 'otherUnpaid', label: 'Other Unpaid' }
+    ];
+  
+    // Form handlers
+    const handleSubmit = () => {
+      console.log('Submitting form with data:', formData);
+      dispatch('submit', formData);
+    };
+  
+    const handleCancel = () => {
+      dispatch('cancel');
+    };
+  
+    const handleChange = () => {
+      console.log('Form changed:', formData);
+    };
+  
+    // Validation
+    $: isEndDateValid = !formData.startDate || !formData.endDate || 
+      new Date(formData.endDate) >= new Date(formData.startDate);
+  
+    $: numberOfDays = formData.startDate && formData.endDate ? 
+      Math.ceil((new Date(formData.endDate).getTime() - new Date(formData.startDate).getTime()) 
+      / (1000 * 60 * 60 * 24)) + 1 : 0;
+  </script>
+  
+  <form on:submit|preventDefault={handleSubmit} class="space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Leave Type -->
+      <div class="form-control">
+        <label class="label" for="leaveType">
+          <span class="label-text">Leave Type</span>
+          <span class="text-error">*</span>
+        </label>
+        <select
+          id="leaveType"
+          class="select select-bordered w-full"
+          bind:value={formData.leaveType}
+          on:change={handleChange}
+          {loading}
+          required
+        >
+          <option value="">Select Leave Type</option>
+          {#each leaveTypeOptions as option}
+            <option value={option.value}>{option.label}</option>
+          {/each}
+        </select>
+      </div>
+  
+      <!-- Start Date -->
+      <div class="form-control">
+        <label class="label" for="startDate">
+          <span class="label-text">Start Date</span>
+          <span class="text-error">*</span>
+        </label>
+        <input
+          id="startDate"
+          type="date"
+          class="input input-bordered"
+          bind:value={formData.startDate}
+          on:change={handleChange}
+          {loading}
+          required
+        />
+      </div>
+  
+      <!-- End Date -->
+      <div class="form-control">
+        <label class="label" for="endDate">
+          <span class="label-text">End Date</span>
+          <span class="text-error">*</span>
+        </label>
+        <input
+          id="endDate"
+          type="date"
+          class="input input-bordered"
+          bind:value={formData.endDate}
+          on:change={handleChange}
+          {loading}
+          required
+        />
+        {#if !isEndDateValid}
+          <label class="label">
+            <span class="label-text-alt text-error">End date must be after start date</span>
+          </label>
+        {/if}
+      </div>
+  
+      <!-- Reason -->
+      <div class="form-control">
+        <label class="label" for="reason">
+          <span class="label-text">Reason</span>
+          <span class="text-error">*</span>
+        </label>
+        <textarea
+          id="reason"
+          class="textarea textarea-bordered h-24"
+          bind:value={formData.reason}
+          on:input={handleChange}
+          {loading}
+          required
+        ></textarea>
+      </div>
+  
+      <!-- Number of Days -->
+      {#if formData.startDate && formData.endDate && isEndDateValid}
+        <div class="form-control col-span-full">
+          <label class="label">
+            <span class="label-text">Number of Days</span>
+          </label>
+          <div class="text-sm font-medium">
+            {numberOfDays} day{numberOfDays !== 1 ? 's' : ''}
+          </div>
+        </div>
+      {/if}
+    </div>
+  
+
+  
+    <div class="flex justify-end gap-2">
+      <button 
+        type="button" 
+        class="btn btn-ghost" 
+        on:click={handleCancel}
+        disabled={loading}
+      >
+        Cancel
+      </button>
+      <button 
+        type="submit" 
+        class="btn btn-primary"
+        disabled={loading || !isEndDateValid}
+      >
+        {loading ? 'Applying...' : 'Apply'}
+      </button>
+    </div>
+  </form>
+  
+  <style>
+    :global(.form-control) {
+      display: flex;
+      flex-direction: column;
+    }
+  
+    :global(.label) {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+    }
+  
+    :global(.text-error) {
+      color: #dc2626;
+    }
+  </style>
