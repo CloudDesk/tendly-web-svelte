@@ -39,6 +39,14 @@ export type CompOffRequest = {
     appliedOn: string;
 };
 
+export type LeaveFilters = {
+    userId?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+    sortOrder?: 'asc' | 'desc';
+  };
+
 export const leavesApi = {
     getSummary: (employeeId: string): Promise<ApiResponse<LeaveSummary>> => {
         return fetchApi(`/leaves/summary/${employeeId}`, {
@@ -59,7 +67,6 @@ export const leavesApi = {
         });
     },
 
-
     create: (data: {
         userId: string;
         type: string;
@@ -78,4 +85,26 @@ export const leavesApi = {
             method: 'POST'
         });
     }
-}; 
+    ,
+    list: (filters:LeaveFilters): Promise<ApiResponse<LeaveRequest[]>> => {
+        const params = new URLSearchParams();
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined) params.append(key, String(value));
+        });
+     
+        return fetchApi(`/leaves?${params.toString()}` )
+    },
+    getById: (leaveId: string): Promise<ApiResponse<LeaveRequest>> => {
+        return fetchApi(`/leaves/${leaveId}`, {
+          method: 'GET'
+        });
+      },
+    
+      updateStatus: (leaveId: string, status: string, remarks?: string): Promise<ApiResponse<void>> => {
+        return fetchApi(`/leaves/${leaveId}/status`, {
+          method: 'PUT', 
+          body: JSON.stringify({ status, remarks })
+        });
+      }
+
+    } 

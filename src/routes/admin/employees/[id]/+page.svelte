@@ -94,6 +94,7 @@
             </div>
           </div>
 
+
           <div class="info-card">
             <h3 class="text-base font-medium text-text mb-6">Employment Details</h3>
             <div class="space-y-4">
@@ -124,3 +125,19 @@
     </div>
   </div>
 </div> 
+
+<style>
+  .loading {
+    text-align: center;
+    padding: 2rem;
+    color: #6b7280;
+  }
+
+  .error {
+    text-align: center;
+    padding: 2rem;
+    color: #991b1b;
+    background: #fee2e2;
+    border-radius: 0.5rem;
+  }
+</style>  
