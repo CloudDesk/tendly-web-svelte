@@ -5,12 +5,13 @@ import { lovsApi } from '$lib/services/api';
 
 export const load: PageLoad = async ({ url, params }) => {
   try {
+    const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user') || '{}') : null;
 
     const filters: LeaveFilters = {
       page: Number(url.searchParams.get('page')) || 1,
       limit: Number(url.searchParams.get('limit')) || 20,
       search: url.searchParams.get('search') || undefined,
-      userId: url.searchParams.get('userId') || undefined
+      userId: url.searchParams.get('userId') || user._id
     }
 
     const sortBy = url.searchParams.get('sortBy');
@@ -25,14 +26,15 @@ export const load: PageLoad = async ({ url, params }) => {
       lovsApi.getByType('leaveType')
     ]);
 
-    console.log(leavesResponse.data, "leaveTypeIdResponse")
+    console.log(summaryResponse, "summaryResponse");
     return {
       leaves: leavesResponse.data,
       summary: summaryResponse.data,
       pagination: {
         total: leavesResponse.meta?.total || 0,
         page: leavesResponse.meta?.page || 1,
-        limit: leavesResponse.meta?.limit || 20
+        limit: leavesResponse.meta?.limit || 20,
+        totalPages: leavesResponse.meta?.totalPages || 1
       },
       filters,
       sort: sortBy && sortOrder ? { key: sortBy, direction: sortOrder } : null,

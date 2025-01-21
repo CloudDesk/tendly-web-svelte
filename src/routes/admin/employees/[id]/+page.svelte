@@ -65,7 +65,7 @@
         <button 
           class="tab-item"
           class:active={activeTab === 'leaves'}
-          on:click={() => setActiveTab('leaves')}>Leaves History</button>
+          on:click={() => setActiveTab('leaves')}>Leaves Summary</button>
         <button 
           class="tab-item"
           class:active={activeTab === 'attendance'}

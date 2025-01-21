@@ -76,6 +76,7 @@
   }
 
   function handlePageChange(page: number) {
+    console.log(serverSide,page,"handlePageChange")
     if (serverSide) {
       dispatch('page', { page });
     }

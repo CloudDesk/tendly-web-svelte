@@ -21,7 +21,8 @@
         sick: { label: 'Sick Leave', isEditable: true },
         lossOfPay: { label: 'Loss of Pay', isEditable: false },
         otherPaid: { label: 'Other Paid', isEditable: true },
-        otherUnpaid: { label: 'Other Unpaid', isEditable: true }
+        otherUnpaid: { label: 'Other Unpaid', isEditable: true },
+        compOff :{label:"Comp Off",isEditable:true}
     } as const;
 
     type LeaveType = keyof typeof leaveTypes;
@@ -80,6 +81,19 @@
         }
     }
 
+    async function loadLeaves (){
+        try {
+            loading = true;
+            const response = await leavesApi.getByEmployeeId(employeeId);
+            console.log(response.data,"response");
+        } catch (err) {
+            error = 'Failed to load leaves';
+            console.error(err);
+        } finally {
+            loading = false;
+        }
+    }
+
     async function loadCompOffRequests() {
         try {
             loading = true;
@@ -101,6 +115,7 @@
     }
 
     async function handleAllotmentUpdate() {
+        console.log(employeeId, currentYear, editingAllotments ,"handleAllotmentUpdate");
         try {
             loading = true;
             await leavesApi.updateAllotments(employeeId, currentYear, editingAllotments);
@@ -123,6 +138,7 @@
 
     onMount(() => {
         loadLeaveSummary();
+        // loadLeaves();
         //loadCompOffRequests();
     });
 </script>
@@ -156,7 +172,7 @@
                                 <th>Alloted</th>
                                 <th>Availed</th>
                                 <th>Remaining</th>
-                                <th>Actions</th>
+                                <!-- <th>Actions</th> -->
                             </tr>
                         </thead>
                         <tbody>
@@ -171,7 +187,7 @@
                                             {leave.remaining}
                                         </span>
                                     </td>
-                                    <td>
+                                    <!-- <td>
                                         {#if leave.remaining > 0}
                                             <button 
                                                 class="btn btn-primary btn-sm"
@@ -180,7 +196,7 @@
                                                 Apply
                                             </button>
                                         {/if}
-                                    </td>
+                                    </td> -->
                                 </tr>
                             {/each}
                         </tbody>
@@ -191,7 +207,7 @@
     </div>
 
     <!-- Requests Section -->
-    <div class="card">
+    <!--  <div class="card">
         <div class="card-body">
             <Tabs tabs={tabs} urlParam="request-type" let:activeTab>
                 {#if activeTab === 'leaves'}
@@ -265,7 +281,7 @@
                 {/if}
             </Tabs>
         </div>
-    </div>
+    </div>-->
 </div>
 
 <Modal
@@ -280,10 +296,11 @@
             {@const leaveType = leaveTypes[leave.type]}
             {#if leaveType.isEditable}
                 <div class="form-group">
-                    <label class="form-label">{leaveType.label}</label>
+                    <label class="form-label" for="allotment-{leave.type}">{leaveType.label}</label>
                     <input 
                         type="number" 
                         class="form-input" 
+                        id="allotment-{leave.type}"
                         bind:value={editingAllotments[leave.type]}
                         min="0"
                         required
@@ -308,3 +325,48 @@
         </div>
     </form>
 </Modal> 
+
+
+<style>
+    .overflow-x-auto {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .table {
+        width: 100%;
+        max-width: 48rem; /* equivalent to max-w-3xl */
+        border-collapse: collapse;
+    }
+
+    th, td {
+        text-align: center;
+        padding: 0.75rem;
+    }
+
+    th {
+        background-color: #f8f9fa;
+        font-weight: 500;
+    }
+
+    td {
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .font-medium {
+        font-weight: 500;
+    }
+
+    .text-success {
+        color: #28a745;
+    }
+
+    .text-danger {
+        color: #dc3545;
+    }
+</style>

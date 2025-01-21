@@ -20,13 +20,14 @@ export const load: PageLoad = async ({ url }) => {
       ...filters,
       ...(sortBy && sortOrder && { sortBy, sortOrder })
     });
-    console.log(response);
+    console.log(response, "employees response");
     return {
       employees: response.data,
       pagination: {
         total: response.meta?.total || 0,
         page: response.meta?.page || 1,
-        limit: response.meta?.limit || 20
+        limit: response.meta?.limit || 20,
+        totalPages: response.meta?.totalPages || 1
       },
       filters,
       sort: sortBy && sortOrder ? { key: sortBy, direction: sortOrder } : null

@@ -9,9 +9,9 @@
   import { getLeaveTypeLabel } from '$lib/constants/leaveTypes.js';
 
   export let data;
-
-  $: ({ leaves, pagination, filters, sort, leaveTypeId } = data);
-  console.log(leaves, "leaves");
+  let isLoading = false;
+  $: ({ leaves,summary, pagination, filters, sort, leaveTypeId } = data);
+  console.log(pagination, "pagination");
 
  
   const columns = [
@@ -70,18 +70,25 @@
     goto(url, { replaceState: true });
   }
 
-  function handlePage(event: CustomEvent) {
+ async function handlePage(event: CustomEvent) {
+  isLoading =true
+  try{
     const { page: newPage } = event.detail;
     const url = new URL($page.url);
     url.searchParams.set('page', newPage.toString());
-    goto(url, { replaceState: true });
+   await  goto(url, { replaceState: true , invalidateAll: true});
+  }finally{
+    isLoading=false
+  }
+
+
   }
 
   let showApplyForm = false;
   let loading = false;
 
   // Initialize formValues with default values
-  let formValues = {
+  let defaultFormValues = {
     leaveType: '',
     startDate: '',
     endDate: '',
@@ -89,6 +96,21 @@
     status: 'Pending',
     leaveTypeId: leaveTypeId || "678dec1789f768e0b1877aae"
   };
+
+  let formValues= {...defaultFormValues};
+
+  function openApplyForm() {
+    // Reset form values when opening the form
+    formValues = { ...defaultFormValues };
+    showApplyForm = true;
+  }
+
+  function closeApplyForm() {
+    // Reset form values when closing the form
+    formValues = { ...defaultFormValues };
+    showApplyForm = false;
+  }
+
 
   async function handleLeaveSubmit(event: CustomEvent) {
     loading = true;
@@ -104,20 +126,25 @@
       const res = await leavesApi.create(values);
       console.log('Leave created:', res);
       showApplyForm = false;
-
-      // Refresh the page
-      goto($page.url, { replaceState: true });
+   
+    // Refresh the page data by invalidating current URL
+    const currentUrl = new URL($page.url);
+    // Add or update a timestamp parameter to force reload
+    currentUrl.searchParams.set('t', Date.now().toString());
+    
+    // Navigate to the modified URL to trigger a refresh
+    await goto(currentUrl, { 
+      replaceState: true,
+      invalidateAll: true // This will force SvelteKit to refetch the page data
+    });
 
     } catch (error) {
       console.error('Error submitting leave:', error);
       // Handle error (show toast, etc.)
     } finally {
+      closeApplyForm();
       loading = false;
     }
-  }
-
-  function openApplyForm() {
-    showApplyForm = true;
   }
 
   function handleFormUpdate(event: CustomEvent) {
@@ -164,6 +191,7 @@
     >
       <LeaveForm
         {loading}
+        {summary}
         initialValues={formValues}
         on:submit={handleLeaveSubmit}
         on:update={handleFormUpdate}
@@ -176,14 +204,24 @@
     <Table
       {columns}
       data={leaves}
-      loading={$page.url.searchParams.toString() !== $page.url.searchParams.toString()}
-      pagination={pagination}
-      currentSort={sort}
+      loading={isLoading}
+      meta={pagination}
       serverSide={true}
       on:search={handleSearch}
       on:sort={handleSort}
       on:page={handlePage}
     />
+    <!--  <Table
+      {columns}
+      data={leaves}
+      loading={$page.url.searchParams.toString() !== $page.url.searchParams.toString()}
+      meta={pagination}
+      currentSort={sort}
+      serverSide={true}
+      on:search={handleSearch}
+      on:sort={handleSort}
+      on:page={handlePage}
+    /> -->
   </div>
 </div>
 

@@ -3,6 +3,8 @@
   import type { User } from '$lib/types_old.js';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
+  import Modal from '$lib/components/common/Modal.svelte';
+  import EmployeeForm from '$lib/components/employee/EmployeeForm.svelte';
 
   export let data;
 
@@ -87,6 +89,35 @@
     const user = event.detail;
     goto(`/admin/employees/${user._id}`);
   }
+
+    // Initialize formValues with default values
+    let defaultFormValues = {
+    leaveType: '',
+    startDate: '',
+    endDate: '',
+    reason: '',
+    status: 'Pending',
+
+  };
+
+  let formValues= {...defaultFormValues};
+  let showApplyForm = false;
+  let loading = false;
+
+  function openApplyForm() {
+    // Reset form values when opening the form
+    formValues = { ...defaultFormValues };
+    showApplyForm = true;
+  }
+
+  async function handleFormSubmit(event:CustomEvent){
+    console.log("submitting form with data:",event.detail);
+    showApplyForm=false;
+  }
+  function handleFormUpdate(event: CustomEvent) {
+    formValues = event.detail;
+  }
+
 </script>
 
 <svelte:head>
@@ -113,19 +144,44 @@
         <i class="fas fa-file-export"></i>
         Export
       </button>
-      <button class="btn-primary">
+      <button class="btn-primary" on:click={openApplyForm}>
         <i class="fas fa-plus"></i>
         Add Employee
       </button>
     </div>
   </header>
 
+
+  {#if showApplyForm}
+    <Modal
+      show={showApplyForm}
+      title="New Employee"
+      onClose={() => (showApplyForm = false)}
+    >
+    <EmployeeForm
+      {loading}
+      initialValues={formValues}
+      on:submit={handleFormSubmit}
+      on:update={handleFormUpdate}
+      on:cancel={() => (showApplyForm = false)}
+
+    />
+      <!-- <LeaveForm
+        {loading}
+        initialValues={formValues}
+        on:submit={handleLeaveSubmit}
+        on:update={handleFormUpdate}
+        on:cancel={() => (showApplyForm = false)}
+      /> -->
+    </Modal>
+  {/if}
+
   <div class="table-container">
     <Table
       {columns}
       data={employees}
       loading={$page.url.searchParams.toString() !== $page.url.searchParams.toString()}
-      pagination={pagination}
+      meta={pagination}
       currentSort={sort}
       serverSide={true}
       on:search={handleSearch}
