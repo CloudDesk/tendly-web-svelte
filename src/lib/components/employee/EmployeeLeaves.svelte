@@ -55,6 +55,7 @@
         remaining: number;
         leaveRequests: LeaveRequest[];
     }> {
+        console.log(summary,"summary");
         return (Object.entries(summary) as Array<[LeaveType, LeaveCategory]>)
             .filter(([key]) => key in leaveTypes)
             .map(([key, value]) => ({

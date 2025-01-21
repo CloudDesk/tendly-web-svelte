@@ -7,7 +7,7 @@
   export let data;
 
   $: ({ employees, pagination, filters, sort } = data);
-
+  console.log(pagination,"pagination")
   const columns = [
     { 
       key: 'name', 

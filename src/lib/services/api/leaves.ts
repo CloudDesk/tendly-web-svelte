@@ -7,7 +7,9 @@ export type LeaveRequest = {
     endDate: string;
     status: 'approved' | 'pending' | 'rejected';
     reason: string;
+
     appliedOn: string;
+    leaveType?: string;
     approvedBy?: string;
     rejectionReason?: string;
 };

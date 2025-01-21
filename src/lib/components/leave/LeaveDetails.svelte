@@ -1,12 +1,12 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { leavesApi } from '$lib/services/api/leaves';
-    import type { LeaveRequest } from '$lib/types';
     import Modal from '$lib/components/common/Modal.svelte';
     import LeaveForm from '$lib/components/leave/LeaveForm.svelte';
-
+    import type { LeaveRequest } from '$lib/types';
+  import { leaveStatusOptions, leaveTypeOptions } from '$lib/constants/leaveTypes';
     export let leaveId: string;
-    
+ 
     let leave: LeaveRequest | null = null;
     let loading = true;
     let error: string | null = null;
@@ -31,23 +31,19 @@
         hideInView?: boolean;
     };
 
-    let fields: Field[] = [
-        { key: 'type', label: 'Leave Type', inputType: 'text', required: true },
-        { key: 'status', label: 'Status', inputType: 'select', required: true, options: [
-            { label: 'Pending', value: 'PENDING' },
-            { label: 'Approved', value: 'APPROVED' },
-            { label: 'Rejected', value: 'REJECTED' }
-        ]},
-        { key: 'startDate', label: 'Start Date', inputType: 'date', required: true },
-        { key: 'endDate', label: 'End Date', inputType: 'date', required: true },
-        { key: 'reason', label: 'Reason', inputType: 'textarea', required: false },
-        { key: 'rejectionReason', label: 'Rejection Reason', inputType: 'textarea', required: false, hideInView: true }
-    ];
+ 
 
+  let fields: Field[] = [
+    { key: 'leaveType', label: 'Leave Type', inputType: 'select', required: true, options: leaveTypeOptions },
+    { key: 'status', label: 'Status', inputType: 'select', required: true, options: leaveStatusOptions },
+    { key: 'startDate', label: 'Start Date', inputType: 'date', required: true },
+    { key: 'endDate', label: 'End Date', inputType: 'date', required: true },
+    { key: 'reason', label: 'Reason', inputType: 'textarea', required: false },
+];
     onMount(async () => {
         try {
             loading = true;
-            const response = await leavesApi.getById(leaveId);
+            const response:any = await leavesApi.getById(leaveId);
             console.log(response.data, "response.data")
             leave = response.data;
         } catch (e: any) {
@@ -81,8 +77,8 @@
                 endDate: submittedData.endDate ? new Date(submittedData.endDate).toISOString() : undefined
             };
             // await leavesApi.update(leaveId, leaveData);
-            const updated = await leavesApi.getById(leaveId);
-            leave = updated.data;
+            // const updated:any = await leavesApi.getById(leaveId);
+            // leave = updated.data;
             showEditModal = false;
         } catch (e: any) {
             error = e.message;
@@ -95,7 +91,7 @@
         try {
             loading = true;
             await leavesApi.updateStatus(leaveId, 'Approved', remarks );
-            const updated = await leavesApi.getById(leaveId);
+            const updated:any = await leavesApi.getById(leaveId);
             leave = updated.data;
             showApproveModal = false;
         } catch (e: any) {
@@ -109,7 +105,7 @@
         try {
             loading = true;
             await leavesApi.updateStatus(leaveId, 'Rejected', remarks );
-            const updated = await leavesApi.getById(leaveId);
+            const updated:any = await leavesApi.getById(leaveId);
             leave = updated.data;
             showRejectModal = false;
         } catch (e: any) {
@@ -145,21 +141,35 @@
 
         return String(value);
     }
+
+    function calculateNumberOfDays(startDate: string, endDate: string): number {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const diffTime = Math.abs(end.getTime() - start.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        return diffDays;
+    }
 </script>
 
 <div class="space-y-6">
     <div class="flex justify-between items-center">
         <h3 class="text-lg font-semibold">Leave Details</h3>
         <div class="flex gap-2">
-            <!-- <button class="btn btn-primary btn-sm" on:click={handleEdit}>
-                Edit Details
-            </button> -->
-            <button class="btn btn-primary btn-sm" on:click={() => showApproveModal = true}>
-                Approve
-            </button>
-            <button class="btn btn-primary btn-sm" on:click={() => showRejectModal = true}>
-                Reject
-            </button>
+            {#if leave?.status === 'Pending'}
+                <button class="btn btn-primary btn-sm" on:click={() => showApproveModal = true}>
+                    Approve
+                </button>
+                <button class="btn btn-primary btn-sm" on:click={() => showRejectModal = true}>
+                    Reject
+                </button>
+            {:else}
+                <button class="btn btn-primary btn-sm" disabled style="opacity: 0.5;">
+                    Approve
+                </button>
+                <button class="btn btn-primary btn-sm" disabled style="opacity: 0.5;">
+                    Reject
+                </button>
+            {/if}
         </div>
     </div>
 
@@ -181,6 +191,18 @@
                     </div>
                 {/if}
             {/each}
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h3 class="text-sm font-medium text-neutral-500">Number of Days</h3>
+                    <p class="mt-1 text-base">
+                        {#if leave.startDate && leave.endDate}
+                            {calculateNumberOfDays(leave.startDate, leave.endDate)}
+                        {:else}
+                            N/A
+                        {/if}
+                    </p>
+                </div>
+            </div>
         </div>
     {/if}
 </div>
@@ -271,8 +293,6 @@
 </Modal>
 
 <style>
-  @import '$lib/styles/form.css';
-
   .loading {
       display: flex;
       justify-content: center;

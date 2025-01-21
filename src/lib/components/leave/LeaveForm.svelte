@@ -1,6 +1,7 @@
 <script lang="ts">
     import { createEventDispatcher } from 'svelte';
     import '../../styles/form.css'
+  import { leaveTypeOptions } from '$lib/constants/leaveTypes';
     interface LeaveFormData {
       leaveType: string;
       startDate: string;
@@ -21,15 +22,7 @@
     // Create a writable store for form data
     let formData = initialValues;
     
-    const leaveTypeOptions = [
-      { value: 'annual', label: 'Annual Leave' },
-      { value: 'sick', label: 'Sick Leave' },
-      { value: 'compOff', label: 'Comp Off' },
-      { value: 'lossOfPay', label: 'Loss of Pay' },
-      { value: 'otherPaid', label: 'Other Paid' },
-      { value: 'otherUnpaid', label: 'Other Unpaid' }
-    ];
-  
+   
     // Form handlers
     const handleSubmit = () => {
       console.log('Submitting form with data:', formData);
@@ -66,7 +59,7 @@
           class="select select-bordered w-full"
           bind:value={formData.leaveType}
           on:change={handleChange}
-          {loading}
+   
           required
         >
           <option value="">Select Leave Type</option>
@@ -88,7 +81,7 @@
           class="input input-bordered"
           bind:value={formData.startDate}
           on:change={handleChange}
-          {loading}
+      
           required
         />
       </div>
@@ -105,13 +98,13 @@
           class="input input-bordered"
           bind:value={formData.endDate}
           on:change={handleChange}
-          {loading}
+       
           required
         />
         {#if !isEndDateValid}
-          <label class="label">
+          <div class="label">
             <span class="label-text-alt text-error">End date must be after start date</span>
-          </label>
+          </div>
         {/if}
       </div>
   
@@ -126,7 +119,7 @@
           class="textarea textarea-bordered h-24"
           bind:value={formData.reason}
           on:input={handleChange}
-          {loading}
+
           required
         ></textarea>
       </div>
@@ -134,10 +127,10 @@
       <!-- Number of Days -->
       {#if formData.startDate && formData.endDate && isEndDateValid}
         <div class="form-control col-span-full">
-          <label class="label">
+          <label class="label" for="numberOfDays">
             <span class="label-text">Number of Days</span>
           </label>
-          <div class="text-sm font-medium">
+          <div id="numberOfDays" class="text-sm font-medium">
             {numberOfDays} day{numberOfDays !== 1 ? 's' : ''}
           </div>
         </div>
