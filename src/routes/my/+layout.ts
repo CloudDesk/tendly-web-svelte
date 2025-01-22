@@ -5,7 +5,8 @@ import { get } from 'svelte/store';
 
 export const load = async () => {
     const authState = get(auth);
-    if (!authState.token) {
+    console.log('authState', authState);
+    if (!authState.user) {
         throw redirect(302, '/login');
     }
 
