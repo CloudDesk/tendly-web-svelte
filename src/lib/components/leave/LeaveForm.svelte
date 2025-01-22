@@ -60,7 +60,7 @@ const getRemainingDays = (leaveType: string): number => {
   };
 
   const summaryKey = typeMapping[leaveType.toLowerCase()];
-  return summaryKey ? summary[summaryKey].remaining : 0;
+  return summaryKey && typeof summary[summaryKey] === 'object' ? summary[summaryKey].remaining : 0;
 };
 
   // Form handlers
@@ -69,7 +69,8 @@ const getRemainingDays = (leaveType: string): number => {
       return;
     }
     console.log('Submitting form with data:', formData);
-    dispatch('submit', formData);
+    let newObj = {...formData,noOfDays:numberOfDays}
+    dispatch('submit', newObj);
   };
 
   const handleCancel = () => {

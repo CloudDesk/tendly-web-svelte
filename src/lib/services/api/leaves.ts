@@ -22,6 +22,7 @@ export type LeaveCategory = {
 };
 
 export type LeaveSummary = {
+    userId: string;
     year: number;
     annual: LeaveCategory;
     sick: LeaveCategory;
