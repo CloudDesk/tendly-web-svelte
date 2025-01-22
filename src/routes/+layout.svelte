@@ -2,7 +2,6 @@
   import '../app.css';
   import Sidebar from '$lib/components/common/Sidebar.svelte';
   import { page } from '$app/stores';
-
   export let data;
   $: ({ isAuthenticated } = data);
   $: isPublicPage = ['/login'].includes($page.url.pathname);
@@ -19,6 +18,7 @@
       <div class="flex-1 {isAuthenticated ? 'ml-64' : ''}">
         <div class="p-6">
           <slot />
+          <!-- <Toast/> -->
         </div>
       </div>
     </div>

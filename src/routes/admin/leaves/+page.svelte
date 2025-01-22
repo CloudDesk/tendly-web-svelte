@@ -7,6 +7,7 @@
   import Modal from '$lib/components/common/Modal.svelte';
   import LeaveForm from '$lib/components/leave/LeaveForm.svelte';
   import { getLeaveTypeLabel } from '$lib/constants/leaveTypes.js';
+  import { toast } from '$lib/components/common/stores/toast.store.js';
 
   export let data;
   let isLoading = false;
@@ -125,6 +126,7 @@
 
       const res = await leavesApi.create(values);
       console.log('Leave created:', res);
+      toast.success('Leave applied successfully');
       showApplyForm = false;
    
     // Refresh the page data by invalidating current URL
@@ -140,16 +142,19 @@
 
     } catch (error) {
       console.error('Error submitting leave:', error);
+      toast.error('Failed to apply leave'); 
       // Handle error (show toast, etc.)
     } finally {
       closeApplyForm();
       loading = false;
     }
+    
   }
 
   function handleFormUpdate(event: CustomEvent) {
     formValues = event.detail;
   }
+
 </script>
 
 <svelte:head>
@@ -166,7 +171,7 @@
           Filter
         </button>
         <button class="btn-view">
-          <i class="fas fa-table-list"></i>
+          <i class="fas fa-table-list" ></i>
           View
         </button>
       </div>

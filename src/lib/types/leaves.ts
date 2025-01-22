@@ -7,4 +7,5 @@ export type LeaveRequest = {
     status: string
     leaveType?: string
     reason?: string
+    noOfDays?: number
 }

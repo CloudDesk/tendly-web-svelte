@@ -102,10 +102,10 @@ export const leavesApi = {
             method: 'GET'
         });
     },
-    updateStatus: (leaveId: string, status: string, remarks?: string): Promise<ApiResponse<void>> => {
+    updateStatus: (leaveId: string, status: string, noOfDays: number, remarks?: string,): Promise<ApiResponse<void>> => {
         return fetchApi(`/leaves/${leaveId}/status`, {
             method: 'PUT',
-            body: JSON.stringify({ status, remarks })
+            body: JSON.stringify({ status, remarks, noOfDays })
         });
     },
     getByEmployeeId: (employeeId: string): Promise<ApiResponse<LeaveRequest[]>> => {

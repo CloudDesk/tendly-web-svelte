@@ -2,6 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import '../../styles/form.css'
   import { leaveTypeOptions } from '$lib/constants/leaveTypes';
+  import type {LeaveSummary} from '$lib/services/api/leaves'
 
   interface LeaveFormData {
     leaveType: string;
@@ -23,16 +24,7 @@
 
   export let loading = false;
   export let initialValues: LeaveFormData;
-  export let summary: { 
-    userId: string;
-    year: number;
-    annual: LeaveSummary['annual'];
-    sick: LeaveSummary['sick'];
-    compOff: LeaveSummary['compOff'];
-    lossOfPay: LeaveSummary['lossOfPay'];
-    otherPaid: LeaveSummary['otherPaid'];
-    otherUnpaid: LeaveSummary['otherUnpaid'];
-  };
+  export let summary: LeaveSummary;
 console.log(summary,"summary");
   const dispatch = createEventDispatcher<{
     submit: LeaveFormData;

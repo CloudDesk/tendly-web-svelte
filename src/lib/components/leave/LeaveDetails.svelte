@@ -90,7 +90,7 @@
     async function handleApprove() {
         try {
             loading = true;
-            await leavesApi.updateStatus(leaveId, 'Approved', remarks );
+            await leavesApi.updateStatus(leaveId, 'Approved',leave?.noOfDays||0, remarks );
             const updated:any = await leavesApi.getById(leaveId);
             leave = updated.data;
             showApproveModal = false;
@@ -104,7 +104,7 @@
     async function handleReject() {
         try {
             loading = true;
-            await leavesApi.updateStatus(leaveId, 'Rejected', remarks );
+            await leavesApi.updateStatus(leaveId, 'Rejected',leave?.noOfDays ||0, remarks );
             const updated:any = await leavesApi.getById(leaveId);
             leave = updated.data;
             showRejectModal = false;
@@ -212,12 +212,12 @@
     title="Edit Leave Details"
     onClose={() => (showEditModal = false)}
 >
-    <LeaveForm
+    <!-- <LeaveForm
         {loading}
         initialValues={editingLeave}
         on:submit={handleLeaveSubmit}
         on:cancel={() => (showEditModal = false)}
-    />
+    /> -->
 </Modal>
 
 <Modal
