@@ -12,16 +12,16 @@ export const loginController = {
   login: async (email: string, password: string): Promise<void> => {
     try {
       const response = await authApi.login(email, password);
-      
+
       if (!response.success) {
         handleApiError(response);
       }
-
+      console.log(response.data, "login response");
       const { user, token } = response.data;
       // Update store
       auth.setAuth(user);
 
-     
+
       goto("/");
     } catch (error) {
       console.error('Login failed:', error);
@@ -32,15 +32,15 @@ export const loginController = {
   logout: async (): Promise<void> => {
     try {
       const response = await authApi.logout();
-      
+
       if (!response.success) {
         handleApiError(response);
       }
 
       // Clear store
       auth.clearAuth();
-      
-     
+
+
       // Navigate to login
       await goto('/login');
     } catch (error) {

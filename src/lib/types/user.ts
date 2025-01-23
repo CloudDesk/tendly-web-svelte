@@ -11,6 +11,8 @@ export type User = {
   updatedAt: string;
   lastLoginAt?: string;
   profileImageUrl?: string;
+  managerId?: string;
+  managerName?: string;
 };
 
 export type UserProfile = Omit<User, 'role' | 'isActive' | 'createdAt' | 'updatedAt'> & {

@@ -206,14 +206,14 @@
       {columns}
       data={employees}
       loading={$page.url.searchParams.toString() !== $page.url.searchParams.toString()}
-      meta={pagination}
-      currentSort={sort}
+      meta={pagination}      
       serverSide={true}
       on:search={handleSearch}
       on:sort={handleSort}
       on:page={handlePage}
       on:rowClick={handleRowClick}
     />
+    <!-- currentSort={sort} is removed  -->
   </div>
 </div>
 

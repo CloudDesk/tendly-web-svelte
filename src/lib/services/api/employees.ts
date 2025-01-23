@@ -10,6 +10,11 @@ export type EmployeeFilters = {
   limit?: number;
 };
 
+export type Employee = {
+  _id: string;
+  name: string;
+  email: string;
+}
 export type EmployeeListResponse = {
   items: User[];
   total: number;
@@ -22,13 +27,13 @@ export const employeesApi = {
     return await fetchApi<User>('/users/me');
   },
 
-  list: async (filters: EmployeeFilters): Promise<ApiResponse<EmployeeListResponse>> => {
+  list: async (filters: EmployeeFilters): Promise<ApiResponse<Employee[]>> => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined) params.append(key, String(value));
     });
 
-    return await fetchApi<EmployeeListResponse>(`/users?${params.toString()}`);
+    return await fetchApi(`/users?${params.toString()}`);
   },
 
   getById: async (id: string): Promise<ApiResponse<User>> => {

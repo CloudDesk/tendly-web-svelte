@@ -3,6 +3,8 @@
   import '../../styles/form.css'
   import { leaveTypeOptions } from '$lib/constants/leaveTypes';
   import type {LeaveSummary} from '$lib/services/api/leaves'
+  import { auth } from '$lib/stores/auth';
+import { get } from "svelte/store";
 
   interface LeaveFormData {
     leaveType: string;
@@ -13,18 +15,14 @@
     leaveTypeId: string;
   }
 
-  interface LeaveSummary {
-    [key: string]: {
-      alloted: number;
-      availed: number;
-      remaining: number;
-      leaveRequests: string[];
-    }
-  }
+  
 
   export let loading = false;
   export let initialValues: LeaveFormData;
   export let summary: LeaveSummary;
+  const authState = get(auth);
+  console.log(authState,"authState");
+
 console.log(summary,"summary");
   const dispatch = createEventDispatcher<{
     submit: LeaveFormData;
@@ -61,7 +59,12 @@ const getRemainingDays = (leaveType: string): number => {
       return;
     }
     console.log('Submitting form with data:', formData);
-    let newObj = {...formData,noOfDays:numberOfDays}
+    let newObj = {...formData,noOfDays:numberOfDays,
+      appliedTo: {
+      _id:authState.user?.managerId ||'676a65b0b06ccef51b302d3d',
+      name: authState.user?.managerName || 'John Doe',
+    },
+    }
     dispatch('submit', newObj);
   };
 

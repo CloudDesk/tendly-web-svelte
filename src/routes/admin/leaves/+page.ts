@@ -11,14 +11,14 @@ export const load: PageLoad = async ({ url, params }) => {
       page: Number(url.searchParams.get('page')) || 1,
       limit: Number(url.searchParams.get('limit')) || 20,
       search: url.searchParams.get('search') || undefined,
-      userId: url.searchParams.get('userId') || user._id
+      // userId: url.searchParams.get('userId') || user._id
     }
 
     const sortBy = url.searchParams.get('sortBy');
     const sortOrder = url.searchParams.get('sortOrder') as 'asc' | 'desc' | undefined;
 
     const [summaryResponse, leavesResponse, leaveTypeIdResponse] = await Promise.all([
-      leavesApi.getSummary(filters.userId || ''),
+      leavesApi.getSummary(user._id || ''),
       leavesApi.list({
         ...filters,
         ...(sortBy && sortOrder && { sortBy, sortOrder })
@@ -42,6 +42,16 @@ export const load: PageLoad = async ({ url, params }) => {
     };
   } catch (error) {
     console.error('Failed to load leaves:', error);
-    throw error as ApiError;
+    return {
+      leaves: [],
+      summary: [],
+      pagination: {
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 1
+      }
+    };
+    // throw error as ApiError;
   }
 };

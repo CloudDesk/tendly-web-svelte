@@ -162,7 +162,7 @@ const prepareEmployeePayload = (formData: EmployeeFormData) => {
     ...formData,
     joiningDate: convertToDateTimeFormat(formData.joiningDate),
     dateOfBirth: convertToDateTimeFormat(formData.dateOfBirth),
-    password: 'TestPassword123',
+    password: '123456',
     departmentId: '60d5f483f8d2e30db8c1a5e4', 
     isActive: true,
   };
