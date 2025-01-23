@@ -19,7 +19,7 @@
     let showWithdrawModal = false;
     let remarks = '';
     let userRoleFlags = getRoleFlags(location.href);
-    console.log(userRoleFlags, "userRoleFlags")
+    console.log(leave, "userRoleFlags")
     type EditingLeave = Partial<LeaveRequest> & {
         startDate?: string;
         endDate?: string;
@@ -57,7 +57,11 @@
             loading = false;
         }
     });
-
+    console.log(leave,"Leave request changed:")
+    $: if (leave) {
+    // Logic to run when leave is updated
+    console.log('Leave request changed:', leave);
+}
     function handleEdit() {
         if (leave) {
             // Format date fields to YYYY-MM-DD for input[type="date"]
@@ -183,27 +187,20 @@
         <h3 class="text-lg font-semibold">Leave Details</h3>
         <div class="flex gap-2">
             {#if leave?.status === 'Pending'}
-            {#if userRoleFlags.isAdmin || userRoleFlags.isManager}
                 <button class="btn btn-primary btn-sm" on:click={() => showApproveModal = true}>
                     Approve
                 </button>
                 <button class="btn btn-primary btn-sm" on:click={() => showRejectModal = true}>
                     Reject
                 </button>
-            {:else if userRoleFlags.isMy}
-                <button class="btn btn-warning btn-sm" on:click={() =>confirmAction()}>
-                    Withdraw
-                </button>
-            {/if}
+          
         {:else}
-            {#if userRoleFlags.isAdmin || userRoleFlags.isManager}
                 <button class="btn btn-primary btn-sm" disabled style="opacity: 0.5;">
                     Approve
                 </button>
                 <button class="btn btn-primary btn-sm" disabled style="opacity: 0.5;">
                     Reject
                 </button>
-            {/if}
         {/if}
         </div>
     </div>
