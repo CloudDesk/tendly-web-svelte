@@ -52,7 +52,7 @@ export const load = async ({ fetch, url }) => {
 
     if (isAuthenticated && isLoadingPage) {
       console.log(3, isAuthenticated, isLoadingPage);
-      const userRole = authState.user?.roleId?.toUpperCase();
+      const userRole = authState.user?.role?.toUpperCase();
       console.log(userRole, "userRolelayout");
       const redirectPath =
         userRole === "ADMIN"
@@ -67,13 +67,13 @@ export const load = async ({ fetch, url }) => {
     }
     if (isAuthenticated && authState.user) {
       console.log(4, isAuthenticated, authState.user);
-      let role: UserRole = authState.user.roleId.toUpperCase() === 'ADMIN' ? 'ADMIN' : authState.user.roleId.toUpperCase() === 'MANAGER' ? 'MANAGER' : 'STAFF';
+      let role: UserRole = authState.user.role.toUpperCase() === 'ADMIN' ? 'ADMIN' : authState.user.role.toUpperCase() === 'MANAGER' ? 'MANAGER' : 'STAFF';
       setUserPermissions(role);
     }
-    console.log('else', isAuthenticated, authState.user?.roleId)
+    console.log('else', isAuthenticated, authState.user?.role)
     return {
       isAuthenticated,
-      userRole: authState.user?.roleId?.toUpperCase() || null,
+      userRole: authState.user?.role?.toUpperCase() || null,
     };
   }
 

@@ -94,6 +94,7 @@ export const leavesApi = {
         Object.entries(filters).forEach(([key, value]) => {
             if (value !== undefined) params.append(key, String(value));
         });
+        console.log("fetchurl", `/leaves?${params.toString()}`);
         return fetchApi(`/leaves?${params.toString()}`)
     },
     getById: (leaveId: string): Promise<ApiResponse<LeaveRequest>> => {
@@ -117,6 +118,7 @@ export const leavesApi = {
         Object.entries(filters).forEach(([key, value]) => {
             if (value !== undefined) params.append(key, String(value));
         });
+        console.log("fetchurl", `/leaves/userId/${employeeId}?${params.toString()}`);
         return fetchApi(`/leaves/userId/${employeeId}?${params.toString()}`)
     },
 } 

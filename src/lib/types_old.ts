@@ -3,7 +3,7 @@ export type User = {
   employeeId: string;
   email: string;
   name: string;
-  roleId: string;
+  role: string;
   departmentId: string;
   active: boolean;
   joiningDate: string;

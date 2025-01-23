@@ -6,7 +6,7 @@ export type User = {
   name: string;
   firstName: string;
   lastName: string;
-  roleId: UserRole;
+  role: UserRole;
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -14,7 +14,7 @@ export type User = {
   profileImageUrl?: string;
 };
 
-export type UserProfile = Omit<User, 'roleId' | 'isActive' | 'createdAt' | 'updatedAt'> & {
+export type UserProfile = Omit<User, 'role' | 'isActive' | 'createdAt' | 'updatedAt'> & {
   role: {
     id: UserRole;
     label: string;

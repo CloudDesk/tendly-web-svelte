@@ -25,7 +25,7 @@ export const load: PageLoad = async ({ url, params }) => {
       }),
       lovsApi.getByType('leaveType')
     ]);
-
+    console.log(leavesResponse, "leavesResponse");
     console.log(summaryResponse, "summaryResponse");
     return {
       leaves: leavesResponse.data,

@@ -101,7 +101,7 @@
                     {#each employees as employee}
                         <tr>
                             <td>{employee.name}</td>
-                            <td>{employee.roleId}</td>
+                            <td>{employee.role}</td>
                             <td>
                                 <label class="label cursor-pointer justify-start gap-2">
                                     <input 

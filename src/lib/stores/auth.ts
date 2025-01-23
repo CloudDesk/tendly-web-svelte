@@ -1,6 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import type { User } from '$lib/types/user';
-import { browser } from '$app/environment'; 
+import { browser } from '$app/environment';
 import { lovs } from './lovs';
 
 type AuthState = {
@@ -28,7 +28,7 @@ function createAuthStore() {
     },
     clearAuth: () => {
       localStorage.removeItem('user');
-      set({ user: null});
+      set({ user: null });
     }
   };
 }
@@ -38,7 +38,7 @@ export const auth = createAuthStore();
 
 // Derived store for user's role label
 export const userRole = derived([auth, lovs], ([$auth, $lovs]) => {
-  if (!$auth.user?.roleId || !$lovs.UserRole) return '';
-  const role = $lovs.UserRole.find(r => r.value === $auth.user?.roleId);
+  if (!$auth.user?.role || !$lovs.UserRole) return '';
+  const role = $lovs.UserRole.find(r => r.value === $auth.user?.role);
   return role?.label || '';
 });

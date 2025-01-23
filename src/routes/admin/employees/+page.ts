@@ -10,7 +10,7 @@ export const load: PageLoad = async ({ url }) => {
       page: Number(url.searchParams.get('page')) || 1,
       limit: Number(url.searchParams.get('limit')) || 20,
       search: url.searchParams.get('search') || undefined,
-      roleId: url.searchParams.get('roleId') || undefined,
+      role: url.searchParams.get('role') || undefined,
     };
 
     const sortBy = url.searchParams.get('sortBy');

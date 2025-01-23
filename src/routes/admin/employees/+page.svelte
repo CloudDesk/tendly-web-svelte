@@ -26,11 +26,11 @@
       `
     },
     { 
-      key: 'roleId', 
+      key: 'role', 
       label: 'Role', 
       sortable: true,
       render: (user: User) => `
-        <div class="role-badge ${user.roleId.toLowerCase()}">${user.roleId}</div>
+        <div class="role-badge ${user.role}">${user.role}</div>
       `
     },
     { 

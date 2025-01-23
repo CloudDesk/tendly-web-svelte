@@ -11,7 +11,7 @@ export const load = async () => {
         throw redirect(302, '/login');
     }
 
-    const userRole = authState.user?.roleId?.toUpperCase();
+    const userRole = authState.user?.role?.toUpperCase();
     if (userRole !== 'ADMIN' && userRole !== 'MANAGER') {
         throw redirect(302, '/');
     }

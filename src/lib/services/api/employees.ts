@@ -3,7 +3,7 @@ import type { ApiResponse } from '$lib/types/api';
 import type { User } from '$lib/types/user';
 
 export type EmployeeFilters = {
-  roleId?: string;
+  role?: string;
   isActive?: boolean;
   search?: string;
   page?: number;
@@ -27,7 +27,7 @@ export const employeesApi = {
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined) params.append(key, String(value));
     });
-    
+
     return await fetchApi<EmployeeListResponse>(`/users?${params.toString()}`);
   },
 

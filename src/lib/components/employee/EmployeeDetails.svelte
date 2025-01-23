@@ -34,7 +34,7 @@
 
     let fields: Field[] = [
         { key: 'email', label: 'Email', inputType: 'email', required: true },
-        { key: 'roleId', label: 'Role', inputType: 'select', required: true, options: [], lovType: 'UserRole' },
+        { key: 'role', label: 'Role', inputType: 'select', required: true, options: [], lovType: 'UserRole' },
         { key: 'joiningDate', label: 'Joining Date', inputType: 'date', required: true },
         { key: 'phone', label: 'Phone', inputType: 'tel', required: false },
         { key: 'location', label: 'Location', inputType: 'text', required: false },

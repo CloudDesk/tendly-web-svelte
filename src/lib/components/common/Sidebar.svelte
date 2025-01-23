@@ -171,7 +171,7 @@
   ];
 
   // Determine which navigation sections to show based on user role
-  $: userRole = $auth.user?.roleId;
+  $: userRole = $auth.user?.role ;
   $: isAdmin = userRole?.toUpperCase() === 'ADMIN';
   $: isManager = userRole?.toUpperCase() === 'MANAGER';
 

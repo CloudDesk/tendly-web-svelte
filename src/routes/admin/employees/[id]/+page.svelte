@@ -31,7 +31,7 @@
       </button>
       <div class="flex items-center gap-3">
         <h1 class="text-xl font-semibold text-text m-0">{employee.name}</h1>
-        <div class="badge badge-success">{employee.roleId}</div>
+        <div class="badge badge-success">{employee.role}</div>
       </div>
     </div>
     <div class="flex gap-3">
@@ -100,7 +100,7 @@
             <div class="space-y-4">
               <div>
                 <div class="info-label">Role</div>
-                <div class="info-value">{employee.roleId}</div>
+                <div class="info-value">{employee.role}</div>
               </div>
               <div>
                 <div class="info-label">Joined</div>
