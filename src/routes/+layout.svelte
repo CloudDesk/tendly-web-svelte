@@ -2,6 +2,7 @@
   import '../app.css';
   import Sidebar from '$lib/components/common/Sidebar.svelte';
   import { page } from '$app/stores';
+  import Toast from '$lib/components/common/Toast.svelte';
   export let data;
   $: ({ isAuthenticated } = data);
   $: isPublicPage = ['/login'].includes($page.url.pathname);
@@ -18,7 +19,7 @@
       <div class="flex-1 {isAuthenticated ? 'ml-64' : ''}">
         <div class="p-6">
           <slot />
-          <!-- <Toast/> -->
+          <Toast/>
         </div>
       </div>
     </div>

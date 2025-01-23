@@ -1,5 +1,4 @@
 export type UserRole = 'ADMIN' | 'MANAGER' | 'STAFF';
-
 export type User = {
   _id: string;
   email: string;

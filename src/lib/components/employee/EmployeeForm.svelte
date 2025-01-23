@@ -3,6 +3,7 @@
   import '../../styles/form.css';
   import { lovsApi } from '$lib/services/api/lovs';
   import { userBloodGroups, userLocations, userRoles } from '$lib/constants/users';
+  import { employeesApi } from '$lib/services/api';
 
   // Field interface defines the structure of form fields
   interface Field {
@@ -14,8 +15,16 @@
     lovType?: string;
   }
 
+  // Interface for Manager User
+  interface ManagerUser {
+    _id: string;
+    name: string;
+    email: string;
+  }
+
   // Define the fields for the employee form
   let fields: Field[] = [
+    { key: 'name', label: 'Name', inputType: 'text', required: true },
     { key: 'email', label: 'Email', inputType: 'email', required: true },
     { key: 'role', label: 'Role', inputType: 'select', required: true, options: userRoles, lovType: 'UserRole' },
     { key: 'joiningDate', label: 'Joining Date', inputType: 'date', required: false },
@@ -40,7 +49,7 @@
     bloodGroup?: string;
     dateOfBirth?: string;
     managerId?: string;
-    [key: string]: string | undefined;
+    [key: string]?: string | undefined;
   }
 
   // Component props
@@ -57,77 +66,45 @@
   let formData = initialValues;
   let errors: { [key: string]: string } = {};
 
-  // Validation function for Joining Date
-  const validateJoiningDate = (date: string): string | null => {
-    if (!date) return 'Joining date is required';
+  // Managers lookup state
+  let managers: ManagerUser[] = [];
+  let managerOptions: Array<{ label: string; value: string }> = [];
+  let managerLookupLoading = false;
 
-    const selectedDate = new Date(date);
-    const today = new Date();
-    
-    // Calculate 10 days ago
-    const tenDaysAgo = new Date();
-    tenDaysAgo.setDate(today.getDate() - 10);
+  // Fetch managers based on role
+  const fetchManagers = async (role: string) => {
+    try {
+      managerLookupLoading = true;
+      let response;
+      if (role === 'admin') {
+        response = await employeesApi.getRoles('admin');
+      } else if (role === 'manager') {
+        response = await employeesApi.getRoles('admin');
+      } else if (role === 'staff') {
+        response = await employeesApi.getRoles('manager');
+      } else {
+        managerOptions = [];
+        return;
+      }
 
-    // Check if date is in the future
-    if (selectedDate > today) {
-      return 'Joining date cannot be in the future';
-    }
+      // Safe initialization with fallback
+      managerOptions = response.success && Array.isArray(response.data) 
+        ? response.data.map((manager: ManagerUser) => ({
+            value: manager._id,
+            label: `${manager.name} (${manager.email})`
+          }))
+        : [];
 
-    // Check if date is more than 10 days in the past
-    if (selectedDate < tenDaysAgo) {
-      return 'Joining date must be within the last 10 days';
-    }
-
-    return null;
-  };
-
-  // Validation function for Date of Birth
-  const validateDateOfBirth = (date: string): string | null => {
-    if (!date) return null;
-
-    const selectedDate = new Date(date);
-    const today = new Date();
-    
-    // Calculate 18 years ago
-    const eighteenYearsAgo = new Date();
-    eighteenYearsAgo.setFullYear(today.getFullYear() - 18);
-
-    // Check if user is at least 18 years old
-    if (selectedDate > eighteenYearsAgo) {
-      return 'You must be at least 18 years old';
-    }
-
-    return null;
-  };
-
-  // Helper function to get max date for joining date (10 days ago)
-  const getTenDaysAgo = () => {
-    const date = new Date();
-    date.setDate(date.getDate() - 10);
-    return date.toISOString().split('T')[0];
-  };
-
-  // Helper function to get min date for date of birth (18 years ago)
-  const getMinDateOfBirth = () => {
-    const date = new Date();
-    date.setFullYear(date.getFullYear() - 18);
-    return date.toISOString().split('T')[0];
-  };
-
-  // Handle date field changes with validation
-  const handleDateChange = (fieldKey: string) => {
-    // Clear previous errors for the specific field
-    errors[fieldKey] = '';
-
-    // Perform specific validations based on field
-    if (fieldKey === 'joiningDate') {
-      const error = validateJoiningDate(formData.joiningDate);
-      if (error) errors[fieldKey] = error;
-    }
-
-    if (fieldKey === 'dateOfBirth') {
-      const error = validateDateOfBirth(formData.dateOfBirth);
-      if (error) errors[fieldKey] = error;
+      // Safely assign managers
+      managers = response.success && Array.isArray(response.data) 
+        ? response.data 
+        : [];
+    } catch (error) {
+      console.error('Error fetching managers:', error);
+      // Optionally set an error state or show a notification
+      errors['managerId'] = 'Failed to load managers';
+    } finally {
+      managerLookupLoading = false;
     }
   };
 
@@ -142,28 +119,59 @@
         }));
       }
     }
+
+    // Fetch managers based on initial role
+    await fetchManagers(formData.role);
   });
 
+  // Reactive statement to watch for changes in the role field
+  $: if (formData.role) {
+    fetchManagers(formData.role);
+  }
+
+  const convertToDateTimeFormat = (dateInput: string | Date): string => {
+  // Handle different input types
+  const date = dateInput instanceof Date 
+    ? dateInput 
+    : new Date(dateInput);
+
+  // Validate date
+  if (isNaN(date.getTime())) {
+    console.warn(`Invalid date input: ${dateInput}`);
+    return new Date().toISOString(); // Fallback to current date-time
+  }
+
+  // Set a consistent time (e.g., noon or a specific time)
+  const formattedDate = new Date(
+    date.getFullYear(), 
+    date.getMonth(), 
+    date.getDate(), 
+    12, // Hour
+    0,  // Minute
+    0,  // Second
+    0   // Millisecond
+  );
+
+  // Convert to ISO 8601 format
+  return formattedDate.toISOString();
+};
+
+  // Example usage in form submission or data preparation
+const prepareEmployeePayload = (formData: EmployeeFormData) => {
+  return {
+    ...formData,
+    joiningDate: convertToDateTimeFormat(formData.joiningDate),
+    dateOfBirth: convertToDateTimeFormat(formData.dateOfBirth),
+    password: 'TestPassword123',
+    departmentId: '60d5f483f8d2e30db8c1a5e4', 
+    isActive: true,
+  };
+};
+
   // Handle form submission
-  const handleSubmit = () => {
+  const handleSubmit = async() => {
     // Reset errors
     errors = {};
-
-    // Validate joining date
-    if (formData.joiningDate) {
-      const joiningDateError = validateJoiningDate(formData.joiningDate);
-      if (joiningDateError) {
-        errors['joiningDate'] = joiningDateError;
-      }
-    }
-
-    // Validate date of birth
-    if (formData.dateOfBirth) {
-      const dateOfBirthError = validateDateOfBirth(formData.dateOfBirth);
-      if (dateOfBirthError) {
-        errors['dateOfBirth'] = dateOfBirthError;
-      }
-    }
 
     // Check if there are any validation errors
     if (Object.keys(errors).length > 0) {
@@ -172,7 +180,10 @@
 
     // If no errors, proceed with form submission
     console.log('Submitting form with data:', formData);
-    dispatch('submit', formData);
+    const employeePayload = prepareEmployeePayload(formData);
+
+  
+    dispatch('submit', employeePayload);
   };
 
   // Handle form cancellation
@@ -184,6 +195,10 @@
   const handleChange = () => {
     console.log('Form changed:', formData);
   };
+
+
+
+
 </script>
 
 <form on:submit|preventDefault={handleSubmit} class="space-y-6">
@@ -229,36 +244,39 @@
               bind:value={formData[field.key]}
               required={field.required}
               class:input-error={errors[field.key]}
-            />
-            <!-- <input
-            id={field.key}
-            type="date"
-            class="input input-bordered"
-            bind:value={formData[field.key]}
-            on:input={() => handleDateChange(field.key)}
-            required={field.required}
-            max={field.key === 'joiningDate' ? getTenDaysAgo() : undefined}
-            min={field.key === 'dateOfBirth' ? getMinDateOfBirth() : undefined}
-            class:input-error={errors[field.key]}
-          />
-            {#if errors[field.key]}
-              <span class="text-error text-sm mt-1">{errors[field.key]}</span>
-            {/if} -->
+             />
           </div>
         {:else if field.inputType === 'manager-lookup'}
-          <input
+          <select
             id={field.key}
-            type="text"
-            class="input input-bordered"
+            class="select select-bordered w-full"
             bind:value={formData[field.key]}
             on:input={handleChange}
             required={field.required}
+            disabled={managerLookupLoading}
             class:input-error={errors[field.key]}
-          />
+          >
+            <option value="">
+              {managerLookupLoading ? 'Loading managers...' : 'Select Manager'}
+            </option>
+            {#each managerOptions as option}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
+          {:else if field.inputType === 'email'}
+          <input
+          id={field.key}
+          type="email"
+          class="input input-bordered"
+          bind:value={formData[field.key]}
+          on:input={handleChange}
+          required={field.required}
+          class:input-error={errors[field.key]}
+        />
         {:else}
           <input
             id={field.key}
-            type='string'
+            type="text"
             class="input input-bordered"
             bind:value={formData[field.key]}
             on:input={handleChange}

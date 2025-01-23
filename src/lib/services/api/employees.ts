@@ -53,5 +53,10 @@ export const employeesApi = {
     return await fetchApi<void>(`/users/${id}`, {
       method: 'DELETE'
     });
+  },
+
+  getRoles: async (role: string): Promise<ApiResponse<User>> => {
+    return await fetchApi<User>(`/users/role/${role}`);
   }
+
 }; 

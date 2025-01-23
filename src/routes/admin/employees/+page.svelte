@@ -5,6 +5,8 @@
   import { page } from '$app/stores';
   import Modal from '$lib/components/common/Modal.svelte';
   import EmployeeForm from '$lib/components/employee/EmployeeForm.svelte';
+  import { employeesApi } from '$lib/services/api/employees.js';
+  import { toast } from '$lib/components/common/stores/toast.store.js';
 
   export let data;
 
@@ -90,15 +92,20 @@
     goto(`/admin/employees/${user._id}`);
   }
 
-    // Initialize formValues with default values
-    let defaultFormValues = {
-    leaveType: '',
-    startDate: '',
-    endDate: '',
-    reason: '',
-    status: 'Pending',
-
-  };
+  let defaultFormValues = {
+    name:'',
+  email: '',
+  role: '',
+  joiningDate: '',
+  phone: '',
+  location: '',
+  emergencyContact: '',
+  address: '',
+  bloodGroup: '',
+  dateOfBirth: '',
+  managerId: '',
+  // isActive: true 
+};
 
   let formValues= {...defaultFormValues};
   let showApplyForm = false;
@@ -112,7 +119,25 @@
 
   async function handleFormSubmit(event:CustomEvent){
     console.log("submitting form with data:",event.detail);
-    showApplyForm=false;
+    // showApplyForm=false;
+    try{
+      loading=true;
+      const response = await employeesApi.create(event.detail);
+      console.log(response,"createResponse")
+      if(response.success){
+        toast.success('Employee added successfully');
+        // Redirect to the new employee page
+       await goto(`/admin/employees/${response.data._id}`);
+      }else{
+       toast.error('Failed to add employee');
+      }
+    }catch(error){
+      toast.error('Failed to add employee');
+      console.error('Error submitting form:', error);
+    }
+    finally{
+      showApplyForm=false;
+    }
   }
   function handleFormUpdate(event: CustomEvent) {
     formValues = event.detail;
