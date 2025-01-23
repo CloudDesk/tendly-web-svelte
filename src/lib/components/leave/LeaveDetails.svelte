@@ -5,6 +5,9 @@
     import LeaveForm from '$lib/components/leave/LeaveForm.svelte';
     import type { LeaveRequest } from '$lib/types';
   import { leaveStatusOptions, leaveTypeOptions } from '$lib/constants/leaveTypes';
+  import { getRoleFlags, userPermissions } from '$lib/stores/authPermissions';
+  import { auth } from '$lib/stores/auth';
+
     export let leaveId: string;
  
     let leave: LeaveRequest | null = null;
@@ -13,8 +16,10 @@
     let showEditModal = false;
     let showApproveModal = false;
     let showRejectModal = false;
+    let showWithdrawModal = false;
     let remarks = '';
-
+    let userRoleFlags = getRoleFlags(location.href);
+    console.log(userRoleFlags, "userRoleFlags")
     type EditingLeave = Partial<LeaveRequest> & {
         startDate?: string;
         endDate?: string;
@@ -115,6 +120,21 @@
         }
     }
 
+    async function handleWithdraw() {
+        console.log("confirmAction")
+        try {
+            loading = true;
+            await leavesApi.updateStatus(leaveId, 'Cancelled',leave?.noOfDays ||0, remarks );
+            const updated:any = await leavesApi.getById(leaveId);
+            leave = updated.data;
+            showWithdrawModal = false;
+        } catch (e: any) {
+            error = e.message;
+        } finally {
+            loading = false;
+        }
+    }
+
     function formatDate(dateStr: any): string {
         if (!dateStr || typeof dateStr !== 'string') return '';
         return new Date(dateStr).toLocaleDateString();
@@ -149,6 +169,13 @@
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
         return diffDays;
     }
+
+    //need to modify the dialog confirm call below method, now directly called 
+   async function confirmAction () {
+    handleWithdraw()
+        }   
+
+
 </script>
 
 <div class="space-y-6">
@@ -156,13 +183,20 @@
         <h3 class="text-lg font-semibold">Leave Details</h3>
         <div class="flex gap-2">
             {#if leave?.status === 'Pending'}
+            {#if userRoleFlags.isAdmin || userRoleFlags.isManager}
                 <button class="btn btn-primary btn-sm" on:click={() => showApproveModal = true}>
                     Approve
                 </button>
                 <button class="btn btn-primary btn-sm" on:click={() => showRejectModal = true}>
                     Reject
                 </button>
-            {:else}
+            {:else if userRoleFlags.isMy}
+                <button class="btn btn-warning btn-sm" on:click={() =>confirmAction()}>
+                    Withdraw
+                </button>
+            {/if}
+        {:else}
+            {#if userRoleFlags.isAdmin || userRoleFlags.isManager}
                 <button class="btn btn-primary btn-sm" disabled style="opacity: 0.5;">
                     Approve
                 </button>
@@ -170,6 +204,7 @@
                     Reject
                 </button>
             {/if}
+        {/if}
         </div>
     </div>
 
@@ -329,6 +364,10 @@
 
   .btn-primary {
       background-color: #3b82f6; /* Blue-500 */
+      color: white;
+  }
+  .btn-warning {
+      background-color: #ffc107; /* Blue-500 */
       color: white;
   }
 

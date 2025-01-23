@@ -159,6 +159,11 @@
       icon: CalendarCheck
     },
     { 
+      label: 'Leaves', 
+      href: '/my/leaves', 
+      icon: CalendarCheck
+    },
+    { 
       label: 'Assignments', 
       href: '/my/assignments', 
       icon: Briefcase

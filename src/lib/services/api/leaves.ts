@@ -94,7 +94,6 @@ export const leavesApi = {
         Object.entries(filters).forEach(([key, value]) => {
             if (value !== undefined) params.append(key, String(value));
         });
-
         return fetchApi(`/leaves?${params.toString()}`)
     },
     getById: (leaveId: string): Promise<ApiResponse<LeaveRequest>> => {
@@ -112,6 +111,12 @@ export const leavesApi = {
         return fetchApi(`/leaves/employee/${employeeId}`, {
             method: 'GET'
         });
-    }
-
+    },
+    myList: (employeeId: string, filters: LeaveFilters): Promise<ApiResponse<LeaveRequest[]>> => {
+        const params = new URLSearchParams();
+        Object.entries(filters).forEach(([key, value]) => {
+            if (value !== undefined) params.append(key, String(value));
+        });
+        return fetchApi(`/leaves/userId/${employeeId}?${params.toString()}`)
+    },
 } 

@@ -5,6 +5,8 @@ import { lovs } from "$lib/stores/lovs";
 import { get } from "svelte/store";
 import { setCustomFetch } from "$lib/services/api/base";
 import { employeesApi } from "$lib/services/api/employees";
+import { setUserPermissions } from "$lib/stores/authPermissions";
+import type { UserRole } from "$lib/types";
 
 export const ssr = false;
 export const prerender = false;
@@ -62,6 +64,11 @@ export const load = async ({ fetch, url }) => {
       console.log(`Redirecting to ${redirectPath}`);
       await goto(redirectPath);
       return { isAuthenticated, userRole };
+    }
+    if (isAuthenticated && authState.user) {
+      console.log(4, isAuthenticated, authState.user);
+      let role: UserRole = authState.user.roleId.toUpperCase() === 'ADMIN' ? 'ADMIN' : authState.user.roleId.toUpperCase() === 'MANAGER' ? 'MANAGER' : 'STAFF';
+      setUserPermissions(role);
     }
     console.log('else', isAuthenticated, authState.user?.roleId)
     return {
