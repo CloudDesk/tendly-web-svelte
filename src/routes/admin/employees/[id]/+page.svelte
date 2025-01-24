@@ -4,6 +4,8 @@
   import EmployeeAttendance from '$lib/components/attendance/EmployeeAttendance.svelte';
   import EmployeeLeaves from '$lib/components/employee/EmployeeLeaves.svelte';
   import EmployeeTrainingAttendance from '$lib/components/attendance/EmployeeTrainingAttendance.svelte';
+  import SalaryStructureForm from '$lib/components/employee/SalaryStructureForm.svelte';
+  import SalaryStructureList from '$lib/components/payroll/SalaryStructureList.svelte';
 
   export let data;
   $: ({ employee } = data);
@@ -74,6 +76,10 @@
           class="tab-item"
           class:active={activeTab === 'training'}
           on:click={() => setActiveTab('training')}>Training</button>
+        <button 
+          class="tab-item"
+          class:active={activeTab === 'salary'}
+          on:click={() => setActiveTab('salary')}>Salary Structure</button>
       </nav>
     </div>
 
@@ -120,6 +126,10 @@
       {:else if activeTab === 'training'}
         <div class="card">
           <EmployeeTrainingAttendance employeeId={employee._id} />
+        </div>
+        {:else if activeTab === 'salary'}
+        <div class="card">
+          <SalaryStructureList employeeId={employee._id} />
         </div>
       {/if}
     </div>
