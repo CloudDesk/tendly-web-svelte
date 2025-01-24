@@ -2,121 +2,96 @@
     import { onMount } from 'svelte';
     import { leavesApi } from '$lib/services/api/leaves';
     import Modal from '$lib/components/common/Modal.svelte';
-    import LeaveForm from '$lib/components/leave/LeaveForm.svelte';
     import type { LeaveRequest } from '$lib/types';
-  import { leaveStatusOptions, leaveTypeOptions } from '$lib/constants/leaveTypes';
-  import { getRoleFlags, userPermissions } from '$lib/stores/authPermissions';
-  import { auth } from '$lib/stores/auth';
+    import { 
+        Calendar, 
+        Clock, 
+        MessageSquare, 
+        UserCheck, 
+        CheckCircle2, 
+        X as Close, 
+        Check 
+    } from 'lucide-svelte';
+  import { getLeaveTypeLabel } from '$lib/constants/leaveTypes';
+  import { getLeaveButtonVisibility } from '$lib/utils/getLeaveButtonVisibility';
+  import { writable } from 'svelte/store';
 
     export let leaveId: string;
- 
+
+    const buttonVisibility = writable({ 
+        canApprove: false, 
+        canReject: false, 
+        canWithdraw: false 
+    });
+
     let leave: LeaveRequest | null = null;
     let loading = true;
     let error: string | null = null;
-    let showEditModal = false;
+
+
+    // Modal state
     let showApproveModal = false;
     let showRejectModal = false;
-    let showWithdrawModal = false;
     let remarks = '';
-    let userRoleFlags = getRoleFlags(location.href);
-    console.log(leave, "userRoleFlags")
-    type EditingLeave = Partial<LeaveRequest> & {
-        startDate?: string;
-        endDate?: string;
-    };
 
-    let editingLeave: EditingLeave = {};
-    
-    type Field = {
-        key: keyof LeaveRequest;
-        label: string;
-        inputType: 'text' | 'date' | 'textarea' | 'select';
-        required: boolean;
-        options?: Array<{label: string, value: string}>;
-        hideInView?: boolean;
-    };
+    // Field configuration with Lucide icons
+    const fields = [
+        { key: 'leaveType', label: 'Leave Type', icon: Calendar },
+        { key: 'status', label: 'Status', icon: CheckCircle2 },
+        { key: 'startDate', label: 'Start Date', icon: Calendar },
+        { key: 'endDate', label: 'End Date', icon: Calendar },
+        { key: 'noOfDays', label: 'Number of Days', icon: Clock },
+        { key: 'reason', label: 'Reason', icon: MessageSquare },
+        { key: 'user', label: 'Applied By', icon: MessageSquare },
+        { key: 'approvedBy', label: 'Approved By', icon: UserCheck, 
+          condition: () => ['Approved', 'Rejected'].includes(leave?.status || '') }
+    ];
 
- 
-
-  let fields: Field[] = [
-    { key: 'leaveType', label: 'Leave Type', inputType: 'select', required: true, options: leaveTypeOptions },
-    { key: 'status', label: 'Status', inputType: 'select', required: true, options: leaveStatusOptions },
-    { key: 'startDate', label: 'Start Date', inputType: 'date', required: true },
-    { key: 'endDate', label: 'End Date', inputType: 'date', required: true },
-    { key: 'reason', label: 'Reason', inputType: 'textarea', required: false },
-];
+    // Fetch leave details
     onMount(async () => {
         try {
             loading = true;
             const response:any = await leavesApi.getById(leaveId);
-            console.log(response.data, "response.data")
             leave = response.data;
+            console.log(leave,"leave");
+            if (leave) {
+                const visibility = await getLeaveButtonVisibility({
+                    ...leave,
+                    appliedTo: leave.appliedTo || { _id: '', name: '' }
+                });
+                buttonVisibility.set(visibility);
+                console.log('Button Visibility Set:', visibility);
+            }
         } catch (e: any) {
             error = e.message;
         } finally {
             loading = false;
         }
     });
-    console.log(leave,"Leave request changed:")
-    $: if (leave) {
-    // Logic to run when leave is updated
-    console.log('Leave request changed:', leave);
-}
-    function handleEdit() {
-        if (leave) {
-            // Format date fields to YYYY-MM-DD for input[type="date"]
-            editingLeave = {
-                ...leave,
-                startDate: leave.startDate ? new Date(leave.startDate).toISOString().split('T')[0] : undefined,
-                endDate: leave.endDate ? new Date(leave.endDate).toISOString().split('T')[0] : undefined
-            };
-            showEditModal = true;
-        }
-    }
 
-    async function handleLeaveSubmit(event: CustomEvent) {
-        loading = true;
-        const submittedData = event.detail;
-        console.log('Submitted data:', submittedData);
-    
-        try {
-            const leaveData: Partial<LeaveRequest> = {
-                ...submittedData,
-                startDate: submittedData.startDate ? new Date(submittedData.startDate).toISOString() : undefined,
-                endDate: submittedData.endDate ? new Date(submittedData.endDate).toISOString() : undefined
-            };
-            // await leavesApi.update(leaveId, leaveData);
-            // const updated:any = await leavesApi.getById(leaveId);
-            // leave = updated.data;
-            showEditModal = false;
-        } catch (e: any) {
-            error = e.message;
-        } finally {
-            loading = false;
-        }
+    $: {
+        console.log($buttonVisibility, 'buttonVisibility***');
     }
+    // Status update handler
+    async function handleStatusUpdate(status: 'Approved' | 'Rejected' | 'Cancelled') {
+        if (!leave) return;
 
-    async function handleApprove() {
         try {
             loading = true;
-            await leavesApi.updateStatus(leaveId, 'Approved',leave?.noOfDays||0, remarks );
+            await leavesApi.updateStatus(
+                leaveId, 
+                status, 
+                leave.noOfDays || 0, 
+                remarks
+            );
+            
             const updated:any = await leavesApi.getById(leaveId);
             leave = updated.data;
+            
+            // Reset modal state
             showApproveModal = false;
-        } catch (e: any) {
-            error = e.message;
-        } finally {
-            loading = false;
-        }
-    }
-
-    async function handleReject() {
-        try {
-            loading = true;
-            await leavesApi.updateStatus(leaveId, 'Rejected',leave?.noOfDays ||0, remarks );
-            const updated:any = await leavesApi.getById(leaveId);
-            leave = updated.data;
             showRejectModal = false;
+            remarks = '';
         } catch (e: any) {
             error = e.message;
         } finally {
@@ -124,162 +99,136 @@
         }
     }
 
-    async function handleWithdraw() {
-        console.log("confirmAction")
-        try {
-            loading = true;
-            await leavesApi.updateStatus(leaveId, 'Cancelled',leave?.noOfDays ||0, remarks );
-            const updated:any = await leavesApi.getById(leaveId);
-            leave = updated.data;
-            showWithdrawModal = false;
-        } catch (e: any) {
-            error = e.message;
-        } finally {
-            loading = false;
-        }
+    // Utility functions
+    function formatDate(date: string): string {
+        return date ? new Date(date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }) : 'N/A';
     }
 
-    function formatDate(dateStr: any): string {
-        if (!dateStr || typeof dateStr !== 'string') return '';
-        return new Date(dateStr).toLocaleDateString();
+    function getStatusColor(status: string): string {
+        const statusColors = {
+            'Pending': 'text-yellow-600 bg-yellow-50',
+            'Approved': 'text-green-600 bg-green-50',
+            'Rejected': 'text-red-600 bg-red-50',
+            'Cancelled': 'text-gray-600 bg-gray-50'
+        };
+        return statusColors[status] || 'text-gray-600 bg-gray-50';
     }
-
-    // Helper to avoid TypeScript index errors
-    function safeAccess<T extends keyof LeaveRequest>(key: T): string | undefined {
-        if (!leave) return undefined;
-        const value = (leave as LeaveRequest)[key];
-        return value ? String(value) : undefined;
-    }
-
-    function getDisplayValue(field: Field, value: any): string {
-        if (!value) return '';
-        
-        if (field.inputType === 'select' && Array.isArray(field.options)) {
-            const option = field.options.find(opt => opt.value === value);
-            return option ? option.label : String(value);
-        }
-
-        if (field.inputType === 'date') {
-            return formatDate(value);
-        }
-
-        return String(value);
-    }
-
-    function calculateNumberOfDays(startDate: string, endDate: string): number {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const diffTime = Math.abs(end.getTime() - start.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        return diffDays;
-    }
-
-    //need to modify the dialog confirm call below method, now directly called 
-   async function confirmAction () {
-    handleWithdraw()
-        }   
-
-
 </script>
 
-<div class="space-y-6">
-    <div class="flex justify-between items-center">
-        <h3 class="text-lg font-semibold">Leave Details</h3>
-        <div class="flex gap-2">
-            {#if leave?.status === 'Pending'}
-                <button class="btn btn-primary btn-sm" on:click={() => showApproveModal = true}>
-                    Approve
+<div class="container mx-auto p-6 bg-white shadow-md rounded-lg">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+            <MessageSquare class="mr-3 text-blue-500" size={24} />
+            Leave Details
+        </h2>
+        
+        {#if leave?.status === 'Pending'}
+        <div class="flex space-x-2">
+            {#if $buttonVisibility.canApprove}
+                <button 
+                    class="btn btn-green" 
+                    on:click={() => showApproveModal = true}
+                >
+                    <Check class="mr-2" size={16} /> Approve
                 </button>
-                <button class="btn btn-primary btn-sm" on:click={() => showRejectModal = true}>
-                    Reject
+            {/if}
+            
+            {#if $buttonVisibility.canReject}
+                <button 
+                    class="btn btn-red" 
+                    on:click={() => showRejectModal = true}
+                >
+                    <Close class="mr-2" size={16} /> Reject
                 </button>
-          
-        {:else}
-                <button class="btn btn-primary btn-sm" disabled style="opacity: 0.5;">
-                    Approve
+            {/if}
+            
+            {#if $buttonVisibility.canWithdraw}
+                <button 
+                    class="btn btn-red" 
+                    on:click={() => handleStatusUpdate('Cancelled')}
+                >
+                    <Close class="mr-2" size={16} /> Withdraw
                 </button>
-                <button class="btn btn-primary btn-sm" disabled style="opacity: 0.5;">
-                    Reject
-                </button>
-        {/if}
+            {/if}
         </div>
+    {/if}
     </div>
 
     {#if error}
         <div class="alert alert-error">{error}</div>
     {:else if loading}
-        <div class="loading">Loading leave details...</div>
+        <div class="text-center text-gray-500 py-10">
+            Loading leave details...
+        </div>
     {:else if leave}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-2 gap-6">
             {#each fields as field}
-                {#if !field.hideInView}
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <h3 class="text-sm font-medium text-neutral-500">{field.label}</h3>
-                            <p class="mt-1 text-base">
-                                {getDisplayValue(field, safeAccess(field.key))}
-                            </p>
+                {#if !field.condition || field.condition()}
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm hover:shadow-md transition-all">
+                        <div class="flex items-center mb-2">
+                            <svelte:component 
+                                this={field.icon} 
+                                class="mr-3 text-blue-500" 
+                                size={20} 
+                            />
+                            <h3 class="text-sm font-medium text-gray-600">{field.label}</h3>
+                        </div>
+                        
+                        <div class="text-base font-semibold text-gray-800">
+                            {#if field.key === 'status'}
+                                <span class={`px-2 py-1 rounded text-sm ${getStatusColor(leave[field.key])}`}>
+                                    {leave[field.key]}
+                                </span>
+                            {:else if field.key === 'leaveType'}
+                                { getLeaveTypeLabel(leave[field.key])}
+                            {:else if field.key === 'startDate' || field.key === 'endDate'}
+                                {formatDate(leave[field.key])}
+                            {:else if field.key === 'approvedBy'}
+                                {leave[field.key].name || 'N/A'}
+                            {:else if field.key === 'user'}
+                                {leave[field.key].name || 'N/A'}
+                            {:else}
+                                {leave[field.key] || 'N/A'}
+                            {/if}
                         </div>
                     </div>
                 {/if}
             {/each}
-            <div class="card bg-base-100">
-                <div class="card-body">
-                    <h3 class="text-sm font-medium text-neutral-500">Number of Days</h3>
-                    <p class="mt-1 text-base">
-                        {#if leave.startDate && leave.endDate}
-                            {calculateNumberOfDays(leave.startDate, leave.endDate)}
-                        {:else}
-                            N/A
-                        {/if}
-                    </p>
-                </div>
-            </div>
         </div>
     {/if}
 </div>
 
-<Modal
-    show={showEditModal}
-    title="Edit Leave Details"
-    onClose={() => (showEditModal = false)}
->
-    <!-- <LeaveForm
-        {loading}
-        initialValues={editingLeave}
-        on:submit={handleLeaveSubmit}
-        on:cancel={() => (showEditModal = false)}
-    /> -->
-</Modal>
-
+<!-- Approve Modal -->
 <Modal
     show={showApproveModal}
     title="Approve Leave"
     onClose={() => (showApproveModal = false)}
 >
-    <form on:submit|preventDefault={handleApprove} class="space-y-6">
+    <form on:submit|preventDefault={() => handleStatusUpdate('Approved')} class="space-y-6">
         <div class="form-control">
-            <label class="label" for="remarks">
-                <span class="label-text">Remarks (optional)</span>
-            </label>
+            <label for="approve-remarks" class="label">Remarks (optional)</label>
             <textarea
-                id="remarks"
+                id="approve-remarks"
                 class="textarea textarea-bordered h-24"
                 bind:value={remarks}
             ></textarea>
         </div>
 
-        <div class="flex justify-end gap-2">
+        <div class="flex justify-end space-x-2">
             <button 
                 type="button" 
                 class="btn btn-ghost" 
                 on:click={() => (showApproveModal = false)}
             >
-                Close
+                Cancel
             </button>
             <button 
                 type="submit" 
-                class="btn btn-primary"
+                class="btn btn-green"
                 disabled={loading}
             >
                 {loading ? 'Approving...' : 'Approve'}
@@ -288,16 +237,15 @@
     </form>
 </Modal>
 
+<!-- Reject Modal -->
 <Modal
     show={showRejectModal}
     title="Reject Leave"
     onClose={() => (showRejectModal = false)}
 >
-    <form on:submit|preventDefault={handleReject} class="space-y-6">
+    <form on:submit|preventDefault={() => handleStatusUpdate('Rejected')} class="space-y-6">
         <div class="form-control">
-            <label class="label" for="reject-remarks">
-                <span class="label-text">Remarks (optional)</span>
-            </label>
+            <label for="reject-remarks" class="label">Remarks (optional)</label>
             <textarea
                 id="reject-remarks"
                 class="textarea textarea-bordered h-24"
@@ -305,17 +253,17 @@
             ></textarea>
         </div>
 
-        <div class="flex justify-end gap-2">
+        <div class="flex justify-end space-x-2">
             <button 
                 type="button" 
                 class="btn btn-ghost" 
                 on:click={() => (showRejectModal = false)}
             >
-                Close
+                Cancel
             </button>
             <button 
                 type="submit" 
-                class="btn btn-primary"
+                class="btn btn-red"
                 disabled={loading}
             >
                 {loading ? 'Rejecting...' : 'Reject'}
@@ -324,188 +272,23 @@
     </form>
 </Modal>
 
-<style>
-  .loading {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 2rem;
-      color: #6b7280; /* Neutral-500 */
-  }
-
-  .space-y-6 > * + * {
-      margin-top: 1.5rem;
-  }
-
-  .flex {
-      display: flex;
-  }
-
-  .justify-between {
-      justify-content: space-between;
-  }
-
-  .items-center {
-      align-items: center;
-  }
-
-  .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.5rem 1rem;
-      border-radius: 0.375rem;
-      font-weight: 500;
-      cursor: pointer;
-  }
-
-  .btn-primary {
-      background-color: #3b82f6; /* Blue-500 */
-      color: white;
-  }
-  .btn-warning {
-      background-color: #ffc107; /* Blue-500 */
-      color: white;
-  }
-
-  .btn-sm {
-      padding: 0.25rem 0.5rem;
-      font-size: 0.875rem;
-  }
-
-  .alert {
-      padding: 1rem;
-      border-radius: 0.375rem;
-      font-weight: 500;
-  }
-
-  .alert-error {
-      background-color: #fee2e2; /* Red-100 */
-      color: #991b1b; /* Red-800 */
-  }
-
-  .grid {
-      display: grid;
-      gap: 1.5rem;
-  }
-
-  .grid-cols-1 {
-      grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-
-  .md\:grid-cols-2 {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .lg\:grid-cols-3 {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .card {
-      background-color: #ffffff; /* Base-100 */
-      border-radius: 0.375rem;
-      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Shadow-sm */
-  }
-
-  .card-body {
-      padding: 1rem;
-  }
-
-  .text-lg {
-      font-size: 1.125rem;
-      line-height: 1.75rem;
-  }
-
-  .font-semibold {
-      font-weight: 600;
-  }
-
-  .text-sm {
-      font-size: 0.875rem;
-      line-height: 1.25rem;
-  }
-
-  .text-neutral-500 {
-      color: #6b7280; /* Neutral-500 */
-  }
-
-  .mt-1 {
-      margin-top: 0.25rem;
-  }
-
-  .text-base {
-      font-size: 1rem;
-      line-height: 1.5rem;
-  }
-
-  .form-control {
-      margin-bottom: 1rem;
-  }
-
-  .label {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-  }
-
-  .label-text {
-      font-size: 0.875rem;
-      color: #374151; /* Neutral-700 */
-  }
-
-  .text-error {
-      color: #b91c1c; /* Red-700 */
-  }
-
-  .input,
-  .select,
-  .textarea {
-      width: 100%;
-      padding: 0.5rem;
-      border: 1px solid #e5e7eb; /* Gray-200 */
-      border-radius: 0.375rem;
-      background-color: white;
-  }
-
-  .textarea {
-      min-height: 6rem;
-      resize: vertical;
-  }
-
-  .flex.justify-end {
-      justify-content: flex-end;
-  }
-
-  .gap-2 > * + * {
-      margin-left: 0.5rem;
-  }
-
-  .btn-ghost {
-      background-color: transparent;
-      color: #374151; /* Neutral-700 */
-  }
-
-  .manager-search-results {
-      background-color: white;
-      border: 1px solid #e5e7eb; /* Gray-200 */
-      border-radius: 0.375rem;
-      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Shadow-sm */
-  }
-
-  .manager-search-results ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-  }
-
-  .manager-search-results li {
-      padding: 0.5rem 1rem;
-      cursor: pointer;
-  }
-
-  .manager-search-results li:hover {
-      background-color: #f3f4f6; /* Gray-100 */
-  }
+<style lang="postcss">
+    .btn {
+        @apply inline-flex items-center justify-center px-4 py-2 rounded-md font-medium transition-colors;
+    }
+    .btn-green {
+        @apply bg-green-500 text-white hover:bg-green-600;
+    }
+    .btn-red {
+        @apply bg-red-500 text-white hover:bg-red-600;
+    }
+    .btn-ghost {
+        @apply bg-gray-100 text-gray-700 hover:bg-gray-200;
+    }
+    .alert-error {
+        @apply bg-red-50 text-red-800 p-4 rounded-lg;
+    }
+    .textarea {
+        @apply w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200;
+    }
 </style>

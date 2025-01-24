@@ -8,4 +8,8 @@ export type LeaveRequest = {
     leaveType?: string
     reason?: string
     noOfDays?: number
+    appliedTo?: {
+        _id: string
+        name: string
+    }
 }
