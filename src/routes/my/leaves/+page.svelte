@@ -141,12 +141,14 @@
     });
 
     } catch (error) {
-      console.error('Error submitting leave:', error);
+      console.log('Error submitting leave:', error);
       toast.error('Failed to apply leave'); 
       // Handle error (show toast, etc.)
     } finally {
-      closeApplyForm();
-      loading = false;
+      setTimeout(() => {
+        closeApplyForm();
+        loading = false;
+      }, 500);
     }
     
   }

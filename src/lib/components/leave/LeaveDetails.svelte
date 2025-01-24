@@ -36,7 +36,7 @@
 
     // Field configuration with Lucide icons
     const fields = [
-        { key: 'leaveType', label: 'Leave Type', icon: Calendar },
+        { key: 'leaveType', label: 'Leave Type', icon: Calendar  },
         { key: 'status', label: 'Status', icon: CheckCircle2 },
         { key: 'startDate', label: 'Start Date', icon: Calendar },
         { key: 'endDate', label: 'End Date', icon: Calendar },
@@ -108,15 +108,17 @@
         }) : 'N/A';
     }
 
-    function getStatusColor(status: string): string {
-        const statusColors = {
-            'Pending': 'text-yellow-600 bg-yellow-50',
-            'Approved': 'text-green-600 bg-green-50',
-            'Rejected': 'text-red-600 bg-red-50',
-            'Cancelled': 'text-gray-600 bg-gray-50'
+        const statusColors: Record<string, string> = {
+            'Pending': 'text-amber-700 bg-amber-100',
+            'Approved': 'text-emerald-700 bg-emerald-100',
+            'Rejected': 'text-rose-700 bg-rose-100',
+            'Cancelled': 'text-slate-600 bg-slate-200'
         };
-        return statusColors[status] || 'text-gray-600 bg-gray-50';
-    }
+
+        function getStatusColor(status: string): string {
+            return statusColors[status] || 'text-gray-600 bg-gray-100';
+        }
+
 </script>
 
 <div class="container mx-auto p-6 bg-white shadow-md rounded-lg">
@@ -184,13 +186,13 @@
                                     {leave[field.key]}
                                 </span>
                             {:else if field.key === 'leaveType'}
-                                { getLeaveTypeLabel(leave[field.key])}
+                                { getLeaveTypeLabel(leave[field.key]??'')}
                             {:else if field.key === 'startDate' || field.key === 'endDate'}
                                 {formatDate(leave[field.key])}
                             {:else if field.key === 'approvedBy'}
-                                {leave[field.key].name || 'N/A'}
+                                {leave[field.key]?.name || 'N/A'}
                             {:else if field.key === 'user'}
-                                {leave[field.key].name || 'N/A'}
+                                {leave[field.key]?.name || 'N/A'}
                             {:else}
                                 {leave[field.key] || 'N/A'}
                             {/if}

@@ -181,10 +181,10 @@
         <i class="fas fa-file-export"></i>
         Export
       </button>
-      <button class="btn-primary" on:click={openApplyForm}>
+      <!-- <button class="btn-primary" on:click={openApplyForm}>
         <i class="fas fa-plus"></i>
         Apply Leave
-      </button>
+      </button> -->
     </div>
   </header>
 
@@ -323,20 +323,24 @@
   }
 
   :global(.status.approved) {
-    background: #dcfce7;
-    color: #166534;
+    background: #d1fae5;
+    color: #047857;
   }
 
   :global(.status.pending) {
-    background: #fef9c3;
-    color: #854d0e;
+      background: #fef3c7;
+      color: #b45309;
   }
 
   :global(.status.rejected) {
-    background: #fee2e2;
-    color: #991b1b;
+      background: #fee2e2;
+      color: #b91c1c;
   }
 
+  :global(.status.cancelled) {
+      background: #f3f4f6;
+      color: #4b5563;
+  }
   :global(.btn-action) {
     width: 28px;
     height: 28px;

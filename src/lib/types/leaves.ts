@@ -12,4 +12,10 @@ export type LeaveRequest = {
         _id: string
         name: string
     }
+    approvedBy?: {
+        name: string
+    }
+    user?: {
+        name: string
+    }
 }
