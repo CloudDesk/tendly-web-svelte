@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { toUTCDate } from '$lib/utils/date';
+  import { toUTCDate,toDate } from '$lib/utils/date';
   import { createEventDispatcher, onMount } from 'svelte';
-
+  import type { SalaryStructure } from '$lib/types';
   // TypeScript interfaces
   interface Field {
     key: string;
@@ -10,30 +10,10 @@
     required: boolean;
     disabled?: boolean;
     value: any;
-    error?: string;
+    error?: string | null;
     min?: number;
     validationRules?: ((value: any) => string | null)[];
-  }
-
-  interface SalaryStructure {
-    userId: string;
-    basic: number;
-    hra: number;
-    specialAllowance: number;
-    conveyanceAllowance: number;
-    medicalAllowance: number;
-    lta: number;
-    variablePay: number;
-    effectiveFrom: string;
-    effectiveTo: string | null;
-    grossSalary: number;
-    netSalary: number;
-    ctc: number;
-    pfDeduction: number;
-    incomeTaxDeduction: number;
-    pfEmployerContribution: number;
-    gratuity: number;
-    isActive: boolean;
+    displayValue?: string;
   }
 
   export let employeeId: string;
@@ -337,11 +317,19 @@ fields = fields.map(field => {
 
   onMount(() => {
     if (salaryStructure) {
-      fields = fields.map(field => ({
+      fields = fields.map(field => {
+      const value =
+        field.key === 'effectiveFrom' || field.key === 'effectiveTo'
+          ? toDate(salaryStructure[field.key as keyof SalaryStructure] as string | undefined)
+          : salaryStructure[field.key as keyof SalaryStructure];
+      return {
         ...field,
-        value: salaryStructure[field.key as keyof SalaryStructure]
-      }));
-    } else {
+        value,
+      };
+      
+    });
+   
+  }  else {
       const userIdField = fields.find(f => f.key === 'userId');
       if (userIdField) {
         userIdField.value = employeeId;
@@ -366,8 +354,14 @@ fields = fields.map(field => {
       }*/
       return acc;
     }, {} as Record<string, any>);
-console.log(formData,"handleSubmit")
-    // dispatch('submit', formData as SalaryStructure);
+
+
+ // Add the `_id` field for existing records
+ if (salaryStructure && salaryStructure._id) {
+    formData._id = salaryStructure._id;
+  }
+  console.log(formData,"handleSubmit")
+    dispatch('submit', formData as SalaryStructure);
   };
 
   const handleCancel = () => {

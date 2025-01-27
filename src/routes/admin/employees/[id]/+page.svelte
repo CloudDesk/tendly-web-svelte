@@ -5,7 +5,7 @@
   import EmployeeLeaves from '$lib/components/employee/EmployeeLeaves.svelte';
   import EmployeeTrainingAttendance from '$lib/components/attendance/EmployeeTrainingAttendance.svelte';
 
-  import SalaryStructureList from '$lib/components/payroll/SalaryStructureList.svelte';
+  import SalaryStructureIndex from '$lib/components/employee/salary-structure/index.svelte';
 
   export let data;
   $: ({ employee } = data);
@@ -129,7 +129,7 @@
         </div>
         {:else if activeTab === 'salary'}
         <div class="card">
-          <SalaryStructureList employeeId={employee._id} />
+          <SalaryStructureIndex employeeId={employee._id} />
         </div>
       {/if}
     </div>

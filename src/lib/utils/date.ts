@@ -30,4 +30,9 @@ export function fromUTCTime(utcTime: string | undefined): string | undefined {
     return utcTime;
   }
 }
- 
+
+export function toDate(localDateTime: string | undefined): string | undefined {
+  if (!localDateTime) return undefined;
+  const date = new Date(localDateTime);
+  return date.toISOString().split('T')[0];
+}

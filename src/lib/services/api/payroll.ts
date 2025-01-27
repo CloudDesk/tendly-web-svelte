@@ -2,9 +2,15 @@ import { fetchApi } from './base';
 
 export const payrollApi = {
 
-    getCurrentSalaryStructure: async () => {
+    getActiveSalaryStructure: async () => {
         //current salary structure of an loggedin employee
         return fetchApi(`/payroll/salary-structure/current`, {
+            method: 'GET'
+        });
+    },
+    getSalaryStructureHistory: async () => {
+        //current salary structure of an loggedin employee
+        return fetchApi(`/payroll/salary-structure/history`, {
             method: 'GET'
         });
     },
@@ -15,14 +21,14 @@ export const payrollApi = {
         });
     },
     updateSalaryStructure: async (id: string, data: any) => {
-        return fetchApi(`/salary-structure/${id}`, {
+        return fetchApi(`/payroll/salary-structure/${id}`, {
             method: 'PUT',
             body: JSON.stringify(data)
         });
     },
-    deleteSalaryStructure: async (id: string) => {
-        return fetchApi(`/salary-structure/${id}`, {
-            method: 'DELETE'
+    getActiveSalaryStructureByUserId: async (userId: string) => {
+        return fetchApi(`/payroll/salary-structure/user/${userId}`, {
+            method: 'GET'
         });
     }
 };
