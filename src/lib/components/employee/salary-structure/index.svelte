@@ -4,7 +4,7 @@
     import SalaryStructureHistory from './SalaryStructureHistory.svelte';
   
     export let employeeId: string;
-  
+  console.log(employeeId, "employeeId");  
     // Constants for toggle button labels
     const SHOW_HISTORY = "Show History";
     const SHOW_ACTIVE = "Show Active";

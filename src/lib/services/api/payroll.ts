@@ -30,5 +30,10 @@ export const payrollApi = {
         return fetchApi(`/payroll/salary-structure/user/${userId}`, {
             method: 'GET'
         });
+    },
+    getSalaryStructureHistoryByUserId: async (userId: string) => {
+        return fetchApi(`/payroll/salary-structure/history/user/${userId}`, {
+            method: 'GET'
+        });
     }
 };

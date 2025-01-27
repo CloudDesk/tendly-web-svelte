@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { toUTCDate,toDate } from '$lib/utils/date';
+  import { toUTCDate, toDate } from '$lib/utils/date';
   import { createEventDispatcher, onMount } from 'svelte';
   import type { SalaryStructure } from '$lib/types';
+
   // TypeScript interfaces
   interface Field {
     key: string;
@@ -15,6 +16,7 @@
     validationRules?: ((value: any) => string | null)[];
     displayValue?: string;
   }
+  type ValidationRule = (value: any) => string | null;
 
   export let employeeId: string;
   export let salaryStructure: SalaryStructure | null = null;
@@ -25,15 +27,20 @@
   }>();
 
   // Validation rules
-  const numberValidation = (value: number): string | null => {
+  const numberValidation:ValidationRule = (value: number): string | null => {
     if (value < 0) return 'Value must be 0 or greater';
     return null;
   };
 
-  const requiredValidation = (value: any): string | null => {
+  const requiredValidation:ValidationRule = (value: any): string | null => {
     if (value === null || value === undefined || value === '') {
       return 'This field is required';
     }
+    return null;
+  };
+
+  const greaterThanZeroValidation: ValidationRule = (value: number): string | null => {
+    if (value <= 0) return 'Value must be greater than 0';
     return null;
   };
 
@@ -45,7 +52,7 @@
       type: 'number',
       required: true,
       value: 0,
-      validationRules: [requiredValidation, numberValidation],
+      validationRules: [requiredValidation, numberValidation, greaterThanZeroValidation],
     },
     {
       key: 'hra',
@@ -53,7 +60,7 @@
       type: 'number',
       required: true,
       value: 0,
-      validationRules: [requiredValidation, numberValidation],
+      validationRules: [requiredValidation, numberValidation, greaterThanZeroValidation],
     },
     {
       key: 'specialAllowance',
@@ -179,29 +186,63 @@
   const validateField = (field: Field): string | null => {
     if (!field.validationRules) return null;
     
-    for (const rule of field.validationRules) {
-      const error = rule(field.value);
-      if (error) return error;
+    let error: string | null = null;
+    
+    // Type guard for number fields
+    if (field.type === 'number') {
+      const numericValue = typeof field.value === 'string' 
+        ? parseCurrency(field.value)
+        : field.value;
+
+      for (const rule of field.validationRules) {
+        error = rule(numericValue);
+        if (error) break;
+      }
+    } else {
+      // For non-numeric fields
+      for (const rule of field.validationRules) {
+        error = rule(field.value);
+        if (error) break;
+      }
     }
     
-    return null;
+    return error;
   };
 
+  const scrollToError = () => {
+    setTimeout(() => {
+      const firstErrorElement = document.querySelector('.error');
+      if (firstErrorElement) {
+        firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        // If no error elements found, scroll to top of form
+        const formElement = document.querySelector('form');
+        if (formElement) {
+          formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }, 100); // Small delay to ensure DOM is updated
+  };
   // Validate all fields
   const validateForm = (): boolean => {
     let isValid = true;
     
     fields = fields.map(field => {
       const error = validateField(field);
-      if (error) isValid = false;
-      return { ...field, error };
+      if (error) {
+        isValid = false;
+        return { ...field, error };
+      }
+      return { ...field, error: null };
     });
-
+    if(!isValid) {
+      scrollToError();
+    }
     return isValid;
   };
 
-    // Formatter for currency display
-    const formatCurrency = (value: number): string => {
+  // Formatter for currency display
+  const formatCurrency = (value: number): string => {
     return `₹${value.toLocaleString('en-IN')}`;
   };
 
@@ -237,6 +278,7 @@
       formula: '(Gross Salary + PF Employer Contribution + Gratuity) × 12'
     }
   ];
+
   // Calculate salary components
   const calculateSalaryComponents = () => {
     const getFieldValue = (key: string): number => {
@@ -251,8 +293,9 @@
     const specialAllowance = getFieldValue('specialAllowance');
     const lta = getFieldValue('lta');
     const variablePay = getFieldValue('variablePay');
-// Update calculated fields with proper formatting
-fields = fields.map(field => {
+
+    // Update calculated fields with proper formatting
+    fields = fields.map(field => {
       let numericValue = 0;
       
       switch (field.key) {
@@ -292,15 +335,17 @@ fields = fields.map(field => {
     });
   };
 
-   // Handle input changes with currency formatting
-   const handleInputChange = (field: Field, event: Event) => {
+  // Handle input changes with currency formatting
+  const handleInputChange = (field: Field, event: Event) => {
     const input = event.target as HTMLInputElement;
     if (field.type === 'number') {
       const numericValue = parseCurrency(input.value);
       field.value = numericValue;
       field.displayValue = formatCurrency(numericValue);
+      field.error = validateField(field);
     } else {
       field.value = input.value;
+      field.error = validateField(field);
     }
     calculateSalaryComponents();
   };
@@ -318,18 +363,16 @@ fields = fields.map(field => {
   onMount(() => {
     if (salaryStructure) {
       fields = fields.map(field => {
-      const value =
-        field.key === 'effectiveFrom' || field.key === 'effectiveTo'
-          ? toDate(salaryStructure[field.key as keyof SalaryStructure] as string | undefined)
-          : salaryStructure[field.key as keyof SalaryStructure];
-      return {
-        ...field,
-        value,
-      };
-      
-    });
-   
-  }  else {
+        const value =
+          field.key === 'effectiveFrom' || field.key === 'effectiveTo'
+            ? toDate(salaryStructure[field.key as keyof SalaryStructure] as string | undefined)
+            : salaryStructure[field.key as keyof SalaryStructure];
+        return {
+          ...field,
+          value,
+        };
+      });
+    } else {
       const userIdField = fields.find(f => f.key === 'userId');
       if (userIdField) {
         userIdField.value = employeeId;
@@ -348,19 +391,14 @@ fields = fields.map(field => {
       } else {
         acc[field.key] = field.value;
       }
-      /*else if (field.type === 'number') {
-        console.log(field.value,"number_field")
-        acc[field.key] = (field.value);
-      }*/
       return acc;
     }, {} as Record<string, any>);
 
-
- // Add the `_id` field for existing records
- if (salaryStructure && salaryStructure._id) {
-    formData._id = salaryStructure._id;
-  }
-  console.log(formData,"handleSubmit")
+    // Add the `_id` field for existing records
+    if (salaryStructure && salaryStructure._id) {
+      formData._id = salaryStructure._id;
+    }
+    console.log(formData, "handleSubmit");
     dispatch('submit', formData as SalaryStructure);
   };
 
@@ -375,7 +413,11 @@ fields = fields.map(field => {
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       {#each fields as field (field.key)}
         <div class="form-control">
-          <label class="label" for={field.key}>{field.label}</label>
+          <label class="label" for={field.key}>{field.label}
+            {#if field.required}
+            <span class="text-red-500 ml-1">*</span>
+          {/if}
+          </label>
           {#if field.type === 'checkbox'}
             <label class="switch">
               <input
@@ -548,7 +590,6 @@ fields = fields.map(field => {
 
   .slider {
     position: absolute;
-
     cursor: pointer;
     top: 0;
     left: 0;

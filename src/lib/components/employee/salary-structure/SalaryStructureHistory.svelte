@@ -27,7 +27,7 @@
     const fetchSalaryHistory = async () => {
       try {
         loading.set(true);
-        const response = await payrollApi.getSalaryStructureHistory();
+        const response = await payrollApi.getSalaryStructureHistoryByUserId(employeeId);
         salaryHistory.set(response.data as SalaryStructure[]);
       } catch (err: any) {
         error.set(err.message);
@@ -53,10 +53,18 @@
         const formData = event.detail;
 
         console.log(formData,"formData")
-        const { _id, ...data } = formData;
-      let result = await payrollApi.updateSalaryStructure(_id, formData);
-      if (result.success) {
+       // Extract _id for update and remove it from the formData
+       const { _id, userId, ...data } = formData;
 
+        // Check if userId is missing and assign employeeId if so
+        const updatedData = {
+          ...data,
+          userId: userId || employeeId
+        };
+
+      let result = await payrollApi.updateSalaryStructure(_id, updatedData);
+      if (result.success) {
+      await fetchSalaryHistory();
       toast.success(`Salary Structure updated successfully`);
      
     } else {
@@ -66,7 +74,7 @@
       console.error(err);
       toast.error(`Error in updating salary structure`);
     }finally{
-        // closeModal();
+        closeModal();
     }
     };
   </script>
@@ -122,6 +130,7 @@
         employeeId={employeeId} 
         salaryStructure={$selectedRecord} 
         on:submit={handleFormSubmit} 
+        on:cancel={closeModal}
       />
     </Modal>
   </div>

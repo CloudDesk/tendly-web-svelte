@@ -23,7 +23,7 @@
   const fetchSalaryStructure = async () => {
     try {
       loading.set(true);
-      const response = await payrollApi.getActiveSalaryStructure();
+      const response = await payrollApi.getActiveSalaryStructureByUserId(employeeId);
       salaryStructure.set(response.data as SalaryStructure);
     } catch (err: any) {
       if (err.response && err.response.status === 404) {
@@ -46,19 +46,34 @@
   };
 
   const handleFormSubmit = async (event: CustomEvent) => {
+    console.log(event.detail, "event.detail");
   try {
     const formData = event.detail;
 
     // Check if it's an update or a create operation
     const isUpdate = Boolean(formData._id);
+
     let result;
 
     if (isUpdate) {
       // Extract _id for update and remove it from the formData
-      const { _id, ...data } = formData;
-      result = await payrollApi.updateSalaryStructure(_id, data);
+      const { _id, userId, ...data } = formData;
+
+      // Check if userId is missing and assign employeeId if so
+      const updatedData = {
+        ...data,
+        userId: userId || employeeId
+      };
+
+      result = await payrollApi.updateSalaryStructure(_id, updatedData);
     } else {
-      result = await payrollApi.createSalaryStructure(formData);
+      // Directly assign userId as employeeId for new records
+      const newData = {
+        ...formData,
+        userId: employeeId
+      };
+
+      result = await payrollApi.createSalaryStructure(newData);
     }
 
     if (result.success) {
@@ -86,7 +101,7 @@
 </script>
 
 <div class="p-6">
-  <div class="flex justify-between items-center mb-6">
+  <div class="flex justify-end items-center mb-6">
     <!-- <h2 class="text-2xl text-gray-800 font-medium">Salary Structure</h2> -->
     {#if !$salaryStructure}
       <button 
@@ -96,7 +111,7 @@
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
         </svg>
-        Create New Record
+        Add Salary Structure
       </button>
     {/if}
   </div>
@@ -213,11 +228,12 @@
    
 
 
-  <Modal title="Create Salary Structure" show={$showModal} onClose={closeModal}>
+  <Modal title="New Salary Structure" show={$showModal} onClose={closeModal}>
     <SalaryStructureForm 
       employeeId={employeeId} 
       salaryStructure={$isEditMode ? $salaryStructure : null} 
       on:submit={handleFormSubmit} 
+      on:cancel={closeModal}
     />
   </Modal>
 </div>
