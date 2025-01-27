@@ -6,9 +6,11 @@
   import { payrollApi } from '$lib/services/api/payroll';
   import { toast } from '../../common/stores/toast.store';
   import { DollarSign, Home, Car, Heart, Edit } from 'lucide-svelte';
+  import type {SalaryStructure} from '$lib/types/payroll';
+
   export let employeeId: string;
 
-  let salaryStructure = writable(null);
+  let salaryStructure = writable<SalaryStructure | null>(null);
   let loading = writable(true);
   let error = writable(null);
   let showModal = writable(false);
@@ -22,8 +24,8 @@
     try {
       loading.set(true);
       const response = await payrollApi.getActiveSalaryStructure();
-      salaryStructure.set(response.data);
-    } catch (err) {
+      salaryStructure.set(response.data as SalaryStructure);
+    } catch (err: any) {
       if (err.response && err.response.status === 404) {
         salaryStructure.set(null);
       } else {
@@ -208,46 +210,7 @@
     </div>
     
     {/if}
-    <!-- <div class="overflow-x-auto">
-      <table class="w-full">
-        <thead>
-          <tr class="bg-gray-50">
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Basic Salary</th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">HRA</th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Conveyance</th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Medical</th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Gross Salary</th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Net Salary</th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">CTC</th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <tr>
-            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">{formatCurrency($salaryStructure.basic)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">{formatCurrency($salaryStructure.hra)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">{formatCurrency($salaryStructure.conveyanceAllowance)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">{formatCurrency($salaryStructure.medicalAllowance)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">{formatCurrency($salaryStructure.grossSalary)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">{formatCurrency($salaryStructure.netSalary)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">{formatCurrency($salaryStructure.ctc)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
-              <div class="flex justify-center items-center space-x-2">
-                <button 
-                  class="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-md hover:bg-indigo-700 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  on:click={() => openModal(true)}
-                >
-                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  Edit
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div> -->
+   
 
 
   <Modal title="Create Salary Structure" show={$showModal} onClose={closeModal}>
