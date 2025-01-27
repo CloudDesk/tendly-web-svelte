@@ -13,7 +13,7 @@
           ✕
         </button>
       </div>
-      <div class="p-4">
+      <div class="p-4  overflow-y-auto max-h-[85vh] space-y-4">
         <slot />
       </div>
     </div>

@@ -4,7 +4,7 @@ export const payrollApi = {
 
     getCurrentSalaryStructure: async () => {
         //current salary structure of an loggedin employee
-        return fetchApi(`/structure/current`, {
+        return fetchApi(`/payroll/salary-structure/current`, {
             method: 'GET'
         });
     },

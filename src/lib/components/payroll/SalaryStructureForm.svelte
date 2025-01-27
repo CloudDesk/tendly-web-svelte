@@ -1,82 +1,373 @@
 <script lang="ts">
+  import { toUTCDate } from '$lib/utils/date';
   import { createEventDispatcher, onMount } from 'svelte';
 
+  // TypeScript interfaces
+  interface Field {
+    key: string;
+    label: string;
+    type: 'number' | 'date' | 'checkbox' | 'text';
+    required: boolean;
+    disabled?: boolean;
+    value: any;
+    error?: string;
+    min?: number;
+    validationRules?: ((value: any) => string | null)[];
+  }
+
+  interface SalaryStructure {
+    userId: string;
+    basic: number;
+    hra: number;
+    specialAllowance: number;
+    conveyanceAllowance: number;
+    medicalAllowance: number;
+    lta: number;
+    variablePay: number;
+    effectiveFrom: string;
+    effectiveTo: string | null;
+    grossSalary: number;
+    netSalary: number;
+    ctc: number;
+    pfDeduction: number;
+    incomeTaxDeduction: number;
+    pfEmployerContribution: number;
+    gratuity: number;
+    isActive: boolean;
+  }
+
   export let employeeId: string;
-  export let salaryStructure = null;
+  export let salaryStructure: SalaryStructure | null = null;
 
-  let formData = {
-    userId: '',
-    basic: 0,
-    hra: 0,
-    specialAllowance: 0,
-    conveyanceAllowance: 0,
-    medicalAllowance: 0,
-    lta: 0,
-    variablePay: 0,
-    effectiveFrom: new Date().toISOString().split('T')[0], // Default to today's date
-    effectiveTo: null,
-    grossSalary: 0,
-    netSalary: 0,
-    ctc: 0,
-    pfDeduction: 0,
-    incomeTaxDeduction: 0,
-    pfEmployerContribution: 0,
-    gratuity: 0,
-    isActive: false
+  const dispatch = createEventDispatcher<{
+    submit: SalaryStructure;
+    cancel: void;
+  }>();
+
+  // Validation rules
+  const numberValidation = (value: number): string | null => {
+    if (value < 0) return 'Value must be 0 or greater';
+    return null;
   };
 
-  const dispatch = createEventDispatcher();
+  const requiredValidation = (value: any): string | null => {
+    if (value === null || value === undefined || value === '') {
+      return 'This field is required';
+    }
+    return null;
+  };
 
-  // Automatically calculate salary components when one of the fields changes
+  // Field configurations with initial values and validation
+  let fields: Field[] = [
+    {
+      key: 'basic',
+      label: 'Basic',
+      type: 'number',
+      required: true,
+      value: 0,
+      validationRules: [requiredValidation, numberValidation],
+    },
+    {
+      key: 'hra',
+      label: 'HRA',
+      type: 'number',
+      required: true,
+      value: 0,
+      validationRules: [requiredValidation, numberValidation],
+    },
+    {
+      key: 'specialAllowance',
+      label: 'Special Allowance',
+      type: 'number',
+      required: false,
+      value: 0,
+      validationRules: [numberValidation],
+    },
+    {
+      key: 'conveyanceAllowance',
+      label: 'Conveyance Allowance',
+      type: 'number',
+      required: false,
+      value: 0,
+      validationRules: [numberValidation],
+    },
+    {
+      key: 'medicalAllowance',
+      label: 'Medical Allowance',
+      type: 'number',
+      required: false,
+      value: 0,
+      validationRules: [numberValidation],
+    },
+    {
+      key: 'lta',
+      label: 'LTA',
+      type: 'number',
+      required: false,
+      value: 0,
+      validationRules: [numberValidation],
+    },
+    {
+      key: 'variablePay',
+      label: 'Variable Pay',
+      type: 'number',
+      required: false,
+      value: 0,
+      validationRules: [numberValidation],
+    },
+    {
+      key: 'effectiveFrom',
+      label: 'Effective From',
+      type: 'date',
+      required: true,
+      value: new Date().toISOString().split('T')[0],
+      validationRules: [requiredValidation],
+    },
+    {
+      key: 'effectiveTo',
+      label: 'Effective To',
+      type: 'date',
+      required: false,
+      value: null,
+    },
+    {
+      key: 'pfDeduction',
+      label: 'PF Deduction',
+      type: 'number',
+      required: false,
+      disabled: true,
+      value: 0,
+    },
+    {
+      key: 'incomeTaxDeduction',
+      label: 'Income Tax Deduction',
+      type: 'number',
+      required: false,
+      disabled: true,
+      value: 0,
+    },
+    {
+      key: 'pfEmployerContribution',
+      label: 'PF Employer Contribution',
+      type: 'number',
+      required: false,
+      disabled: true,
+      value: 0,
+    },
+    {
+      key: 'gratuity',
+      label: 'Gratuity',
+      type: 'number',
+      required: false,
+      disabled: true,
+      value: 0,
+    },
+    {
+      key: 'grossSalary',
+      label: 'Gross Salary',
+      type: 'number',
+      required: false,
+      disabled: true,
+      value: 0,
+    },
+    {
+      key: 'netSalary',
+      label: 'Net Salary',
+      type: 'number',
+      required: false,
+      disabled: true,
+      value: 0,
+    },
+    {
+      key: 'ctc',
+      label: 'CTC',
+      type: 'number',
+      required: false,
+      disabled: true,
+      value: 0,
+    },
+    {
+      key: 'isActive',
+      label: 'Active',
+      type: 'checkbox',
+      required: false,
+      value: false,
+    },
+  ];
+
+  // Validate field
+  const validateField = (field: Field): string | null => {
+    if (!field.validationRules) return null;
+    
+    for (const rule of field.validationRules) {
+      const error = rule(field.value);
+      if (error) return error;
+    }
+    
+    return null;
+  };
+
+  // Validate all fields
+  const validateForm = (): boolean => {
+    let isValid = true;
+    
+    fields = fields.map(field => {
+      const error = validateField(field);
+      if (error) isValid = false;
+      return { ...field, error };
+    });
+
+    return isValid;
+  };
+
+    // Formatter for currency display
+    const formatCurrency = (value: number): string => {
+    return `₹${value.toLocaleString('en-IN')}`;
+  };
+
+  // Function to parse currency string back to number
+  const parseCurrency = (value: string): number => {
+    return Number(value.replace(/[₹,]/g, ''));
+  };
+
+  // Calculation formulas for display
+  const calculationFormulas = [
+    {
+      label: 'Gross Salary',
+      formula: 'Basic + HRA + Special Allowance + Conveyance Allowance + Medical Allowance + LTA + Variable Pay'
+    },
+    {
+      label: 'PF Deduction',
+      formula: 'Basic × 12%'
+    },
+    {
+      label: 'PF Employer Contribution',
+      formula: 'Basic × 12%'
+    },
+    {
+      label: 'Gratuity',
+      formula: 'Basic × 4.81%'
+    },
+    {
+      label: 'Net Salary',
+      formula: 'Gross Salary - (PF Deduction + Income Tax Deduction)'
+    },
+    {
+      label: 'CTC (Annual)',
+      formula: '(Gross Salary + PF Employer Contribution + Gratuity) × 12'
+    }
+  ];
+  // Calculate salary components
   const calculateSalaryComponents = () => {
-    const basic = parseFloat(formData.basic) || 0;
-    const hra = parseFloat(formData.hra) || 0;
-    const conveyanceAllowance = parseFloat(formData.conveyanceAllowance) || 0;
-    const medicalAllowance = parseFloat(formData.medicalAllowance) || 0;
-    const spacialAllowance = parseFloat(formData.specialAllowance) || 0;
+    const getFieldValue = (key: string): number => {
+      const field = fields.find(f => f.key === key);
+      return Math.round(parseFloat(field?.value) || 0);
+    };
 
-    // Calculate PF Deduction (12% of Basic Salary)
-    formData.pfDeduction = basic * 0.12;
+    const basic = getFieldValue('basic');
+    const hra = getFieldValue('hra');
+    const conveyanceAllowance = getFieldValue('conveyanceAllowance');
+    const medicalAllowance = getFieldValue('medicalAllowance');
+    const specialAllowance = getFieldValue('specialAllowance');
+    const lta = getFieldValue('lta');
+    const variablePay = getFieldValue('variablePay');
+// Update calculated fields with proper formatting
+fields = fields.map(field => {
+      let numericValue = 0;
+      
+      switch (field.key) {
+        case 'pfDeduction':
+          numericValue = Math.round(basic * 0.12);
+          break;
+        case 'pfEmployerContribution':
+          numericValue = Math.round(basic * 0.12);
+          break;
+        case 'gratuity':
+          numericValue = Math.round(basic * 0.0481);
+          break;
+        case 'grossSalary':
+          numericValue = basic + hra + conveyanceAllowance + medicalAllowance + 
+                        specialAllowance + lta + variablePay;
+          break;
+        case 'netSalary':
+          const pfDeduction = getFieldValue('pfDeduction');
+          const incomeTaxDeduction = getFieldValue('incomeTaxDeduction');
+          numericValue = getFieldValue('grossSalary') - (pfDeduction + incomeTaxDeduction);
+          break;
+        case 'ctc':
+          const grossSalary = getFieldValue('grossSalary');
+          const pfEmployerContribution = getFieldValue('pfEmployerContribution');
+          const gratuity = getFieldValue('gratuity');
+          numericValue = Math.round((grossSalary + pfEmployerContribution + gratuity) * 12);
+          break;
+        default:
+          numericValue = field.value || 0;
+      }
 
-    // Calculate PF Employer Contribution (12% of Basic Salary)
-    formData.pfEmployerContribution = basic * 0.12;
-
-    // Calculate Gratuity (4.81% of Basic Salary)
-    formData.gratuity = basic * 0.0481;
-
-    // Calculate Gross Salary
-    formData.grossSalary = basic + hra + conveyanceAllowance + medicalAllowance +spacialAllowance;
-
-    // Calculate Income Tax Deduction (10% of Gross Salary)
-    formData.incomeTaxDeduction = formData.grossSalary * 0.10;
-
-    // Calculate Net Salary
-    formData.netSalary = formData.grossSalary - formData.pfDeduction - formData.incomeTaxDeduction;
-
-    // Calculate CTC (for 12 months)
-    formData.ctc = (formData.grossSalary + formData.pfEmployerContribution + formData.gratuity) * 12;
+      return {
+        ...field,
+        value: numericValue,
+        displayValue: field.type === 'number' ? formatCurrency(numericValue) : field.value
+      };
+    });
   };
 
-  // Auto-calculate when any of the relevant fields change
-  $: formData.basic, formData.hra, formData.conveyanceAllowance, formData.medicalAllowance, calculateSalaryComponents();
+   // Handle input changes with currency formatting
+   const handleInputChange = (field: Field, event: Event) => {
+    const input = event.target as HTMLInputElement;
+    if (field.type === 'number') {
+      const numericValue = parseCurrency(input.value);
+      field.value = numericValue;
+      field.displayValue = formatCurrency(numericValue);
+    } else {
+      field.value = input.value;
+    }
+    calculateSalaryComponents();
+  };
+
+  // Auto-calculate when relevant fields change
+  $: {
+    const relevantFields = fields.filter(f => 
+      ['basic', 'hra', 'conveyanceAllowance', 'medicalAllowance'].includes(f.key)
+    );
+    if (relevantFields.some(f => f.value !== undefined)) {
+      calculateSalaryComponents();
+    }
+  }
 
   onMount(() => {
     if (salaryStructure) {
-      formData = { ...salaryStructure };
+      fields = fields.map(field => ({
+        ...field,
+        value: salaryStructure[field.key as keyof SalaryStructure]
+      }));
     } else {
-      formData.userId = employeeId;
+      const userIdField = fields.find(f => f.key === 'userId');
+      if (userIdField) {
+        userIdField.value = employeeId;
+      }
     }
   });
 
   const handleSubmit = async () => {
-    // Perform validation here
-    if (!formData.basic || !formData.hra || !formData.grossSalary || !formData.netSalary || !formData.ctc) {
-      alert('Please fill in all required fields.');
+    if (!validateForm()) {
       return;
     }
 
-    // Dispatch the submit event with the salary structure data
-    dispatch('submit', formData);
+    const formData = fields.reduce((acc, field) => {
+      if (field.key === 'effectiveFrom' || field.key === 'effectiveTo') {
+        acc[field.key] = field.value ? toUTCDate(field.value) : null;
+      } else {
+        acc[field.key] = field.value;
+      }
+      /*else if (field.type === 'number') {
+        console.log(field.value,"number_field")
+        acc[field.key] = (field.value);
+      }*/
+      return acc;
+    }, {} as Record<string, any>);
+console.log(formData,"handleSubmit")
+    // dispatch('submit', formData as SalaryStructure);
   };
 
   const handleCancel = () => {
@@ -84,193 +375,118 @@
   };
 </script>
 
-<div class="p-6 bg-white shadow-md rounded-lg">
+<div class="p-6 bg-white shadow-md rounded-lg max-h-screen overflow-y-auto">
   <form on:submit|preventDefault={handleSubmit} class="space-y-4">
+    <!-- Salary Input Fields -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="form-control">
-        <label class="label" for="basic">Basic</label>
-        <input
-          id="basic"
-          type="number"
-          class="input input-bordered"
-          bind:value={formData.basic}
-          required
-        />
-      </div>
-      <div class="form-control">
-        <label class="label" for="hra">HRA</label>
-        <input
-          id="hra"
-          type="number"
-          class="input input-bordered"
-          bind:value={formData.hra}
-          required
-        />
-      </div>
-      <div class="form-control">
-        <label class="label" for="specialAllowance">Special Allowance</label>
-        <input
-          id="specialAllowance"
-          type="number"
-          class="input input-bordered"
-          bind:value={formData.specialAllowance}
-        />
-      </div>
-      <div class="form-control">
-        <label class="label" for="conveyanceAllowance">Conveyance Allowance</label>
-        <input
-          id="conveyanceAllowance"
-          type="number"
-          class="input input-bordered"
-          bind:value={formData.conveyanceAllowance}
-        />
-      </div>
-      <div class="form-control">
-        <label class="label" for="medicalAllowance">Medical Allowance</label>
-        <input
-          id="medicalAllowance"
-          type="number"
-          class="input input-bordered"
-          bind:value={formData.medicalAllowance}
-        />
-      </div>
-      <div class="form-control">
-        <label class="label" for="lta">LTA</label>
-        <input
-          id="lta"
-          type="number"
-          class="input input-bordered"
-          bind:value={formData.lta}
-        />
-      </div>
-      <div class="form-control">
-        <label class="label" for="variablePay">Variable Pay</label>
-        <input
-          id="variablePay"
-          type="number"
-          class="input input-bordered"
-          bind:value={formData.variablePay}
-        />
-      </div>
-      <div class="form-control">
-        <label class="label" for="effectiveFrom">Effective From</label>
-        <input
-          id="effectiveFrom"
-          type="date"
-          class="input input-bordered"
-          bind:value={formData.effectiveFrom}
-          required
-        />
-      </div>
-      <div class="form-control">
-        <label class="label" for="effectiveTo">Effective To</label>
-        <input
-          id="effectiveTo"
-          type="date"
-          class="input input-bordered"
-          bind:value={formData.effectiveTo}
-        />
-      </div>
-      <div class="form-control">
-        <label class="label" for="pfDeduction">PF Deduction</label>
-        <input
-          id="pfDeduction"
-          type="number"
-          class="input input-bordered"
-          bind:value={formData.pfDeduction}
-          disabled
-        />
-      </div>
-      <div class="form-control">
-        <label class="label" for="incomeTaxDeduction">Income Tax Deduction</label>
-        <input
-          id="incomeTaxDeduction"
-          type="number"
-          class="input input-bordered"
-          bind:value={formData.incomeTaxDeduction}
-          disabled
-        />
-      </div>
-      <div class="form-control">
-        <label class="label" for="pfEmployerContribution">PF Employer Contribution</label>
-        <input
-          id="pfEmployerContribution"
-          type="number"
-          class="input input-bordered"
-          bind:value={formData.pfEmployerContribution}
-          disabled
-        />
-      </div>
-      <div class="form-control">
-        <label class="label" for="gratuity">Gratuity</label>
-        <input
-          id="gratuity"
-          type="number"
-          class="input input-bordered"
-          bind:value={formData.gratuity}
-          disabled
-        />
-      </div>
-      <div class="form-control">
-        <label class="label" for="grossSalary">Gross Salary</label>
-        <input
-          id="grossSalary"
-          type="number"
-          class="input input-bordered"
-          bind:value={formData.grossSalary}
-          disabled
-        />
-      </div>
-      <div class="form-control">
-        <label class="label" for="netSalary">Net Salary</label>
-        <input
-          id="netSalary"
-          type="number"
-          class="input input-bordered"
-          bind:value={formData.netSalary}
-          disabled
-        />
-      </div>
-      <div class="form-control">
-        <label class="label" for="ctc">CTC</label>
-        <input
-          id="ctc"
-          type="number"
-          class="input input-bordered"
-          bind:value={formData.ctc}
-          disabled
-        />
-      </div>
-      <div class="form-control">
-        <label class="label" for="isActive">Active</label>
-        <input
-          id="isActive"
-          type="checkbox"
-          class="input input-bordered"
-          bind:checked={formData.isActive}
-        />
+      {#each fields as field (field.key)}
+        <div class="form-control">
+          <label class="label" for={field.key}>{field.label}</label>
+          {#if field.type === 'checkbox'}
+            <label class="switch">
+              <input
+                id={field.key}
+                type="checkbox"
+                bind:checked={field.value}
+                disabled={field.disabled}
+              />
+              <span class="slider round"></span>
+            </label>
+          {:else if field.type === 'number'}
+            <input
+              id={field.key}
+              type="text"
+              class="input input-bordered"
+              class:error={field.error}
+              value={field.displayValue || formatCurrency(0)}
+              on:input={(e) => handleInputChange(field, e)}
+              required={field.required}
+              disabled={field.disabled}
+            />
+          {:else if field.type === 'date'}
+            <input
+              id={field.key}
+              type="date"
+              class="input input-bordered"
+              class:error={field.error}
+              bind:value={field.value}
+              required={field.required}
+              disabled={field.disabled}
+            />
+          {:else}
+            <input
+              id={field.key}
+              type="text"
+              class="input input-bordered"
+              class:error={field.error}
+              bind:value={field.value}
+              required={field.required}
+              disabled={field.disabled}
+            />
+          {/if}
+          {#if field.error}
+            <span class="error-message">{field.error}</span>
+          {/if}
+        </div>
+      {/each}
+    </div>
+
+    <!-- Calculation Formulas Section  -->
+    <div class="mt-8 p-4 bg-gray-50 rounded-lg">
+      <h3 class="text-lg font-semibold mb-4">Calculation Formulas</h3>
+      <div class="space-y-2">
+        {#each calculationFormulas as formula}
+          <div class="flex flex-col">
+            <span class="font-medium">{formula.label}:</span>
+            <span class="text-sm text-gray-600">{formula.formula}</span>
+          </div>
+        {/each}
       </div>
     </div>
 
-    <div class="flex justify-end gap-2">
-      <button 
-        type="button" 
-        class="btn btn-ghost" 
-        on:click={handleCancel}
-      >
-        Cancel
-      </button>
-      <button 
-        type="submit" 
-        class="btn btn-primary"
-      >
-        Submit
-      </button>
+    <!-- Form Buttons -->
+    <div class="flex items-center justify-end gap-6 mt-6">
+      <div class="flex gap-2">
+        <button 
+          type="button" 
+          class="btn btn-ghost" 
+          on:click={handleCancel}
+        >
+          Cancel
+        </button>
+        <button 
+          type="submit" 
+          class="btn btn-primary"
+        >
+          Submit
+        </button>
+      </div>
     </div>
   </form>
 </div>
 
 <style>
+  .calculation-section {
+    background-color: #f9fafb;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .formula-item {
+    margin-bottom: 0.5rem;
+  }
+
+  .formula-label {
+    font-weight: 500;
+    color: #374151;
+  }
+
+  .formula-text {
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+
   .form-control {
     display: flex;
     flex-direction: column;
@@ -285,6 +501,16 @@
     padding: 0.5rem;
     border: 1px solid #d1d5db;
     border-radius: 0.375rem;
+  }
+
+  .input.error {
+    border-color: #ef4444;
+  }
+
+  .error-message {
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
   }
 
   .btn {
@@ -310,5 +536,60 @@
 
   .btn-ghost:hover {
     background-color: #f3f4f6;
+  }
+
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 20px;
+    margin-left: 8px;
+  }
+
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .slider {
+    position: absolute;
+
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+  }
+
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+  }
+
+  input:checked + .slider {
+    background-color: #3b82f6;
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(14px);
+  }
+
+  .slider.round {
+    border-radius: 34px;
+  }
+
+  .slider.round:before {
+    border-radius: 50%;
   }
 </style>
