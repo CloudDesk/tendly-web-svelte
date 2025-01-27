@@ -2,13 +2,14 @@ import { fetchApi } from './base';
 
 export const payrollApi = {
 
-    getSalaryStructureByEmployeeId: async (employeeId: string) => {
-        return fetchApi(`/salary-structure/${employeeId}`, {
+    getCurrentSalaryStructure: async () => {
+        //current salary structure of an loggedin employee
+        return fetchApi(`/structure/current`, {
             method: 'GET'
         });
     },
     createSalaryStructure: async (data: any) => {
-        return fetchApi('/salary-structure', {
+        return fetchApi('/payroll/salary-structure', {
             method: 'POST',
             body: JSON.stringify(data)
         });

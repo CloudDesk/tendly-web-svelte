@@ -4,7 +4,7 @@
   import EmployeeAttendance from '$lib/components/attendance/EmployeeAttendance.svelte';
   import EmployeeLeaves from '$lib/components/employee/EmployeeLeaves.svelte';
   import EmployeeTrainingAttendance from '$lib/components/attendance/EmployeeTrainingAttendance.svelte';
-  import SalaryStructureForm from '$lib/components/employee/SalaryStructureForm.svelte';
+
   import SalaryStructureList from '$lib/components/payroll/SalaryStructureList.svelte';
 
   export let data;

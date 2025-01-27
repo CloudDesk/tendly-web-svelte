@@ -20,7 +20,7 @@
     const fetchSalaryStructure = async () => {
       try {
         loading.set(true);
-        const response = await payrollApi.getSalaryStructureByEmployeeId(employeeId);
+        const response = await payrollApi.getCurrentSalaryStructure();
         salaryStructure.set(response.data);
       } catch (err) {
         if (err.response && err.response.status === 404) {
@@ -47,7 +47,7 @@
 
         try{
             let result = await payrollApi.createSalaryStructure(event.detail);
-            console.log(result,"result in salary structure list")
+            console.log(result,"result")
         }catch(err){
           console.log(err,"error in salary structure list")
         }
