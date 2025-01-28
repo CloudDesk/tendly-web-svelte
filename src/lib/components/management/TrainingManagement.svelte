@@ -4,9 +4,9 @@
     import { onMount } from 'svelte';
     import type { Training, User } from '$lib/types_old';
     import { trainingsApi, employeesApi } from '$lib/services/api/';
+    import { page } from '$app/stores';
 
     export let isTrainer = false;
-  
     let trainings: Training[] = [];
     let employees: User[] = [];
     let loading = false;
@@ -18,12 +18,15 @@
     let editingTraining: Partial<Training> = {};
     let selectedTraining: Training | null = null;
     let selectedEmployees: Set<string> = new Set();
-    let page = 1;
-    let limit = 10;
     let searchQuery = '';
     let assignmentValidFrom = '';
     let assignmentValidTill = '';
-  
+    let pagination = {
+    total: 0,
+    page: 1,
+    limit: 5,
+    totalPages: 1
+  };
     const columns = [
       { key: 'name', label: 'Name' },
       { key: 'code', label: 'Code' },
@@ -81,8 +84,15 @@
       try {
         loading = true;
         const response = await trainingsApi.list({
-          page, limit, search: searchQuery
+          page: pagination.page, limit:pagination.limit, search: searchQuery
         });
+        console.log(response,"1, loadTrainings");
+        pagination={
+          total: response.meta?.total||0,
+          page: response.meta?.page||1,
+          limit: response.meta?.limit || 5,
+          totalPages: response.meta?.totalPages||1
+        }
         trainings = response.data;
       } catch (err) {
         error = 'Failed to load trainings';
@@ -159,6 +169,21 @@
       }
     }
   
+      async function handlePage(event: CustomEvent) {
+        console.log(event,"handlePageChange")
+        loading =true
+    try{
+      const { page: newPage } = event.detail;
+      pagination.page = newPage;
+      const url = new URL($page.url);
+      url.searchParams.set('page', newPage.toString());
+      await loadTrainings();
+    // await  goto(url, { replaceState: true , invalidateAll: true});
+    }finally{
+      loading=false
+    }
+    }
+
     async function handleTableAction(e: CustomEvent) {
       const { action, id } = e.detail;
       const training = trainings.find(t => t._id === id);
@@ -237,9 +262,16 @@
     {#if loading}
       <div class="loading">Loading...</div>
     {:else}
-      <Table {columns} data={trainings} on:action={handleTableAction} />
+      <Table  {columns} data={trainings}
+      loading={loading}
+      meta={pagination} 
+      serverSide={true}
+      variant="transparent"
+      on:action={handleTableAction} 
+      on:page={handlePage}
+      />
       
-      <div class="flex justify-center mt-4 gap-2">
+      <!-- <div class="flex justify-center mt-4 gap-2">
         <button 
           class="btn btn-sm" 
           disabled={page === 1}
@@ -256,7 +288,7 @@
             loadTrainings();
           }}
         >Next</button>
-      </div>
+      </div> -->
     {/if}
   </div>
   

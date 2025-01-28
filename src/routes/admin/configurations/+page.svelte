@@ -4,11 +4,14 @@
   import ShiftManagement from '$lib/components/management/ShiftManagement.svelte';
   import TrainingManagement from '$lib/components/management/TrainingManagement.svelte';
   import ConfigManagement from '$lib/components/management/ConfigManagement.svelte';
+  import OrgChart from '$lib/components/employee/OrgChart.svelte';
 
   const tabs = [
     { id: 'configs', label: 'Configs' },
     { id: 'shifts', label: 'Shifts' },
-    { id: 'trainings', label: 'Trainings' }
+    { id: 'trainings', label: 'Trainings' },
+    {id:'org',label:'Org Chart'}
+
   ];
 
   $: activeTab = $page.url.searchParams.get('tab') || tabs[0]?.id;
@@ -28,6 +31,8 @@
           <TrainingManagement />
         {:else if activeTab === 'configs'}
           <ConfigManagement />
+        {:else if activeTab ==='org'}
+        <OrgChart/>
         {/if}
       </Tabs>
     </div>

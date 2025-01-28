@@ -1,10 +1,14 @@
 export type Shift = {
   id: string;
-  employeeId: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  userId: string;
+  shiftId: string;
+  shiftCode: "NOON" | "MORN";
+  startDate: string;
+  isActive: boolean;
+  assignedBy: string;
+  assignedAt: string;
   createdAt: string;
   updatedAt: string;
-}; 
+};
+
+

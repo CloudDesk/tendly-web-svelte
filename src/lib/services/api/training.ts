@@ -1,39 +1,39 @@
 import { fetchApi, type ListParams } from './base';
 import type { Training } from '$lib/types';
-import {  toUTCDate, toUTCTime, fromUTCTime, fromUTCDate } from '$lib/utils/date';
+import { toUTCDate, toUTCTime, fromUTCTime, fromUTCDate } from '$lib/utils/date';
 
 
 function convertTrainingTimesToUTC<T extends { startTime?: string; endTime?: string; trainingWindowStart?: string; trainingWindowEnd?: string; validFrom?: string; validTill?: string }>(training: T): T {
-    return {
-      ...training,
-      startTime: toUTCTime(training.startTime),
-      endTime: toUTCTime(training.endTime),
-      trainingWindowStart: toUTCTime(training.trainingWindowStart),
-      trainingWindowEnd: toUTCTime(training.trainingWindowEnd),
-      validFrom: toUTCDate(training.validFrom),
-      validTill: toUTCDate(training.validTill)
-    };
-  }
-  
+  return {
+    ...training,
+    startTime: toUTCTime(training.startTime),
+    endTime: toUTCTime(training.endTime),
+    trainingWindowStart: toUTCTime(training.trainingWindowStart),
+    trainingWindowEnd: toUTCTime(training.trainingWindowEnd),
+    validFrom: toUTCDate(training.validFrom),
+    validTill: toUTCDate(training.validTill)
+  };
+}
+
 function convertTrainingTimesFromUTC<T extends { startTime?: string; endTime?: string; trainingWindowStart?: string; trainingWindowEnd?: string; validFrom?: string; validTill?: string }>(training: T): T {
-    return {
-      ...training,
-      startTime: fromUTCTime(training.startTime),
-      endTime: fromUTCTime(training.endTime),
-      trainingWindowStart: fromUTCTime(training.trainingWindowStart),
-      trainingWindowEnd: fromUTCTime(training.trainingWindowEnd),
-      validFrom: fromUTCDate(training.validFrom),
-      validTill: fromUTCDate(training.validTill)
-    };
-  }
-  
+  return {
+    ...training,
+    startTime: fromUTCTime(training.startTime),
+    endTime: fromUTCTime(training.endTime),
+    trainingWindowStart: fromUTCTime(training.trainingWindowStart),
+    trainingWindowEnd: fromUTCTime(training.trainingWindowEnd),
+    validFrom: fromUTCDate(training.validFrom),
+    validTill: fromUTCDate(training.validTill)
+  };
+}
+
 export const trainingsApi = {
   list: async (params: ListParams = {}) => {
     const queryParams = new URLSearchParams();
     if (params.page) queryParams.append('page', params.page.toString());
     if (params.limit) queryParams.append('limit', params.limit.toString());
     if (params.search) queryParams.append('search', params.search);
-    
+    console.log(queryParams.toString(), "queryparams")
     const response = await fetchApi<Training[]>(`/trainings?${queryParams.toString()}`);
     return {
       ...response,
@@ -67,14 +67,14 @@ export const trainingsApi = {
       data: convertTrainingTimesFromUTC(response.data)
     };
   },
-  delete: (id: string) => 
+  delete: (id: string) =>
     fetchApi<void>(`/trainings/${id}`, {
       method: 'DELETE'
     }),
   assignEmployees: (
-    trainingId: string, 
+    trainingId: string,
     trainingCode: string,
-    employeeIds: string[], 
+    employeeIds: string[],
     validity: { validFrom: string; validTill?: string }
   ) => {
     // Convert dates to UTC at midnight
@@ -91,7 +91,7 @@ export const trainingsApi = {
 
     return fetchApi<void>(`/trainings/${trainingId}/assign`, {
       method: 'POST',
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         addUserIds: employeeIds,
         removeUserIds: [],
         trainingCode,

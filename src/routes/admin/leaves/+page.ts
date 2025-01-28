@@ -9,7 +9,7 @@ export const load: PageLoad = async ({ url, params }) => {
 
     const filters: LeaveFilters = {
       page: Number(url.searchParams.get('page')) || 1,
-      limit: Number(url.searchParams.get('limit')) || 20,
+      limit: Number(url.searchParams.get('limit')) || 5,
       search: url.searchParams.get('search') || undefined,
       // userId: url.searchParams.get('userId') || user._id
     }

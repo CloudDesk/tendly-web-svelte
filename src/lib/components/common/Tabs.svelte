@@ -15,17 +15,24 @@
   }
 </script>
 
-<div class="tabs tabs-boxed bg-base-100 p-1">
-  {#each tabs as tab}
-    <button
-      class="tab transition-all {activeTab === tab.id ? 'tab-active bg-primary text-primary-content shadow-sm' : 'hover:bg-base-200 text-neutral-600'}"
-      on:click={() => handleTabClick(tab.id)}
-    >
+<div class="w-full">
+  <nav class="border-b border-gray-200">
+    <div class="flex space-x-8">
+      {#each tabs as tab}
+        <button
+          class="tab-item py-4 px-1 inline-flex items-center border-b-2 font-medium text-sm transition-colors duration-200 ease-out whitespace-nowrap"
+         
+          class:active={activeTab === tab.id}
+        
+          on:click={() => handleTabClick(tab.id)}
+        >
       {tab.label}
     </button>
   {/each}
+  </div>
+  </nav>
+  <div class="mt-6">
+    <slot {activeTab} />
+  </div> 
 </div>
 
-<div class="mt-6">
-  <slot {activeTab} />
-</div> 

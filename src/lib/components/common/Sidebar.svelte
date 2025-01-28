@@ -19,12 +19,15 @@
     Briefcase,
     Bell,
     ChevronDown,
-    BookOpen
+    BookOpen,
+    
   } from 'lucide-svelte';
+  import {fly} from 'svelte/transition';
   import { writable } from 'svelte/store';
   export const ssr = false;
 
   const isCollapsed = writable(false);
+  const isLoggingOut = writable(false);
   
   // Initialize collapsedSections based on navigation sections
   function initializeCollapsedSections(sections: NavigationSection[]) {
@@ -234,6 +237,12 @@
   function toggleSidebar() {
     isCollapsed.update(v => !v);
   }
+  async function handleLogout() {
+    isLoggingOut.set(true);
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate logging off delay
+    localStorage.clear();
+    window.location.href = '/login';
+  }
 </script>
 
 <aside class="fixed left-0 top-0 h-screen bg-gradient-to-b from-[#F8FAFF] to-[#EDF3FF] border-r border-surface-border shadow-sm {$isCollapsed ? 'w-20' : 'w-64'} transition-all duration-200 z-20">
@@ -327,6 +336,49 @@
       </div>
     {/each}
   </nav>
+   <!-- User Card -->
+   <div class="absolute bottom-0 w-full p-4 bg-white border-t border-surface-border/50">
+   <div class="flex items-center gap-4">
+     <div class="w-10 h-10 flex items-center justify-center bg-blue-500 text-white rounded-full text-lg font-semibold">
+       {$auth.user?.name[0]}
+     </div>
+     <div class="flex-1">
+       <div class="text-sm font-medium text-gray-900">{$auth.user?.name}</div>
+       <div class="text-xs text-gray-500">{$auth.user?.role}</div>
+     </div>
+     <button
+       class="group relative w-32 h-8 overflow-hidden rounded-md transition-all duration-300 hover:bg-blue-50"
+       on:click={handleLogout}
+       aria-label="Logout"
+       disabled={$isLoggingOut}
+     >
+       {#if $isLoggingOut}
+         <div 
+           class="w-full h-full flex items-center justify-center text-sm text-gray-700"
+           in:fly={{ x: 20, duration: 200 }}
+         >
+           Logging off...
+         </div>
+       {:else}
+         <div class="relative w-full h-full">
+           <!-- Icon container with transition -->
+           <div class="absolute inset-y-0 left-0 flex items-center justify-center w-8 h-8 transition-all duration-300 group-hover:translate-x-12 group-hover:text-blue-600">
+             <LogOut size={20} />
+           </div>
+           
+           <!-- Text that appears on hover -->
+           <div class="absolute inset-0 flex items-center justify-center text-sm font-medium opacity-0 transition-all duration-300 group-hover:opacity-100 text-blue-600">
+             Log Out
+           </div>
+           
+           <!-- Hover fill effect -->
+           <div class="absolute inset-0 w-0 bg-blue-50/50 transition-all duration-300 group-hover:w-full" />
+         </div>
+       {/if}
+     </button>
+   </div>
+ </div>
+ 
 </aside>
 
 <style lang="postcss">
@@ -342,5 +394,18 @@
   nav {
     scrollbar-width: thin;
     scrollbar-color: var(--surface-border) transparent;
+  }
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  .logout-btn:hover .logout-text {
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  .logout-btn:hover .lucide-log-out {
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
   }
 </style>

@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import type { Shift, User } from '$lib/types';
   import { shiftsApi, employeesApi } from '$lib/services/api/';
-
+  import { page } from '$app/stores';
   let shifts: Shift[] = [];
   let employees: User[] = [];
   let loading = false;
@@ -16,11 +16,15 @@
   let editingShift: Partial<Shift> = {};
   let selectedShift: Shift | null = null;
   let selectedEmployees: Set<string> = new Set();
-  let page = 1;
-  let limit = 10;
   let searchQuery = '';
   let assignmentValidFrom = '';
   let assignmentValidTill = '';
+  let pagination = {
+    total: 0,
+    page: 1,
+    limit: 5,
+    totalPages: 1
+  };
 
   const columns = [
     { key: 'name', label: 'Name' },
@@ -79,8 +83,15 @@
     try {
       loading = true;
       const response = await shiftsApi.list({
-        page, limit, search: searchQuery
+        page:pagination.page, limit:pagination.limit, search: searchQuery
       });
+      console.log(response,"1 leadShifts")
+      pagination ={
+        total: response.meta?.total || 0,
+        page: response.meta?.page || 1,
+        limit: response.meta?.limit || 5,
+        totalPages: response.meta?.totalPages || 1
+      },
       shifts = response.data;
     } catch (err) {
       error = 'Failed to load shifts';
@@ -173,6 +184,20 @@
       loadEmployees();
     }
   }
+  async function handlePageChange(event:CustomEvent) {
+    console.log(event,"handlePageChange")
+        loading =true
+    try{
+      const { page: newPage } = event.detail;
+      pagination.page = newPage;
+      const url = new URL($page.url);
+      url.searchParams.set('page', newPage.toString());
+      await loadShifts();
+    // await  goto(url, { replaceState: true , invalidateAll: true});
+    }finally{
+      loading=false
+    }
+  }
 
   onMount(loadShifts);
 </script>
@@ -202,9 +227,16 @@
   {#if loading}
     <div class="loading">Loading...</div>
   {:else}
-    <Table {columns} data={shifts} on:action={handleTableAction} />
+    <Table {columns} data={shifts} 
+    loading={loading}
+    serverSide={true}
+    meta={pagination} 
+    variant='transparent'
+    on:action={handleTableAction} 
+    on:page={handlePageChange}
+    />
     
-    <div class="flex justify-center mt-4 gap-2">
+    <!-- <div class="flex justify-center mt-4 gap-2">
       <button 
         class="btn btn-sm" 
         disabled={page === 1}
@@ -221,7 +253,7 @@
           loadShifts();
         }}
       >Next</button>
-    </div>
+    </div> -->
   {/if}
 </div>
 
@@ -513,7 +545,7 @@
             type="date" 
             class="input input-bordered" 
             bind:value={assignmentValidTill}
-            min={assignmentValidFrom}
+            min={assignmentValidFrom ||new Date().toISOString().split('T')[0]}
           />
         </div>
       </div>

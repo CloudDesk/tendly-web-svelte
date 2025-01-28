@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import type { LOV } from '$lib/types';
   import { lovsApi } from '$lib/services/api/';
-
+  import { page } from '$app/stores';
   let lovs: LOV[] = [];
   let loading = false;
   let error: string | null = null;
@@ -12,10 +12,13 @@
   let showDetails = false;
   let editingLOV: Partial<LOV> = { values: [] };
   let selectedLOV: LOV | null = null;
-  let page = 1;
-  let limit = 10;
   let searchQuery = '';
-
+  let pagination = {
+    total: 0,
+    page: 1,
+    limit: 5,
+    totalPages: 1
+  };
   const columns = [
     { key: 'name', label: 'Name' },
     { key: 'type', label: 'Type' },
@@ -37,7 +40,16 @@
   async function loadLOVs() {
     try {
       loading = true;
-      const response = await lovsApi.list(searchQuery);
+      const response = await lovsApi.list({
+        page: pagination.page,limit: pagination.limit,search: searchQuery
+      });
+      console.log(response,"response")  
+      pagination={
+          total: response.meta?.total||0,
+          page: response.meta?.page||1,
+          limit:  5,
+          totalPages: response.meta?.totalPages||1
+        }
       lovs = response.data;
     } catch (err) {
       error = 'Failed to load configurations';
@@ -91,6 +103,22 @@
     editingLOV.values = editingLOV.values?.filter((_, i) => i !== index);
   }
 
+  async function handlePage(event: CustomEvent) {
+        console.log(event,"handlePageChange")
+        loading =true
+    try{
+      const { page: newPage } = event.detail;
+      pagination.page = newPage;
+      const url = new URL($page.url);
+      url.searchParams.set('page', newPage.toString());
+      await loadLOVs();
+    // await  goto(url, { replaceState: true , invalidateAll: true});
+    }finally{
+      loading=false
+    }
+    }
+
+
   onMount(loadLOVs);
 </script>
 
@@ -119,9 +147,16 @@
   {#if loading}
     <div class="loading">Loading...</div>
   {:else}
-    <Table {columns} data={lovs} on:action={handleTableAction} />
+    <Table {columns} data={lovs} 
+    serverSide={true}
+    loading={loading}
+    meta={pagination}
+    variant='transparent'
+    on:action={handleTableAction} 
+    on:page={handlePage}
+    />
     
-    <div class="flex justify-center mt-4 gap-2">
+    <!-- <div class="flex justify-center mt-4 gap-2">
       <button 
         class="btn btn-sm" 
         disabled={page === 1}
@@ -138,7 +173,7 @@
           loadLOVs();
         }}
       >Next</button>
-    </div>
+    </div> -->
   {/if}
 </div>
 

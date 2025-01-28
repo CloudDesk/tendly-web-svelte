@@ -16,7 +16,8 @@
   export let error: string | null = null;
   export let meta: PaginationMeta | null = null;
   export let serverSide: boolean = false;
-
+  export let variant: 'contained' | 'transparent' = 'contained';
+  
   let searchQuery = '';
   let sortKey: string | null = null;
   let sortDirection: 'asc' | 'desc' = 'asc';
@@ -50,6 +51,10 @@
         return (aVal - bVal) * modifier;
       })
     : filteredData;
+
+    $: containerClasses = variant === 'contained' 
+    ? 'bg-white rounded-lg shadow-sm p-4' 
+    : 'bg-transparent';
 
   function handleSort(column: Column<any>) {
     if (!column.sortable) return;
@@ -100,7 +105,7 @@
   }
 </script>
 
-<div class="table-container">
+<div class={`table-container ${containerClasses}`}>
   {#if searchable}
     <div class="search-container">
       <input
@@ -200,10 +205,11 @@
 
 <style>
   .table-container {
-    background: white;
+    /* background: white;
     border-radius: 0.5rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    padding: 1rem;
+    padding: 1rem; */
+    min-width: 100%;
   }
 
   .search-container {

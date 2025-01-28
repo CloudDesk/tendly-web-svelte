@@ -72,6 +72,7 @@
   }
 
  async function handlePage(event: CustomEvent) {
+  console.log(event.detail, "handlePage")
   isLoading =true
   try{
     const { page: newPage } = event.detail;
