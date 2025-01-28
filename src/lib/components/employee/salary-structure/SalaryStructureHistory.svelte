@@ -131,6 +131,7 @@
         salaryStructure={$selectedRecord} 
         on:submit={handleFormSubmit} 
         on:cancel={closeModal}
+        readOnly={true}
       />
     </Modal>
   </div>

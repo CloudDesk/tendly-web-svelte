@@ -20,7 +20,7 @@
 
   export let employeeId: string;
   export let salaryStructure: SalaryStructure | null = null;
-
+  export let readOnly: boolean = false;
   const dispatch = createEventDispatcher<{
     submit: SalaryStructure;
     cancel: void;
@@ -114,8 +114,9 @@
       key: 'effectiveTo',
       label: 'Effective To',
       type: 'date',
-      required: false,
-      value: null,
+      required: true,
+      value: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      validationRules: [requiredValidation],
     },
     {
       key: 'pfDeduction',
@@ -424,7 +425,7 @@
                 id={field.key}
                 type="checkbox"
                 bind:checked={field.value}
-                disabled={field.disabled}
+                disabled={field.disabled ||readOnly}
               />
               <span class="slider round"></span>
             </label>
@@ -437,7 +438,7 @@
               value={field.displayValue || formatCurrency(0)}
               on:input={(e) => handleInputChange(field, e)}
               required={field.required}
-              disabled={field.disabled}
+              disabled={field.disabled ||readOnly}
             />
           {:else if field.type === 'date'}
             <input
@@ -447,7 +448,7 @@
               class:error={field.error}
               bind:value={field.value}
               required={field.required}
-              disabled={field.disabled}
+              disabled={field.disabled ||readOnly}
             />
           {:else}
             <input
@@ -457,7 +458,7 @@
               class:error={field.error}
               bind:value={field.value}
               required={field.required}
-              disabled={field.disabled}
+              disabled={field.disabled ||readOnly}
             />
           {/if}
           {#if field.error}
@@ -486,6 +487,7 @@
         <button 
           type="button" 
           class="btn btn-ghost" 
+        
           on:click={handleCancel}
         >
           Cancel
@@ -493,6 +495,7 @@
         <button 
           type="submit" 
           class="btn btn-primary"
+          disabled={readOnly}
         >
           Submit
         </button>
