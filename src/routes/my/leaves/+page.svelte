@@ -48,7 +48,7 @@
       key: '_id',
       label: 'Actions',
       render: (leave: LeaveRequest) => `
-        <a href="/my/leaves/${leave._id}" class="btn-action" data-sveltekit-preload>
+        <a href="/my/leaves/${leave._id}" class="btn btn-sm btn-ghost" data-sveltekit-preload>
           View
         </a>
       `

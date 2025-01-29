@@ -1,6 +1,11 @@
 import type { ApiResponse } from '$lib/types';
 import { fetchApi } from './base';
 
+type User = {
+    name: string;
+    email?: string;
+};
+
 export type LeaveRequest = {
     _id: string;
     startDate: string;
@@ -12,6 +17,7 @@ export type LeaveRequest = {
     leaveType?: string;
     approvedBy?: string;
     rejectionReason?: string;
+    user?: User
 };
 
 export type LeaveCategory = {
@@ -46,6 +52,7 @@ export type LeaveFilters = {
     search?: string;
     page?: number;
     limit?: number;
+    sortBy?: string,
     sortOrder?: 'asc' | 'desc';
 };
 
@@ -121,4 +128,14 @@ export const leavesApi = {
         console.log("fetchurl", `/leaves/userId/${employeeId}?${params.toString()}`);
         return fetchApi(`/leaves/userId/${employeeId}?${params.toString()}`)
     },
+
+    getLeavesByAssignedId: (assignedId: string, filters: LeaveFilters): Promise<ApiResponse<LeaveRequest[]>> => {
+        const params = new URLSearchParams();
+        Object.entries(filters).forEach(([key, value]) => {
+            if (value !== undefined && !value !== null) params.append(key, String(value));
+        });
+        console.log("getLeavesByAssignedId", `/leaves/assigned/${assignedId}?${params.toString()}`);
+        return fetchApi(`/leaves/applied-to/${assignedId}?${params.toString()}`)
+    }
+
 } 

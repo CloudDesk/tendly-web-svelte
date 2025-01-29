@@ -117,7 +117,7 @@
               <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">{formatCurrency(record.netSalary)}</td>
               <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">{formatCurrency(record.ctc)}</td>
               <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">
-                <button class="btn btn-primary" on:click={() => openModal(record)}>View</button>
+                <button class="btn btn-sm btn-ghost" on:click={() => openModal(record)}>View</button>
               </td>
             </tr>
           {/each}

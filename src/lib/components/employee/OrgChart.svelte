@@ -96,6 +96,7 @@
     .org-chart-container {
       width: 100%;
       overflow-x: auto;
+      /* background: #b8b8b8; */
     }
   
     .org-chart {
