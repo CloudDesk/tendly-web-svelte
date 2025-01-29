@@ -6,8 +6,10 @@
   import { leavesApi } from '$lib/services/api/leaves';
   import Modal from '$lib/components/common/Modal.svelte';
   import LeaveForm from '$lib/components/leave/LeaveForm.svelte';
-  import { getLeaveTypeLabel } from '$lib/constants/leaveTypes.js';
+  import { getLeaveTypeLabel, leaveStatusOptions, leaveTypeOptions } from '$lib/constants/leaveTypes.js';
   import { toast } from '$lib/components/common/stores/toast.store.js';
+  import Filter from '$lib/components/common/Filter.svelte';
+    import { CloudCog } from 'lucide-svelte';
 
   export let data;
   let isLoading = false;
@@ -157,6 +159,108 @@
     formValues = event.detail;
   }
 
+  let isFilterOpen = false;
+  let filterValues = {};
+
+  const filterConfig = [
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select',
+      description: 'Filter by leave request status',
+      options: [...leaveStatusOptions, { label: 'Cancelled', value: 'Cancelled' }]
+    },
+    {
+      key: 'leaveType',
+      label: 'Leave Type',
+      type: 'select',
+      description: 'Select multiple leave types',
+      options: leaveTypeOptions
+    },
+   /* 
+   {
+      key: 'fromDate',
+      label: 'From Date',
+      type: 'date'
+    },
+    {
+      key: 'toDate',
+      label: 'To Date',
+      type: 'date'
+    }
+    */
+  ];
+
+  function toggleFilter() {
+    isFilterOpen = !isFilterOpen;
+  }
+
+  function handleFilterChange(event: CustomEvent) {
+    const { values } = event.detail;
+    console.log('Filter values changed:', values);
+    filterValues = { ...values }; // Ensure reactive update
+  }
+
+  async function handleFilterApply(event: CustomEvent) {
+    console.log('Applying filters:', filterValues);
+    const url = new URL($page.url);
+    
+    // Clear existing filter params
+    ['status', 'leaveType'].forEach(key => {
+      url.searchParams.delete(key);
+    });
+
+    // Add new filter params, handling arrays for checkbox values
+    Object.entries(filterValues).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        // Join array values with commas for checkbox type
+        if (value.length > 0) {
+          url.searchParams.set(key, value.join(','));
+        }
+      } else if (value) {
+        url.searchParams.set(key, value.toString());
+      }
+    });
+
+    // Reset to first page when filtering
+    url.searchParams.set('page', '1');
+    
+    isLoading = true;
+    try {
+      await goto(url, { replaceState: true });
+    } finally {
+      isLoading = false;
+      toggleFilter();
+    }
+  }
+
+  async function handleFilterReset() {
+    // Reset local filter values
+    filterValues = {};
+    
+    // Clear filter-related URL parameters
+    const url = new URL($page.url);
+    
+    // Get all filter keys from filterConfig
+    const filterKeys = filterConfig.map(filter => filter.key);
+    
+    // Clear all filter-related search params
+    filterKeys.forEach(key => {
+      url.searchParams.delete(key);
+    });
+    
+    // Reset to first page
+    url.searchParams.set('page', '1');
+    
+    isLoading = true;
+    try {
+      await goto(url, { replaceState: true });
+    } finally {
+      isLoading = false;
+      toggleFilter();
+    }
+  }
+
 </script>
 
 <svelte:head>
@@ -168,7 +272,7 @@
     <div class="header-left">
       <h1>Leave Management</h1>
       <div class="header-actions">
-        <button class="btn-filter">
+        <button class="btn-filter" on:click={toggleFilter}>
           <i class="fas fa-filter"></i>
           Filter
         </button>
@@ -206,6 +310,16 @@
       />
     </Modal>
   {/if}
+
+  <Filter
+    filters={filterConfig}
+    values={filterValues}
+    isOpen={isFilterOpen}
+    on:change={handleFilterChange}
+    on:apply={handleFilterApply}
+    on:reset={handleFilterReset}
+    on:close={() => isFilterOpen = false}
+  />
 
   <div class="table-container">
     <Table

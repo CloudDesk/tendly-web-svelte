@@ -11,6 +11,8 @@ export const load: PageLoad = async ({ url, params }) => {
       page: Number(url.searchParams.get('page')) || 1,
       limit: Number(url.searchParams.get('limit')) || 20,
       search: url.searchParams.get('search') || undefined,
+      status:url.searchParams.get('status')||undefined,
+      leaveType:url.searchParams.get('leaveType')||undefined,
       userId: url.searchParams.get('userId') || user._id
     }
 
