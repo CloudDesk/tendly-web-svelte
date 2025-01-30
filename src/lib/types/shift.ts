@@ -11,4 +11,3 @@ export type Shift = {
   updatedAt: string;
 };
 
-

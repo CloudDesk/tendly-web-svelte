@@ -10,69 +10,73 @@
 
   const dispatch = createEventDispatcher();
 
-  // Keep track of temporary values while filter panel is open
-  let tempValues: Record<string, any> = { ...values };
 
-  // Update temp values when parent values change
-  $: {
-    if (!isOpen) {
-      tempValues = { ...values };
-    }
+  // Local state
+  let tempFilterValues: Record<string, any> = { ...values };
+
+  // Reset temp values when panel closes
+  $: if (!isOpen) {
+    tempFilterValues = { ...values };
   }
 
-
-  function handleFilterChange(key: string, value: any) {
-    tempValues = { ...tempValues, [key]: value };
-    dispatch('change', { values: tempValues });
+ // Filter value management
+  function updateFilterValue(key: string, value: any): void {
+    tempFilterValues = { ...tempFilterValues, [key]: value };
+    dispatch('change', { values: tempFilterValues });
   }
-
   function handleSelectChange(event: Event, key: string) {
     const target = event.target as HTMLSelectElement;
-    handleFilterChange(key, target.value);
+    updateFilterValue(key, target.value);
   }
 
   function handleInputChange(event: Event, key: string) {
     const target = event.target as HTMLInputElement;
-    handleFilterChange(key, target.value);
+    updateFilterValue(key, target.value);
   }
 
-  function handleCheckboxChange(key: string, value: string) {
-      let currentValues = Array.isArray(tempValues[key]) ? [...tempValues[key]] : [];
+  function handleCheckboxChange(key: string, value: string): void {
+    const currentValues = Array.isArray(tempFilterValues[key]) 
+      ? [...tempFilterValues[key]] 
+      : [];
 
-      if (currentValues.includes(value)) {
-        currentValues = currentValues.filter(v => v !== value);
-      } else {
-        currentValues = [...currentValues, value];
-      }
+    const updatedValues = currentValues.includes(value)
+      ? currentValues.filter(v => v !== value)
+      : [...currentValues, value];
 
-      handleFilterChange(key, currentValues);
+    updateFilterValue(key, updatedValues);
   }
 
+  // Action handlers
   function handleApply() {
-    dispatch('apply', tempValues);
+    dispatch('apply', tempFilterValues);
   }
 
   function handleReset() {
-    tempValues = {};
+    tempFilterValues = {};
     dispatch('reset');
   }
 
   function handleClose() {
-    // Revert to original values if closing without applying
-     tempValues = { ...values };
-     dispatch('change', { values: tempValues });
+     tempFilterValues = { ...values };
+     dispatch('change', { values: tempFilterValues });
     isOpen = false;
     dispatch('close');
   }
 
+  // Helper functions
   function isChecked(key: string, value: string | number): boolean {
-  if (!Array.isArray(tempValues[key])) return false;
-  return tempValues[key].includes(value.toString());
-}
+    return Array.isArray(tempFilterValues[key]) && 
+           tempFilterValues[key].includes(value.toString());
+  }
 
-function getSelectedCount(key: string): number {
-  return Array.isArray(tempValues[key]) ? tempValues[key].length : 0;
-}
+  function getSelectedCount(key: string): number {
+    return Array.isArray(tempFilterValues[key]) ? tempFilterValues[key].length : 0;
+  }
+
+  function clearSelection(key: string): void {
+    updateFilterValue(key, []);
+  }
+  
 </script>
 
 <div 
@@ -95,7 +99,7 @@ function getSelectedCount(key: string): number {
       <div class="filter-item">
         <div class="mb-3 flex justify-between items-center">
           <div>
-            <label class="text-sm font-medium text-gray-700">
+            <label class="text-sm font-medium text-gray-700" for={filter.key}>
               {filter.label}
             </label>
             {#if filter.description}
@@ -114,7 +118,7 @@ function getSelectedCount(key: string): number {
             <select
               class="w-full rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 
                      py-2.5 pl-3 pr-10 text-sm text-gray-700 transition-all duration-200"
-              value={tempValues[filter.key] || ''}
+              value={tempFilterValues[filter.key] || ''}
               on:change={(e) => handleSelectChange(e, filter.key)}
             >
               <option value="">All</option>
@@ -164,8 +168,8 @@ function getSelectedCount(key: string): number {
             <button
               class="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200"
               on:click={() => {
-                tempValues = { ...tempValues, [filter.key]: [] };
-                dispatch('change', { tempValues });
+                tempFilterValues = { ...tempFilterValues, [filter.key]: [] };
+                dispatch('change', { tempFilterValues });
               }}
             >
               Clear selection ({getSelectedCount(filter.key)})
@@ -177,7 +181,7 @@ function getSelectedCount(key: string): number {
             type="date"
             class="w-full rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 
                    py-2.5 px-3 text-sm text-gray-700 transition-all duration-200"
-            value={tempValues[filter.key] || ''}
+            value={tempFilterValues[filter.key] || ''}
             on:change={(e) => handleInputChange(e, filter.key)}
           />
 
@@ -187,7 +191,7 @@ function getSelectedCount(key: string): number {
             class="w-full rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 
                    py-2.5 px-3 text-sm text-gray-700 placeholder-gray-400 transition-all duration-200"
             placeholder={`Search ${filter.label.toLowerCase()}...`}
-            value={tempValues[filter.key] || ''}
+            value={tempFilterValues[filter.key] || ''}
             on:input={(e) => handleInputChange(e, filter.key)}
           />
         {/if}
@@ -218,10 +222,12 @@ function getSelectedCount(key: string): number {
 </div>
 
 {#if isOpen}
-  <div 
+  <button 
+    type="button"
     class="fixed inset-0 bg-black bg-opacity-25 backdrop-blur-sm z-40"
     on:click={handleClose}
-  ></div>
+    aria-label="Close filter panel"
+  ></button>
 {/if}
 
 <style>

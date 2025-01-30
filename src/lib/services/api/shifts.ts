@@ -1,6 +1,6 @@
 import { fetchApi, type ListParams } from './base';
 import type { Shift } from '$lib/types';
-import { toUTCDate, toUTCTime, fromUTCTime, fromUTCDate } from '$lib/utils/date';
+import { toUTCDate, toUTCTime, fromUTCTime, fromUTCDate, toISTISOString } from '$lib/utils/date';
 
 
 function convertShiftTimesToUTC<T extends { startTime?: string; endTime?: string; shiftWindowStart?: string; shiftWindowEnd?: string; validFrom?: string; validTill?: string }>(shift: T): T {
@@ -71,6 +71,9 @@ export const shiftsApi = {
     employeeIds: string[],
     validity: { validFrom: string; validTill?: string }
   ) => {
+
+    console.log(validity.validFrom, "1 validFrom")
+    console.log(validity.validTill, "1 validityTill")
     // Convert dates to UTC at midnight
     const validFromDate = new Date(validity.validFrom);
     validFromDate.setHours(0, 0, 0, 0);
@@ -82,7 +85,16 @@ export const shiftsApi = {
       validTillDate.setHours(23, 59, 59, 999);
       utcValidTill = validTillDate.toISOString();
     }
+    console.log(utcValidFrom, "2 validFrom")
+    console.log(utcValidTill, "2 validityTill")
 
+    /* console.log(validity.validFrom, "1 validFrom")
+     console.log(validity.validTill, "1 validityTill")
+     const utcValidFrom = toISTISOString(validity.validFrom);
+     const utcValidTill = toISTISOString(validity.validTill, true);
+     console.log(utcValidFrom, "2 validFrom")
+     console.log(utcValidTill, "2 validityTill")
+ */
     return fetchApi<void>(`/shifts/${shiftId}/assign`, {
       method: 'POST',
       body: JSON.stringify({

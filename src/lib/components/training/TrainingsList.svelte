@@ -7,7 +7,7 @@
     import { trainingsApi, employeesApi } from '$lib/services/api/';
 
     let trainings: Training[] = [];
-    let employees: EmployeeListResponse = [];
+    let employees: User[] = [];
     let loading = false;
     let error: string | null = null;
     let showForm = false;

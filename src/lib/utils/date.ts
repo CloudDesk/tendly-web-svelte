@@ -36,3 +36,23 @@ export function toDate(localDateTime: string | undefined): string | undefined {
   const date = new Date(localDateTime);
   return date.toISOString().split('T')[0];
 }
+
+
+export function toISTISOString(dateStr: string | undefined, isEndOfDay = false) {
+  if (!dateStr) return undefined;
+
+  const date = new Date(dateStr);
+
+  // Set start or end of the day in IST
+  if (isEndOfDay) {
+    date.setHours(23, 59, 59, 999);
+  } else {
+    date.setHours(0, 0, 0, 0);
+  }
+
+  // Manually adjust for IST (UTC+5:30)
+  const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+  const istTime = new Date(date.getTime() - IST_OFFSET);
+
+  return istTime.toISOString(); // Return ISO format
+}

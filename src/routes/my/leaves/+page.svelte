@@ -1,6 +1,6 @@
 <script lang="ts">
   import Table from '$lib/components/common/Table.svelte';
-  import type { LeaveRequest, LeaveSummary } from '$lib/services/api/leaves';
+  import type { LeaveRequest } from '$lib/services/api/leaves';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { leavesApi } from '$lib/services/api/leaves';
@@ -12,10 +12,30 @@
   import { writable, derived } from 'svelte/store';
   import type { LeaveFilterSchema } from '$lib/types';
 
-  export let data;
+  // Constants for default form values
+  const DEFAULT_FORM_VALUES = {
+    leaveType: '',
+    startDate: '',
+    endDate: '',
+    reason: '',
+    status: 'Pending',
+    leaveTypeId: "678dec1789f768e0b1877aae"
+  };
+
+  // Initialize stores
   let isLoading = false;
+  let showApplyForm = false;
+  let loading = false;
+  let isFilterOpen = false;
+  let filterValues = writable({});
+  let appliedFilterValues = writable({});
+  let formValues = { ...DEFAULT_FORM_VALUES };
+
+  // Extract data from props
+  export let data;
   $: ({ leaves, summary, pagination, filters, sort, leaveTypeId } = data);
 
+  // Define table columns
   const columns = [
     {
       key: 'leaveType',
@@ -56,113 +76,12 @@
     }
   ];
 
-  function handleSearch(event: CustomEvent) {
-    const { query } = event.detail;
-    const url = new URL($page.url);
-    url.searchParams.set('search', query);
-    url.searchParams.set('page', '1');
-    goto(url, { replaceState: true });
-  }
-
-  function handleSort(event: CustomEvent) {
-    const { key, direction } = event.detail;
-    const url = new URL($page.url);
-    url.searchParams.set('sortBy', key);
-    url.searchParams.set('sortOrder', direction);
-    goto(url, { replaceState: true });
-  }
-
-  async function handlePage(event: CustomEvent) {
-    isLoading = true;
-    try {
-      const { page: newPage } = event.detail;
-      const url = new URL($page.url);
-      url.searchParams.set('page', newPage.toString());
-      await goto(url, { replaceState: true, invalidateAll: true });
-    } finally {
-      isLoading = false;
-    }
-  }
-
-  let showApplyForm = false;
-  let loading = false;
-
-  // Initialize formValues with default values
-  let defaultFormValues = {
-    leaveType: '',
-    startDate: '',
-    endDate: '',
-    reason: '',
-    status: 'Pending',
-    leaveTypeId: leaveTypeId || "678dec1789f768e0b1877aae"
-  };
-
-  let formValues = { ...defaultFormValues };
-
-  function openApplyForm() {
-    // Reset form values when opening the form
-    formValues = { ...defaultFormValues };
-    showApplyForm = true;
-  }
-
-  function closeApplyForm() {
-    // Reset form values when closing the form
-    formValues = { ...defaultFormValues };
-    showApplyForm = false;
-  }
-
-  async function handleLeaveSubmit(event: CustomEvent) {
-    loading = true;
-    const submittedData = event.detail;
-    console.log('Submitted data:', submittedData);
-
-    try {
-      const values = {
-        ...submittedData,
-        leaveTypeId: leaveTypeId || "678dec1789f768e0b1877aae"
-      };
-
-      const res = await leavesApi.create(values);
-      console.log('Leave created:', res);
-      toast.success('Leave applied successfully');
-      showApplyForm = false;
-
-      // Refresh the page data by invalidating current URL
-      const currentUrl = new URL($page.url);
-      // Add or update a timestamp parameter to force reload
-      currentUrl.searchParams.set('t', Date.now().toString());
-
-      // Navigate to the modified URL to trigger a refresh
-      await goto(currentUrl, {
-        replaceState: true,
-        invalidateAll: true // This will force SvelteKit to refetch the page data
-      });
-
-    } catch (error) {
-      console.log('Error submitting leave:', error);
-      toast.error('Failed to apply leave');
-      // Handle error (show toast, etc.)
-    } finally {
-      setTimeout(() => {
-        closeApplyForm();
-        loading = false;
-      }, 500);
-    }
-  }
-
-  function handleFormUpdate(event: CustomEvent) {
-    formValues = event.detail;
-  }
-
-  let isFilterOpen = false;
-  let filterValues = writable({});
-  let appliedFilterValues = writable({}); // Store applied filter values separately
-
+  // Define filter schema
   const filtersSchema: LeaveFilterSchema[] = [
     {
       key: 'status',
       label: 'Status',
-      type: 'select' as 'select',
+      type: 'select',
       options: [...leaveStatusOptions, { label: 'Cancelled', value: 'Cancelled' }]
     },
     {
@@ -183,81 +102,7 @@
     }
   ];
 
-  function toggleFilter() {
-    isFilterOpen = !isFilterOpen;
-  }
-
-  function handleFilterChange(event: CustomEvent) {
-    const { values } = event.detail;
-    console.log('Filter values changed:', values);
-    filterValues.set(values);   // Update temporary values
-    console.log($filterValues, "filterValues");
-  }
-
-  async function handleFilterApply(event: CustomEvent) {
-    console.log(event.detail,"handleFilterApply")
-    const  values  = event.detail;
-    console.log(values,"values")
-     appliedFilterValues.set(values); // Update applied values
-    const url = new URL($page.url);
-
-    // Clear existing filter params
-    ['status', 'leaveType', 'fromDate', 'toDate'].forEach(key => {
-      url.searchParams.delete(key);
-    });
-
-    // Add new filter params, handling arrays for checkbox values
-    Object.entries(values).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
-        // Join array values with commas for checkbox type
-        if (value.length > 0) {
-          url.searchParams.set(key, value.join(','));
-        }
-      } else if (value) {
-        url.searchParams.set(key, value.toString());
-      }
-    });
-
-    // Reset to first page when filtering
-    url.searchParams.set('page', '1');
-
-    isLoading = true;
-    try {
-      await goto(url, { replaceState: true });
-    } finally {
-      isLoading = false;
-      isFilterOpen=false;
-    }
-  }
-
-  async function handleFilterReset() {
-    // Reset local filter values
-    filterValues.set({});
-    appliedFilterValues.set({})
-
-    // Clear filter-related URL parameters
-    const url = new URL($page.url);
-
-    // Get all filter keys from filterConfig
-    const filterKeys = filtersSchema.map(filter => filter.key);
-
-    // Clear all filter-related search params
-    filterKeys.forEach(key => {
-      url.searchParams.delete(key);
-    });
-
-    // Reset to first page
-    url.searchParams.set('page', '1');
-
-    isLoading = true;
-    try {
-      await goto(url, { replaceState: true });
-    } finally {
-      isLoading = false;
-      toggleFilter();
-    }
-  }
-
+  // Derived store to calculate the count of selected filters
   const selectedFilterCount = derived(filterValues, ($filterValues) => {
     return Object.values($filterValues).reduce((count: number, value: any) => {
       if (Array.isArray(value)) {
@@ -268,6 +113,157 @@
       return count;
     }, 0);
   });
+
+  // Handle search event
+  function handleSearch(event: CustomEvent) {
+    const { query } = event.detail;
+    const url = new URL($page.url);
+    url.searchParams.set('search', query);
+    url.searchParams.set('page', '1');
+    goto(url, { replaceState: true });
+  }
+
+  // Handle sort event
+  function handleSort(event: CustomEvent) {
+    const { key, direction } = event.detail;
+    const url = new URL($page.url);
+    url.searchParams.set('sortBy', key);
+    url.searchParams.set('sortOrder', direction);
+    goto(url, { replaceState: true });
+  }
+
+  // Handle page change event
+  async function handlePage(event: CustomEvent) {
+    isLoading = true;
+    try {
+      const { page: newPage } = event.detail;
+      const url = new URL($page.url);
+      url.searchParams.set('page', newPage.toString());
+      await goto(url, { replaceState: true, invalidateAll: true });
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  // Open apply form
+  function openApplyForm() {
+    formValues = { ...DEFAULT_FORM_VALUES };
+    showApplyForm = true;
+  }
+
+  // Close apply form
+  function closeApplyForm() {
+    formValues = { ...DEFAULT_FORM_VALUES };
+    showApplyForm = false;
+  }
+
+  // Handle leave form submission
+  async function handleLeaveSubmit(event: CustomEvent) {
+    loading = true;
+    const submittedData = event.detail;
+    console.log('Submitted data:', submittedData);
+
+    try {
+      const values = {
+        ...submittedData,
+        leaveTypeId: leaveTypeId || "678dec1789f768e0b1877aae"
+      };
+
+      const res = await leavesApi.create(values);
+      console.log('Leave created:', res);
+      toast.success('Leave applied successfully');
+      showApplyForm = false;
+
+      // Refresh the page data by invalidating current URL
+      const currentUrl = new URL($page.url);
+      currentUrl.searchParams.set('t', Date.now().toString());
+
+      await goto(currentUrl, {
+        replaceState: true,
+        invalidateAll: true
+      });
+
+    } catch (error) {
+      console.log('Error submitting leave:', error);
+      toast.error('Failed to apply leave');
+    } finally {
+      setTimeout(() => {
+        closeApplyForm();
+        loading = false;
+      }, 500);
+    }
+  }
+
+  // Handle form update
+  function handleFormUpdate(event: CustomEvent) {
+    formValues = event.detail;
+  }
+
+  // Toggle filter panel
+  function toggleFilter() {
+    isFilterOpen = !isFilterOpen;
+  }
+
+  // Handle filter change
+  function handleFilterChange(event: CustomEvent) {
+    const { values } = event.detail;
+    console.log('Filter values changed:', values);
+    filterValues.set(values);
+  }
+
+  // Handle filter apply
+  async function handleFilterApply(event: CustomEvent) {
+    const values = event.detail;
+    appliedFilterValues.set(values);
+    const url = new URL($page.url);
+
+    ['status', 'leaveType', 'fromDate', 'toDate'].forEach(key => {
+      url.searchParams.delete(key);
+    });
+
+    Object.entries(values).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        if (value.length > 0) {
+          url.searchParams.set(key, value.join(','));
+        }
+      } else if (value) {
+        url.searchParams.set(key, value.toString());
+      }
+    });
+
+    url.searchParams.set('page', '1');
+
+    isLoading = true;
+    try {
+      await goto(url, { replaceState: true });
+    } finally {
+      isLoading = false;
+      isFilterOpen = false;
+    }
+  }
+
+  // Handle filter reset
+  async function handleFilterReset() {
+    filterValues.set({});
+    appliedFilterValues.set({});
+
+    const url = new URL($page.url);
+    const filterKeys = filtersSchema.map(filter => filter.key);
+
+    filterKeys.forEach(key => {
+      url.searchParams.delete(key);
+    });
+
+    url.searchParams.set('page', '1');
+
+    isLoading = true;
+    try {
+      await goto(url, { replaceState: true });
+    } finally {
+      isLoading = false;
+      toggleFilter();
+    }
+  }
 </script>
 
 <svelte:head>
@@ -352,172 +348,149 @@
 </div>
 
 <style>
- .leaves-page {
-  padding: 24px;
-  background: #f6f7fb;
-  min-height: 100vh;
-}
+  .leaves-page {
+    padding: 24px;
+    background: #f6f7fb;
+    min-height: 100vh;
+  }
 
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  /* background: #f0f1f5; */
-  padding: 2px;
-  border-radius: 6px;
-}
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px;
+    border-radius: 6px;
+  }
 
-h1 {
-  font-size: 24px;
-  font-weight: 600;
-  color: #323338;
-  margin: 0;
-}
+  h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #323338;
+    margin: 0;
+  }
 
-/* Base button styles */
-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: none;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-}
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+  }
 
-/* Filter and View button styles */
-.btn-filter, 
-.btn-view {
-  background: #f0f1f5;
-  color: #4b4b4b;
-  padding: 8px 12px;
-  font-weight: 500;
-  position: relative;
-  min-width: 90px;
-}
+  .btn-filter, 
+  .btn-view {
+    background: #f0f1f5;
+    color: #4b4b4b;
+    padding: 8px 12px;
+    font-weight: 500;
+    position: relative;
+    min-width: 90px;
+  }
 
-/* Active/Selected state for filter/view buttons */
-.btn-filter.active, 
-.btn-view.active {
-  background: white;
-  color: #0073ea;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
+  .btn-filter.active, 
+  .btn-view.active {
+    background: white;
+    color: #0073ea;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
 
-/* Hover state for filter/view buttons */
-.btn-filter:hover, 
-.btn-view:hover {
-  background: white;
-  color: #0073ea;
-}
-
-/* Filter badge styling */
-.filter-badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  background: #ff3b30;
-  color: white;
-  border-radius: 10px;
-  padding: 2px 6px;
-  font-size: 11px;
-  font-weight: 600;
-  min-width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #f6f7fb;
-}
-
-/* Right side action buttons */
-.header-right {
-  display: flex;
-  gap: 12px;
-}
-
-/* Primary button style */
-.btn-primary {
-  background: #0073ea;
-  color: white;
-  padding: 10px 18px;
-  box-shadow: 0 2px 4px rgba(0, 115, 234, 0.2);
-}
-
-.btn-primary:hover {
-  background: #0060c2;
-  box-shadow: 0 4px 6px rgba(0, 115, 234, 0.25);
-  transform: translateY(-1px);
-}
-
-.btn-primary:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 115, 234, 0.2);
-}
-
-/* Secondary button style */
-.btn-secondary {
-  background: white;
-  color: #323338;
-  border: 1px solid #e0e0e0;
-  padding: 9px 18px;
-}
-
-.btn-secondary:hover {
-  background: #f8f9fc;
-  border-color: #d0d0d0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.btn-secondary:active {
-  background: #f0f1f5;
-  border-color: #d0d0d0;
-}
-
-/* Icon styles */
-button i {
-  font-size: 16px;
-}
-
-.btn-primary i,
-.btn-secondary i {
-  font-size: 14px;
-}
-
-/* Disabled state for all buttons */
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+  .btn-filter:hover, 
+  .btn-view:hover {
+    background: white;
+    color: #0073ea;
+  }
 
   .filter-badge {
     position: absolute;
-    top: -5px;
-    right: -5px;
-    background: red;
+    top: -6px;
+    right: -6px;
+    background: #ff3b30;
     color: white;
-    border-radius: 50%;
+    border-radius: 10px;
     padding: 2px 6px;
-    font-size: 12px;
-    font-weight: bold;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #f6f7fb;
+  }
+
+  .header-right {
+    display: flex;
+    gap: 12px;
+  }
+
+  .btn-primary {
+    background: #0073ea;
+    color: white;
+    padding: 10px 18px;
+    box-shadow: 0 2px 4px rgba(0, 115, 234, 0.2);
+  }
+
+  .btn-primary:hover {
+    background: #0060c2;
+    box-shadow: 0 4px 6px rgba(0, 115, 234, 0.25);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 115, 234, 0.2);
+  }
+
+  .btn-secondary {
+    background: white;
+    color: #323338;
+    border: 1px solid #e0e0e0;
+    padding: 9px 18px;
+  }
+
+  .btn-secondary:hover {
+    background: #f8f9fc;
+    border-color: #d0d0d0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .btn-secondary:active {
+    background: #f0f1f5;
+    border-color: #d0d0d0;
+  }
+
+  button i {
+    font-size: 16px;
+  }
+
+  .btn-primary i,
+  .btn-secondary i {
+    font-size: 14px;
+  }
+
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .table-container {

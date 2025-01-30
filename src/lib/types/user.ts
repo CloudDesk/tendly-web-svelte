@@ -1,4 +1,9 @@
 export type UserRole = 'ADMIN' | 'MANAGER' | 'STAFF';
+type ShiftAssignment = {
+  startDate: { type: 'string', format: 'date-time' },
+  endDate: { type: 'string', format: 'date-time' },
+  shiftCode: { type: 'string' }
+}
 export type User = {
   _id: string;
   email: string;
@@ -13,6 +18,10 @@ export type User = {
   profileImageUrl?: string;
   managerId?: string;
   managerName?: string;
+  currentShiftAssignment?: string;
+  currentShiftAssignmentData?: ShiftAssignment;
+  upcomingShiftAssignment?: string;
+  upcomingShiftAssignmentData?: ShiftAssignment;
 };
 
 export type UserProfile = Omit<User, 'role' | 'isActive' | 'createdAt' | 'updatedAt'> & {

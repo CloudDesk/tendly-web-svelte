@@ -5,6 +5,7 @@
   import type { Shift, User } from '$lib/types';
   import { shiftsApi, employeesApi } from '$lib/services/api/';
   import { page } from '$app/stores';
+  import { fromUTCDate, toUTCDate } from '$lib/utils/date';
   let shifts: Shift[] = [];
   let employees: User[] = [];
   let loading = false;
@@ -67,14 +68,14 @@
       key: 'currentShiftAssignment', 
       label: 'Current Shift',
       render: (row: User) => row.currentShiftAssignment 
-        ? `${row.currentShiftAssignment.name} (${row.currentShiftAssignment.startTime}-${row.currentShiftAssignment.endTime})`
+        ? `${row.currentShiftAssignmentData?.shiftCode} (${fromUTCDate(row.currentShiftAssignmentData?.startDate?.toString())}-${fromUTCDate(row.currentShiftAssignmentData?.endDate?.toString())})`
         : 'No shift assigned'
     },
     { 
       key: 'upcomingShiftAssignment', 
       label: 'Upcoming Shift',
       render: (row: User) => row.upcomingShiftAssignment
-        ? `${row.upcomingShiftAssignment.name} (${row.upcomingShiftAssignment.startTime}-${row.upcomingShiftAssignment.endTime})`
+        ? `${row.upcomingShiftAssignmentData?.shiftCode} (${fromUTCDate(row.upcomingShiftAssignmentData?.startDate?.toString())}-${fromUTCDate(row.upcomingShiftAssignmentData?.endDate.toString())})`
         : 'No upcoming shift'
     }
   ];
@@ -108,7 +109,13 @@
         limit: 100, // Load more employees for assignment
         search: searchQuery
       });
-      employees = response.data;
+      console.log("employeeList",response.data)
+     
+      if(response.success){
+        employees = response.data as User[];
+      }
+
+
     } catch (err) {
       error = 'Failed to load employees';
       console.error(err);
@@ -257,6 +264,7 @@
   {/if}
 </div>
 
+<!-- Add,Edit Shift -->
 <Modal
   show={showForm}
   title={editingShift._id ? 'Edit Shift' : 'New Shift'}
@@ -376,6 +384,7 @@
   </form>
 </Modal> 
 
+<!-- View Action Card -->
 <Modal
   show={showDetails}
   title="Shift Details"
@@ -420,6 +429,7 @@
   {/if}
 </Modal> 
 
+<!-- Assign Modal with 2 steps  -->
 <Modal
   show={showAssignModal}
   title={`Assign ${selectedShift?.name || 'Shift'}`}
@@ -538,7 +548,6 @@
             required
           />
         </div>
-
         <div class="form-control">
           <label class="label">Assignment Valid Till</label>
           <input 
