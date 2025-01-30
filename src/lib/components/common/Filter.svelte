@@ -1,83 +1,78 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
-    import { slide } from 'svelte/transition';
-    import { X, Check } from 'lucide-svelte';
-    
-    type FilterOption = {
-      label: string;
-      value: string | number;
-    };
-    
-    type FilterConfig = {
-      key: string;
-      label: string;
-      type: 'select' | 'multiselect' | 'date' | 'daterange' | 'text' | 'checkbox';
-      options?: FilterOption[];
-      description?: string;
-    };
-    
-    export let filters: FilterConfig[] = [];
-    export let values: Record<string, any> = {};
-    export let isOpen = false;
-    
-    console.log('filtervalues',values);
-    const dispatch = createEventDispatcher();
-    
-    function handleFilterChange(key: string, value: any) {
-      values = { ...values, [key]: value };
-      dispatch('change', { values });
-    }
-    
-    function handleSelectChange(event: Event, key: string) {
-      const target = event.target as HTMLSelectElement;
-      handleFilterChange(key, target.value);
-    }
+  import { createEventDispatcher } from 'svelte';
+  import { slide } from 'svelte/transition';
+  import { X, Check } from 'lucide-svelte';
+  import type { LeaveFilterSchema } from '$lib/types';
 
-    function handleInputChange(event: Event, key: string) {
-      const target = event.target as HTMLInputElement;
-      handleFilterChange(key, target.value);
-    }
+  export let filters: LeaveFilterSchema[] = [];
+  export let values: Record<string, any> = {};
+  export let isOpen = false;
 
-    function handleCheckboxChange(key: string, value: string) {
-      const currentValues = Array.isArray(values[key]) ? [...values[key]] : [];
-      
-      const index = currentValues.indexOf(value);
-      if (index > -1) {
-        currentValues.splice(index, 1);
+  const dispatch = createEventDispatcher();
+
+  // Keep track of temporary values while filter panel is open
+  let tempValues: Record<string, any> = { ...values };
+
+  // Update temp values when parent values change
+  $: {
+    if (!isOpen) {
+      tempValues = { ...values };
+    }
+  }
+
+
+  function handleFilterChange(key: string, value: any) {
+    tempValues = { ...tempValues, [key]: value };
+    dispatch('change', { values: tempValues });
+  }
+
+  function handleSelectChange(event: Event, key: string) {
+    const target = event.target as HTMLSelectElement;
+    handleFilterChange(key, target.value);
+  }
+
+  function handleInputChange(event: Event, key: string) {
+    const target = event.target as HTMLInputElement;
+    handleFilterChange(key, target.value);
+  }
+
+  function handleCheckboxChange(key: string, value: string) {
+      let currentValues = Array.isArray(tempValues[key]) ? [...tempValues[key]] : [];
+
+      if (currentValues.includes(value)) {
+        currentValues = currentValues.filter(v => v !== value);
       } else {
-        currentValues.push(value);
+        currentValues = [...currentValues, value];
       }
-      
-      values = {
-        ...values,
-        [key]: currentValues
-      };
-      
-      dispatch('change', { values });
-    }
-    
-    function handleApply() {
-      dispatch('apply', values);
-    }
-    
-    function handleReset() {
-      values = {};
-      dispatch('reset');
-    }
-    
-    function handleClose() {
-      isOpen = false;
-      dispatch('close');
-    }
 
-    function isChecked(key: string, value: string | number): boolean {
-      if (!Array.isArray(values[key])) return false;
-      return values[key].includes(value.toString());
-    }
+      handleFilterChange(key, currentValues);
+  }
 
-    function getSelectedCount(key: string): number {
-      return Array.isArray(values[key]) ? values[key].length : 0;
-    }
+  function handleApply() {
+    dispatch('apply', tempValues);
+  }
+
+  function handleReset() {
+    tempValues = {};
+    dispatch('reset');
+  }
+
+  function handleClose() {
+    // Revert to original values if closing without applying
+     tempValues = { ...values };
+     dispatch('change', { values: tempValues });
+    isOpen = false;
+    dispatch('close');
+  }
+
+  function isChecked(key: string, value: string | number): boolean {
+  if (!Array.isArray(tempValues[key])) return false;
+  return tempValues[key].includes(value.toString());
+}
+
+function getSelectedCount(key: string): number {
+  return Array.isArray(tempValues[key]) ? tempValues[key].length : 0;
+}
 </script>
 
 <div 
@@ -85,26 +80,26 @@
   class:hidden={!isOpen}
   transition:slide={{ duration: 300, axis: 'x' }}
 >
-  <header class="flex items-center justify-between p-6 border-b">
+  <header class="flex items-center justify-between p-6 border-b border-gray-200">
     <h3 class="text-lg font-semibold text-gray-900">Filters</h3>
     <button 
-      class="p-2 rounded-full hover:bg-gray-100 transition-colors"
+      class="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
       on:click={handleClose}
     >
-      <X class="w-5 h-5 text-gray-500" />
+      <X class="w-5 h-5 text-gray-500 hover:text-gray-700" />
     </button>
   </header>
 
   <div class="filters-content p-6 space-y-6 overflow-y-auto" style="height: calc(100vh - 160px)">
     {#each filters as filter}
       <div class="filter-item">
-        <div class="mb-2 flex justify-between items-center">
+        <div class="mb-3 flex justify-between items-center">
           <div>
-            <label class="text-sm font-medium text-gray-900">
+            <label class="text-sm font-medium text-gray-700">
               {filter.label}
             </label>
             {#if filter.description}
-              <p class="text-xs text-gray-500 mt-0.5">{filter.description}</p>
+              <p class="text-xs text-gray-400 mt-1">{filter.description}</p>
             {/if}
           </div>
           {#if filter.type === 'checkbox' && getSelectedCount(filter.key) > 0}
@@ -117,9 +112,9 @@
         {#if filter.type === 'select'}
           <div class="relative">
             <select
-              class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 
-                     py-2.5 pl-3 pr-10 text-sm transition-colors"
-              value={values[filter.key] || ''}
+              class="w-full rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 
+                     py-2.5 pl-3 pr-10 text-sm text-gray-700 transition-all duration-200"
+              value={tempValues[filter.key] || ''}
               on:change={(e) => handleSelectChange(e, filter.key)}
             >
               <option value="">All</option>
@@ -139,7 +134,7 @@
             {#each filter.options || [] as option}
               <label 
                 class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer
-                       transition-colors duration-150 ease-in-out"
+                       transition-colors duration-200 ease-in-out"
               >
                 <div class="relative flex items-center">
                   <input
@@ -150,7 +145,7 @@
                     on:change={() => handleCheckboxChange(filter.key, option.value.toString())}
                   />
                   <div 
-                    class={`w-5 h-5 border rounded transition-colors duration-150 ease-in-out
+                    class={`w-5 h-5 border rounded transition-colors duration-200 ease-in-out
                       flex items-center justify-center
                       ${isChecked(filter.key, option.value) 
                         ? 'bg-blue-500 border-blue-500' 
@@ -167,10 +162,10 @@
           </div>
           {#if getSelectedCount(filter.key) > 0}
             <button
-              class="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium"
+              class="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200"
               on:click={() => {
-                values = { ...values, [filter.key]: [] };
-                dispatch('change', { values });
+                tempValues = { ...tempValues, [filter.key]: [] };
+                dispatch('change', { tempValues });
               }}
             >
               Clear selection ({getSelectedCount(filter.key)})
@@ -180,19 +175,19 @@
         {:else if filter.type === 'date'}
           <input
             type="date"
-            class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 
-                   py-2.5 px-3 text-sm transition-colors"
-            value={values[filter.key] || ''}
+            class="w-full rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 
+                   py-2.5 px-3 text-sm text-gray-700 transition-all duration-200"
+            value={tempValues[filter.key] || ''}
             on:change={(e) => handleInputChange(e, filter.key)}
           />
 
         {:else if filter.type === 'text'}
           <input
             type="text"
-            class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 
-                   py-2.5 px-3 text-sm transition-colors"
+            class="w-full rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 
+                   py-2.5 px-3 text-sm text-gray-700 placeholder-gray-400 transition-all duration-200"
             placeholder={`Search ${filter.label.toLowerCase()}...`}
-            value={values[filter.key] || ''}
+            value={tempValues[filter.key] || ''}
             on:input={(e) => handleInputChange(e, filter.key)}
           />
         {/if}
@@ -200,12 +195,12 @@
     {/each}
   </div>
 
-  <footer class="absolute bottom-0 left-0 w-full p-4 bg-gray-50 border-t">
+  <footer class="absolute bottom-0 left-0 w-full p-4 bg-gray-50 border-t border-gray-200">
     <div class="flex justify-between gap-4">
       <button
         class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 
-               rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500
-               transition-colors"
+               rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500
+               transition-all duration-200"
         on:click={handleReset}
       >
         Reset
@@ -213,7 +208,7 @@
       <button
         class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 border border-transparent 
                rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
-               transition-colors"
+               transition-all duration-200"
         on:click={handleApply}
       >
         Apply Filters
@@ -230,9 +225,9 @@
 {/if}
 
 <style>
-  /* Add custom scrollbar for checkbox list */
+  /* Custom scrollbar for checkbox list */
   .space-y-2::-webkit-scrollbar {
-    width: 4px;
+    width: 6px;
   }
 
   .space-y-2::-webkit-scrollbar-track {

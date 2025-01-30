@@ -9,14 +9,13 @@
   import { getLeaveTypeLabel, leaveStatusOptions, leaveTypeOptions } from '$lib/constants/leaveTypes.js';
   import { toast } from '$lib/components/common/stores/toast.store.js';
   import Filter from '$lib/components/common/Filter.svelte';
-    import { CloudCog } from 'lucide-svelte';
+  import { writable, derived } from 'svelte/store';
+  import type { LeaveFilterSchema } from '$lib/types';
 
   export let data;
   let isLoading = false;
-  $: ({ leaves,summary, pagination, filters, sort, leaveTypeId } = data);
-  console.log(pagination, "pagination");
+  $: ({ leaves, summary, pagination, filters, sort, leaveTypeId } = data);
 
- 
   const columns = [
     {
       key: 'leaveType',
@@ -73,18 +72,16 @@
     goto(url, { replaceState: true });
   }
 
- async function handlePage(event: CustomEvent) {
-  isLoading =true
-  try{
-    const { page: newPage } = event.detail;
-    const url = new URL($page.url);
-    url.searchParams.set('page', newPage.toString());
-   await  goto(url, { replaceState: true , invalidateAll: true});
-  }finally{
-    isLoading=false
-  }
-
-
+  async function handlePage(event: CustomEvent) {
+    isLoading = true;
+    try {
+      const { page: newPage } = event.detail;
+      const url = new URL($page.url);
+      url.searchParams.set('page', newPage.toString());
+      await goto(url, { replaceState: true, invalidateAll: true });
+    } finally {
+      isLoading = false;
+    }
   }
 
   let showApplyForm = false;
@@ -100,7 +97,7 @@
     leaveTypeId: leaveTypeId || "678dec1789f768e0b1877aae"
   };
 
-  let formValues= {...defaultFormValues};
+  let formValues = { ...defaultFormValues };
 
   function openApplyForm() {
     // Reset form values when opening the form
@@ -113,7 +110,6 @@
     formValues = { ...defaultFormValues };
     showApplyForm = false;
   }
-
 
   async function handleLeaveSubmit(event: CustomEvent) {
     loading = true;
@@ -130,21 +126,21 @@
       console.log('Leave created:', res);
       toast.success('Leave applied successfully');
       showApplyForm = false;
-   
-    // Refresh the page data by invalidating current URL
-    const currentUrl = new URL($page.url);
-    // Add or update a timestamp parameter to force reload
-    currentUrl.searchParams.set('t', Date.now().toString());
-    
-    // Navigate to the modified URL to trigger a refresh
-    await goto(currentUrl, { 
-      replaceState: true,
-      invalidateAll: true // This will force SvelteKit to refetch the page data
-    });
+
+      // Refresh the page data by invalidating current URL
+      const currentUrl = new URL($page.url);
+      // Add or update a timestamp parameter to force reload
+      currentUrl.searchParams.set('t', Date.now().toString());
+
+      // Navigate to the modified URL to trigger a refresh
+      await goto(currentUrl, {
+        replaceState: true,
+        invalidateAll: true // This will force SvelteKit to refetch the page data
+      });
 
     } catch (error) {
       console.log('Error submitting leave:', error);
-      toast.error('Failed to apply leave'); 
+      toast.error('Failed to apply leave');
       // Handle error (show toast, etc.)
     } finally {
       setTimeout(() => {
@@ -152,7 +148,6 @@
         loading = false;
       }, 500);
     }
-    
   }
 
   function handleFormUpdate(event: CustomEvent) {
@@ -160,25 +155,23 @@
   }
 
   let isFilterOpen = false;
-  let filterValues = {};
+  let filterValues = writable({});
+  let appliedFilterValues = writable({}); // Store applied filter values separately
 
-  const filterConfig = [
+  const filtersSchema: LeaveFilterSchema[] = [
     {
       key: 'status',
       label: 'Status',
-      type: 'select',
-      description: 'Filter by leave request status',
+      type: 'select' as 'select',
       options: [...leaveStatusOptions, { label: 'Cancelled', value: 'Cancelled' }]
     },
     {
       key: 'leaveType',
       label: 'Leave Type',
       type: 'select',
-      description: 'Select multiple leave types',
       options: leaveTypeOptions
     },
-   /* 
-   {
+    {
       key: 'fromDate',
       label: 'From Date',
       type: 'date'
@@ -188,7 +181,6 @@
       label: 'To Date',
       type: 'date'
     }
-    */
   ];
 
   function toggleFilter() {
@@ -198,20 +190,24 @@
   function handleFilterChange(event: CustomEvent) {
     const { values } = event.detail;
     console.log('Filter values changed:', values);
-    filterValues = { ...values }; // Ensure reactive update
+    filterValues.set(values);   // Update temporary values
+    console.log($filterValues, "filterValues");
   }
 
   async function handleFilterApply(event: CustomEvent) {
-    console.log('Applying filters:', filterValues);
+    console.log(event.detail,"handleFilterApply")
+    const  values  = event.detail;
+    console.log(values,"values")
+     appliedFilterValues.set(values); // Update applied values
     const url = new URL($page.url);
-    
+
     // Clear existing filter params
-    ['status', 'leaveType'].forEach(key => {
+    ['status', 'leaveType', 'fromDate', 'toDate'].forEach(key => {
       url.searchParams.delete(key);
     });
 
     // Add new filter params, handling arrays for checkbox values
-    Object.entries(filterValues).forEach(([key, value]) => {
+    Object.entries(values).forEach(([key, value]) => {
       if (Array.isArray(value)) {
         // Join array values with commas for checkbox type
         if (value.length > 0) {
@@ -224,34 +220,35 @@
 
     // Reset to first page when filtering
     url.searchParams.set('page', '1');
-    
+
     isLoading = true;
     try {
       await goto(url, { replaceState: true });
     } finally {
       isLoading = false;
-      toggleFilter();
+      isFilterOpen=false;
     }
   }
 
   async function handleFilterReset() {
     // Reset local filter values
-    filterValues = {};
-    
+    filterValues.set({});
+    appliedFilterValues.set({})
+
     // Clear filter-related URL parameters
     const url = new URL($page.url);
-    
+
     // Get all filter keys from filterConfig
-    const filterKeys = filterConfig.map(filter => filter.key);
-    
+    const filterKeys = filtersSchema.map(filter => filter.key);
+
     // Clear all filter-related search params
     filterKeys.forEach(key => {
       url.searchParams.delete(key);
     });
-    
+
     // Reset to first page
     url.searchParams.set('page', '1');
-    
+
     isLoading = true;
     try {
       await goto(url, { replaceState: true });
@@ -261,6 +258,16 @@
     }
   }
 
+  const selectedFilterCount = derived(filterValues, ($filterValues) => {
+    return Object.values($filterValues).reduce((count: number, value: any) => {
+      if (Array.isArray(value)) {
+        return count + value.length;
+      } else if (value) {
+        return count + 1;
+      }
+      return count;
+    }, 0);
+  });
 </script>
 
 <svelte:head>
@@ -272,12 +279,21 @@
     <div class="header-left">
       <h1>Leave Management</h1>
       <div class="header-actions">
-        <button class="btn-filter" on:click={toggleFilter}>
+        <button 
+          class="btn-filter" 
+          class:active={isFilterOpen}
+          on:click={toggleFilter}
+        >
           <i class="fas fa-filter"></i>
+          {#if $selectedFilterCount > 0}
+            <span class="filter-badge">{$selectedFilterCount}</span>
+          {/if}
           Filter
         </button>
-        <button class="btn-view">
-          <i class="fas fa-table-list" ></i>
+        <button 
+          class="btn-view"
+        >
+          <i class="fas fa-table-list"></i>
           View
         </button>
       </div>
@@ -312,8 +328,8 @@
   {/if}
 
   <Filter
-    filters={filterConfig}
-    values={filterValues}
+    filters={filtersSchema}
+    values={$appliedFilterValues}
     isOpen={isFilterOpen}
     on:change={handleFilterChange}
     on:apply={handleFilterApply}
@@ -332,97 +348,176 @@
       on:sort={handleSort}
       on:page={handlePage}
     />
-    <!--  <Table
-      {columns}
-      data={leaves}
-      loading={$page.url.searchParams.toString() !== $page.url.searchParams.toString()}
-      meta={pagination}
-      currentSort={sort}
-      serverSide={true}
-      on:search={handleSearch}
-      on:sort={handleSort}
-      on:page={handlePage}
-    /> -->
   </div>
 </div>
 
 <style>
-  .leaves-page {
-    padding: 24px;
-    background: #f6f7fb;
-    min-height: 100vh;
-  }
+ .leaves-page {
+  padding: 24px;
+  background: #f6f7fb;
+  min-height: 100vh;
+}
 
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-  }
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
 
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-  }
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
 
-  .header-actions {
-    display: flex;
-    gap: 8px;
-  }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* background: #f0f1f5; */
+  padding: 2px;
+  border-radius: 6px;
+}
 
-  .header-right {
-    display: flex;
-    gap: 12px;
-  }
+h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #323338;
+  margin: 0;
+}
 
-  h1 {
-    font-size: 24px;
-    font-weight: 600;
-    color: #323338;
-    margin: 0;
-  }
+/* Base button styles */
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
 
-  button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    border-radius: 4px;
-    border: none;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
+/* Filter and View button styles */
+.btn-filter, 
+.btn-view {
+  background: #f0f1f5;
+  color: #4b4b4b;
+  padding: 8px 12px;
+  font-weight: 500;
+  position: relative;
+  min-width: 90px;
+}
 
-  .btn-primary {
-    background: #0073ea;
+/* Active/Selected state for filter/view buttons */
+.btn-filter.active, 
+.btn-view.active {
+  background: white;
+  color: #0073ea;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Hover state for filter/view buttons */
+.btn-filter:hover, 
+.btn-view:hover {
+  background: white;
+  color: #0073ea;
+}
+
+/* Filter badge styling */
+.filter-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #ff3b30;
+  color: white;
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #f6f7fb;
+}
+
+/* Right side action buttons */
+.header-right {
+  display: flex;
+  gap: 12px;
+}
+
+/* Primary button style */
+.btn-primary {
+  background: #0073ea;
+  color: white;
+  padding: 10px 18px;
+  box-shadow: 0 2px 4px rgba(0, 115, 234, 0.2);
+}
+
+.btn-primary:hover {
+  background: #0060c2;
+  box-shadow: 0 4px 6px rgba(0, 115, 234, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 115, 234, 0.2);
+}
+
+/* Secondary button style */
+.btn-secondary {
+  background: white;
+  color: #323338;
+  border: 1px solid #e0e0e0;
+  padding: 9px 18px;
+}
+
+.btn-secondary:hover {
+  background: #f8f9fc;
+  border-color: #d0d0d0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.btn-secondary:active {
+  background: #f0f1f5;
+  border-color: #d0d0d0;
+}
+
+/* Icon styles */
+button i {
+  font-size: 16px;
+}
+
+.btn-primary i,
+.btn-secondary i {
+  font-size: 14px;
+}
+
+/* Disabled state for all buttons */
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+  .filter-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: red;
     color: white;
-  }
-
-  .btn-primary:hover {
-    background: #0060c2;
-  }
-
-  .btn-secondary {
-    background: white;
-    color: #323338;
-    border: 1px solid #dcdcdc;
-  }
-
-  .btn-secondary:hover {
-    background: #f5f6f8;
-  }
-
-  .btn-filter, .btn-view {
-    background: transparent;
-    color: #676879;
-    padding: 6px 12px;
-  }
-
-  .btn-filter:hover, .btn-view:hover {
-    background: #f5f6f8;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 12px;
+    font-weight: bold;
   }
 
   .table-container {
@@ -470,4 +565,3 @@
     color: #323338;
   }
 </style>
-

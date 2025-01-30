@@ -19,3 +19,17 @@ export type LeaveRequest = {
         name: string
     }
 }
+
+
+export type LeaveFilterOption = {
+    label: string;
+    value: string | number;
+};
+
+export type LeaveFilterSchema = {
+    key: string;
+    label: string;
+    type: 'select' | 'multiselect' | 'date' | 'daterange' | 'text' | 'checkbox';
+    options?: LeaveFilterOption[];
+    description?: string;
+};
