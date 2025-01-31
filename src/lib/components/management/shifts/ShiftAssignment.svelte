@@ -1,8 +1,9 @@
+<!-- ShiftAssignment.svelte -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import type { Shift, User } from '$lib/types';
-  import { shiftsApi } from '$lib/services/api/';
+  import type { User, Shift } from '$lib/types';
   import { fromUTCDate } from '$lib/utils/date';
+  import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
 
   export let shift: Shift | null = null;
   export let employees: User[] = [];
@@ -12,6 +13,35 @@
   export let assignmentValidTill = '';
 
   const dispatch = createEventDispatcher();
+
+  let showDialog = false;
+  let dialogConfig = {
+    title: 'Confirm Shift Assignment',
+    message: '',
+    confirmText: 'Proceed with Valid Assignments',
+    cancelText: 'Cancel',
+    type: 'warning' as const
+  };
+
+  let confirmationData = {
+    validEmployees: [],
+    invalidEmployees: []
+  };
+
+  $: dateError = validateDates();
+
+  function validateDates(): string {
+    // if (!assignmentValidFrom) return 'Assignment from date is required';
+    
+    const fromDate = new Date(assignmentValidFrom);
+    const tillDate = assignmentValidTill ? new Date(assignmentValidTill) : null;
+
+    if (tillDate && tillDate <= fromDate) {
+      return 'Assignment till date must be after from date';
+    }
+
+    return '';
+  }
 
   const employeeColumns = [
     { key: 'name' as keyof User, label: 'Name' },
@@ -27,7 +57,7 @@
       key: 'upcomingShiftAssignment', 
       label: 'Upcoming Shift',
       render: (row: User) => row.upcomingShiftAssignment
-        ? `${row.upcomingShiftAssignmentData?.shiftCode} (${fromUTCDate(row.upcomingShiftAssignmentData?.startDate?.toString())}-${fromUTCDate(row.upcomingShiftAssignmentData?.endDate.toString())})`
+        ? `${row.upcomingShiftAssignmentData?.shiftCode} (${fromUTCDate(row.upcomingShiftAssignmentData?.startDate?.toString())}-${fromUTCDate(row.upcomingShiftAssignmentData?.endDate?.toString())})`
         : 'No upcoming shift'
     }
   ];
@@ -41,13 +71,110 @@
     selectedEmployees = selectedEmployees;
   }
 
+  function getValidationError(employee: User): string {
+    // Case 1: Has upcoming assignment
+    if (employee.upcomingShiftAssignment) {
+      return 'Cannot assign shift - Employee has an upcoming shift scheduled';
+    }
+
+    if (!assignmentValidFrom) return '';
+    
+    const assignmentFromDate = new Date(assignmentValidFrom);
+    const assignmentTillDate = assignmentValidTill ? new Date(assignmentValidTill) : null;
+
+    // Case 2: Has current assignment
+    if (employee.currentShiftAssignment) {
+      const currentEndDate = new Date(employee.currentShiftAssignmentData?.endDate.toString());
+      
+      if (assignmentFromDate < currentEndDate) {
+        return `New assignment must start after current assignment ends (${fromUTCDate(currentEndDate.toString())})`;
+      }
+    }
+
+    // Case 3.2: Date validation
+    if (assignmentTillDate && assignmentTillDate <= assignmentFromDate) {
+      return 'Assignment end date must be after start date';
+    }
+
+    return '';
+  }
+
+  function validateAssignment(employee: User): boolean {
+    return !getValidationError(employee);
+  }
+
+  function isEmployeeSelectable(employee: User): boolean {
+    return !employee.upcomingShiftAssignment;
+  }
+
+  // Watch for date changes to revalidate
+  $: if (assignmentValidFrom || assignmentValidTill) {
+    // Force a refresh of selected employees if dates change
+    selectedEmployees = new Set(Array.from(selectedEmployees));
+  }
+
+  function prepareConfirmation() {
+    const valid = [];
+    const invalid = [];
+    
+    for (const empId of selectedEmployees) {
+      const employee = employees.find(e => e._id === empId);
+      if (employee) {
+        if (validateAssignment(employee)) {
+          valid.push(employee);
+        } else {
+          invalid.push(employee);
+        }
+      }
+    }
+
+    confirmationData = {
+      validEmployees: valid,
+      invalidEmployees: invalid
+    };
+
+    // Format the confirmation message
+    let message = `You are about to assign shifts to ${valid.length} employee(s).\n\n`;
+    
+    if (invalid.length > 0) {
+      message += 'The following employees will be excluded due to validation issues:\n';
+      message += invalid.map(emp => `- ${emp.name}: ${getValidationError(emp)}`).join('\n');
+      message += '\n\n';
+    }
+    
+    message += 'Do you want to proceed with the valid assignments?';
+
+    dialogConfig = {
+      ...dialogConfig,
+      message
+    };
+
+    showDialog = true;
+  }
+
+  function handleDialogConfirm() {
+    handleAssignmentSubmit();
+    showDialog = false;
+  }
+
+  function handleDialogCancel() {
+    showDialog = false;
+  }
+
+
   async function handleAssignmentSubmit() {
     if (!shift?._id || !assignmentValidFrom) return;
+    
+    const validEmployees = confirmationData.validEmployees.map(emp => emp._id);
+    
+    if (validEmployees.length === 0) {
+      return;
+    }
     
     dispatch('submit', {
       shiftId: shift._id,
       shiftCode: shift.code,
-      employees: Array.from(selectedEmployees),
+      employees: validEmployees,
       dates: {
         validFrom: assignmentValidFrom,
         validTill: assignmentValidTill || undefined
@@ -58,6 +185,13 @@
 
 {#if assignmentStep === 1}
   <div class="space-y-4">
+    <!-- Date validation error message -->
+    {#if dateError}
+      <div class="alert alert-error">
+        <span>{dateError}</span>
+      </div>
+    {/if}
+
     <div class="overflow-x-auto">
       <table class="table w-full">
         <thead>
@@ -66,10 +200,14 @@
               <input 
                 type="checkbox"
                 class="checkbox"
-                checked={selectedEmployees.size === employees.length}
+                checked={selectedEmployees.size === employees.filter(isEmployeeSelectable).length}
                 on:change={(e) => {
                   if (e.currentTarget.checked) {
-                    employees.forEach(emp => selectedEmployees.add(emp._id));
+                    employees.forEach(emp => {
+                      if (isEmployeeSelectable(emp)) {
+                        selectedEmployees.add(emp._id);
+                      }
+                    });
                   } else {
                     selectedEmployees.clear();
                   }
@@ -80,6 +218,7 @@
             {#each employeeColumns as column}
               <th>{column.label}</th>
             {/each}
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -90,6 +229,7 @@
                   type="checkbox"
                   class="checkbox"
                   checked={selectedEmployees.has(employee._id)}
+                  disabled={!isEmployeeSelectable(employee)}
                   on:change={() => handleEmployeeSelect(employee)}
                 />
               </td>
@@ -102,6 +242,13 @@
                   {/if}
                 </td>
               {/each}
+              <td>
+                {#if getValidationError(employee)}
+                  <div class="text-error text-sm">
+                    {getValidationError(employee)}
+                  </div>
+                {/if}
+              </td>
             </tr>
           {/each}
         </tbody>
@@ -114,7 +261,7 @@
       </p>
       <button 
         class="btn btn-primary"
-        disabled={selectedEmployees.size === 0}
+        disabled={selectedEmployees.size === 0 || dateError}
         on:click={() => dispatch('step', { step: 2 })}
       >
         Next
@@ -123,6 +270,7 @@
   </div>
 {:else}
   <div class="space-y-4">
+    <!-- Shift Details Section -->
     <div class="bg-base-200 rounded-lg p-4">
       <h3 class="font-medium mb-2">Selected Shift</h3>
       <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -138,24 +286,20 @@
           <span class="text-base-content/70">Timing:</span>
           <span class="ml-1">{shift?.startTime} - {shift?.endTime}</span>
         </div>
-        <div>
-          <span class="text-base-content/70">Window:</span>
-          <span class="ml-1">{shift?.shiftWindowStart} - {shift?.shiftWindowEnd}</span>
-        </div>
-        <div>
-          <span class="text-base-content/70">Validity:</span>
-          <span class="ml-1">{shift?.validFrom} - {shift?.validTill || 'No end date'}</span>
-        </div>
-        <div>
-          <span class="text-base-content/70">Grace Time:</span>
-          <span class="ml-1">{shift?.graceTimeInMinutes || 0} minutes</span>
-        </div>
       </div>
     </div>
 
+    <!-- Date validation error message -->
+    {#if dateError}
+      <div class="alert alert-error">
+        <span>{dateError}</span>
+      </div>
+    {/if}
+
+    <!-- Date Selection Section -->
     <div class="grid grid-cols-2 gap-4">
       <div class="form-control">
-        <label class="label">Assignment Valid From</label>
+        <label class="label">Assignment Valid From*</label>
         <input 
           type="date" 
           class="input input-bordered" 
@@ -175,6 +319,7 @@
       </div>
     </div>
 
+    <!-- Selected Employees Section -->
     <div>
       <h3 class="font-medium mb-2">Selected Employees ({selectedEmployees.size})</h3>
       <div class="max-h-60 overflow-y-auto border border-base-200 rounded-lg divide-y">
@@ -182,16 +327,19 @@
           <div class="p-3">
             <p class="font-medium">{employee.name}</p>
             <p class="text-sm text-base-content/70">
-              {employee.employeeId} • 
-              {employee.currentShiftAssignment 
-                ? `Current: ${employee.currentShiftAssignmentData?.shiftCode}`
-                : 'No current shift'}
+              {employee.employeeId}
+              {#if getValidationError(employee)}
+                <span class="text-error ml-2">
+                  {getValidationError(employee)}
+                </span>
+              {/if}
             </p>
           </div>
         {/each}
       </div>
     </div>
 
+    <!-- Action Buttons -->
     <div class="flex justify-between items-center">
       <button 
         class="btn btn-ghost"
@@ -201,11 +349,21 @@
       </button>
       <button 
         class="btn btn-primary"
-        disabled={!assignmentValidFrom}
-        on:click={handleAssignmentSubmit}
+        disabled={dateError || !assignmentValidFrom || Array.from(selectedEmployees).every(id => {
+          const employee = employees.find(e => e._id === id);
+          return !employee || !validateAssignment(employee);
+        })}
+        on:click={prepareConfirmation}
       >
         Confirm Assignment
       </button>
     </div>
   </div>
 {/if}
+
+<ConfirmDialog
+  bind:show={showDialog}
+  config={dialogConfig}
+  on:confirm={handleDialogConfirm}
+  on:cancel={handleDialogCancel}
+/>
