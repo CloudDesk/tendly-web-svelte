@@ -1,4 +1,3 @@
-<!-- ShiftAssignment.svelte -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import type { User, Shift } from '$lib/types';
@@ -31,13 +30,11 @@
   $: dateError = validateDates();
 
   function validateDates(): string {
-    // if (!assignmentValidFrom) return 'Assignment from date is required';
-    
     const fromDate = new Date(assignmentValidFrom);
     const tillDate = assignmentValidTill ? new Date(assignmentValidTill) : null;
 
     if (tillDate && tillDate <= fromDate) {
-      return 'Assignment till date must be after from date';
+      return 'End date must be after start date';
     }
 
     return '';
@@ -72,7 +69,6 @@
   }
 
   function getValidationError(employee: User): string {
-    // Case 1: Has upcoming assignment
     if (employee.upcomingShiftAssignment) {
       return 'Cannot assign shift - Employee has an upcoming shift scheduled';
     }
@@ -82,7 +78,6 @@
     const assignmentFromDate = new Date(assignmentValidFrom);
     const assignmentTillDate = assignmentValidTill ? new Date(assignmentValidTill) : null;
 
-    // Case 2: Has current assignment
     if (employee.currentShiftAssignment) {
       const currentEndDate = new Date(employee.currentShiftAssignmentData?.endDate.toString());
       
@@ -91,9 +86,8 @@
       }
     }
 
-    // Case 3.2: Date validation
     if (assignmentTillDate && assignmentTillDate <= assignmentFromDate) {
-      return 'Assignment end date must be after start date';
+      return 'End date must be after start date';
     }
 
     return '';
@@ -107,9 +101,7 @@
     return !employee.upcomingShiftAssignment;
   }
 
-  // Watch for date changes to revalidate
   $: if (assignmentValidFrom || assignmentValidTill) {
-    // Force a refresh of selected employees if dates change
     selectedEmployees = new Set(Array.from(selectedEmployees));
   }
 
@@ -133,7 +125,6 @@
       invalidEmployees: invalid
     };
 
-    // Format the confirmation message
     let message = `You are about to assign shifts to ${valid.length} employee(s).\n\n`;
     
     if (invalid.length > 0) {
@@ -161,7 +152,6 @@
     showDialog = false;
   }
 
-
   async function handleAssignmentSubmit() {
     if (!shift?._id || !assignmentValidFrom) return;
     
@@ -185,10 +175,9 @@
 
 {#if assignmentStep === 1}
   <div class="space-y-4">
-    <!-- Date validation error message -->
     {#if dateError}
       <div class="alert alert-error">
-        <span>{dateError}</span>
+        <span class="text-red-500">{dateError}</span>
       </div>
     {/if}
 
@@ -218,7 +207,6 @@
             {#each employeeColumns as column}
               <th>{column.label}</th>
             {/each}
-            <th>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -242,13 +230,6 @@
                   {/if}
                 </td>
               {/each}
-              <td>
-                {#if getValidationError(employee)}
-                  <div class="text-error text-sm">
-                    {getValidationError(employee)}
-                  </div>
-                {/if}
-              </td>
             </tr>
           {/each}
         </tbody>
@@ -259,6 +240,11 @@
       <p class="text-sm text-base-content/70">
         {selectedEmployees.size} employee{selectedEmployees.size === 1 ? '' : 's'} selected
       </p>
+      {#if employees.some(emp => !isEmployeeSelectable(emp))}
+        <p class="text-sm text-red-500">
+          * Some employees have upcoming shifts and cannot be selected for this assignment.
+        </p>
+      {/if}
       <button 
         class="btn btn-primary"
         disabled={selectedEmployees.size === 0 || dateError}
@@ -270,7 +256,6 @@
   </div>
 {:else}
   <div class="space-y-4">
-    <!-- Shift Details Section -->
     <div class="bg-base-200 rounded-lg p-4">
       <h3 class="font-medium mb-2">Selected Shift</h3>
       <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -286,20 +271,30 @@
           <span class="text-base-content/70">Timing:</span>
           <span class="ml-1">{shift?.startTime} - {shift?.endTime}</span>
         </div>
+        <div>
+          <span class="text-base-content/70">Window:</span>
+          <span class="ml-1">{shift?.shiftWindowStart} - {shift?.shiftWindowEnd}</span>
+        </div>
+        <div>
+          <span class="text-base-content/70">Validity:</span>
+          <span class="ml-1">{shift?.validFrom} - {shift?.validTill || 'No end date'}</span>
+        </div>
+        <div>
+          <span class="text-base-content/70">Grace Time:</span>
+          <span class="ml-1">{shift?.graceTimeInMinutes || 0} minutes</span>
+        </div>
       </div>
     </div>
 
-    <!-- Date validation error message -->
     {#if dateError}
       <div class="alert alert-error">
-        <span>{dateError}</span>
+        <span class="text-red-500">{dateError}</span>
       </div>
     {/if}
 
-    <!-- Date Selection Section -->
     <div class="grid grid-cols-2 gap-4">
       <div class="form-control">
-        <label class="label">Assignment Valid From*</label>
+        <label class="label">Assignment Start Date*</label>
         <input 
           type="date" 
           class="input input-bordered" 
@@ -309,7 +304,7 @@
         />
       </div>
       <div class="form-control">
-        <label class="label">Assignment Valid Till</label>
+        <label class="label">Assignment End Date</label>
         <input 
           type="date" 
           class="input input-bordered" 
@@ -319,7 +314,6 @@
       </div>
     </div>
 
-    <!-- Selected Employees Section -->
     <div>
       <h3 class="font-medium mb-2">Selected Employees ({selectedEmployees.size})</h3>
       <div class="max-h-60 overflow-y-auto border border-base-200 rounded-lg divide-y">
@@ -328,8 +322,13 @@
             <p class="font-medium">{employee.name}</p>
             <p class="text-sm text-base-content/70">
               {employee.employeeId}
+              {#if employee.currentShiftAssignment}
+                <span class="text-sm text-base-content/70">
+                  Current Shift: {employee.currentShiftAssignmentData?.shiftCode} ({fromUTCDate(employee.currentShiftAssignmentData?.startDate?.toString())} - {fromUTCDate(employee.currentShiftAssignmentData?.endDate?.toString())})
+                </span>
+              {/if}
               {#if getValidationError(employee)}
-                <span class="text-error ml-2">
+                <span class="text-error  ml-2">
                   {getValidationError(employee)}
                 </span>
               {/if}
@@ -339,7 +338,6 @@
       </div>
     </div>
 
-    <!-- Action Buttons -->
     <div class="flex justify-between items-center">
       <button 
         class="btn btn-ghost"
