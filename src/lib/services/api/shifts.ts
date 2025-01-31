@@ -1,6 +1,6 @@
 import { fetchApi, type ListParams } from './base';
 import type { Shift } from '$lib/types';
-import { toUTCDate, toUTCTime, fromUTCTime, fromUTCDate, toISTISOString } from '$lib/utils/date';
+import { toUTCDate, toUTCTime, fromUTCTime, fromUTCDate } from '$lib/utils/date';
 
 
 function convertShiftTimesToUTC<T extends { startTime?: string; endTime?: string; shiftWindowStart?: string; shiftWindowEnd?: string; validFrom?: string; validTill?: string }>(shift: T): T {

@@ -6,3 +6,11 @@ export type ToastMessage = {
     message: string;
     duration: number;
 }
+
+export type DialogConfig = {
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    type?: 'info' | 'warning' | 'danger';
+};

@@ -1,7 +1,8 @@
 <script lang="ts">
     import { page } from '$app/stores';
   import Tabs from '$lib/components/common/Tabs.svelte';
-  import ShiftManagement from '$lib/components/management/ShiftManagement.svelte';
+  // import ShiftManagement from '$lib/components/management/ShiftManagement.svelte';
+  import ShiftManagement from '$lib/components/management/shifts/ShiftManagement.svelte'
   import TrainingManagement from '$lib/components/management/TrainingManagement.svelte';
   import ConfigManagement from '$lib/components/management/ConfigManagement.svelte';
   import OrgChart from '$lib/components/employee/OrgChart.svelte';
