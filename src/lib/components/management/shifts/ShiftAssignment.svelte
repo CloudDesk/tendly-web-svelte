@@ -46,14 +46,14 @@
     { 
       key: 'currentShiftAssignment', 
       label: 'Current Shift',
-      render: (row: User) => row.currentShiftAssignment 
+      render: (row: User) => row.currentShiftAssignmentData && Object.keys(row.currentShiftAssignmentData).length > 0 
         ? `${row.currentShiftAssignmentData?.shiftCode} (${fromUTCDate(row.currentShiftAssignmentData?.startDate?.toString())}-${fromUTCDate(row.currentShiftAssignmentData?.endDate?.toString())})`
         : 'No shift assigned'
     },
     { 
       key: 'upcomingShiftAssignment', 
       label: 'Upcoming Shift',
-      render: (row: User) => row.upcomingShiftAssignment
+      render: (row: User) => row.upcomingShiftAssignmentData && Object.keys(row.upcomingShiftAssignmentData).length > 0 
         ? `${row.upcomingShiftAssignmentData?.shiftCode} (${fromUTCDate(row.upcomingShiftAssignmentData?.startDate?.toString())}-${fromUTCDate(row.upcomingShiftAssignmentData?.endDate?.toString())})`
         : 'No upcoming shift'
     }
@@ -69,7 +69,7 @@
   }
 
   function getValidationError(employee: User): string {
-    if (employee.upcomingShiftAssignment) {
+    if (employee.upcomingShiftAssignmentData&& Object.keys(employee.upcomingShiftAssignmentData).length>0) {
       return 'Cannot assign shift - Employee has an upcoming shift scheduled';
     }
 
@@ -78,10 +78,10 @@
     const assignmentFromDate = new Date(assignmentValidFrom);
     const assignmentTillDate = assignmentValidTill ? new Date(assignmentValidTill) : null;
 
-    if (employee.currentShiftAssignment) {
-      const currentEndDate = new Date(employee.currentShiftAssignmentData?.endDate.toString());
+    if (employee.currentShiftAssignmentData&& Object.keys(employee.currentShiftAssignmentData).length>0) {
+      const currentEndDate = employee.currentShiftAssignmentData?.endDate ? new Date(employee.currentShiftAssignmentData.endDate.toString()) : null;
       
-      if (assignmentFromDate < currentEndDate) {
+      if (currentEndDate && assignmentFromDate < currentEndDate) {
         return `New assignment must start after current assignment ends (${fromUTCDate(currentEndDate.toString())})`;
       }
     }
@@ -98,7 +98,8 @@
   }
 
   function isEmployeeSelectable(employee: User): boolean {
-    return !employee.upcomingShiftAssignment;
+    let isSelectable = employee.upcomingShiftAssignmentData && Object.keys(employee.upcomingShiftAssignmentData).length===0
+    return isSelectable;
   }
 
   $: if (assignmentValidFrom || assignmentValidTill) {
@@ -322,7 +323,7 @@
             <p class="font-medium">{employee.name}</p>
             <p class="text-sm text-base-content/70">
               {employee.employeeId}
-              {#if employee.currentShiftAssignment}
+              {#if employee.currentShiftAssignmentData&& Object.keys(employee.currentShiftAssignmentData).length>0}
                 <span class="text-sm text-base-content/70">
                   Current Shift: {employee.currentShiftAssignmentData?.shiftCode} ({fromUTCDate(employee.currentShiftAssignmentData?.startDate?.toString())} - {fromUTCDate(employee.currentShiftAssignmentData?.endDate?.toString())})
                 </span>
