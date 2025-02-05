@@ -9,6 +9,7 @@ type AttendanceRecord = {
   firstSwipe: string;
   lastSwipe: string;
   attendanceStatus: string[];
+  swipes?: []
 };
 
 type AttendanceSummary = {
@@ -27,7 +28,9 @@ type AttendanceResponse = {
 };
 
 export const attendanceApi = {
-  search: (params: { userIds?: string[], startDate?: string, endDate?: string } = {}) => {
+  search: (params: {
+    userIds?: string[], startDate?: string, endDate?: string,
+  } = {}) => {
     const payload = {
       userIds: params.userIds || [],
       startDate: params.startDate || new Date().toISOString(),
@@ -45,6 +48,17 @@ export const attendanceApi = {
       endDate: params.endDate || new Date().toISOString()
     }
     return fetchApi<AttendanceResponse[]>('/attendance/records/all', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+  swipe: (params: { biometricId: string, timestamp?: string }) => {
+    const payload = {
+      biometricId: params.biometricId,
+      // swipeType: params.swipeType,
+      // timestamp: params.timestamp || new Date().toISOString()
+    }
+    return fetchApi<{ success: boolean }>('/attendance/swipe', {
       method: 'POST',
       body: JSON.stringify(payload)
     });

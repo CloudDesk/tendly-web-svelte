@@ -22,6 +22,7 @@ export type User = {
   currentShiftAssignmentData?: ShiftAssignment;
   upcomingShiftAssignment?: string;
   upcomingShiftAssignmentData?: ShiftAssignment;
+  biometricId?: string
 };
 
 export type UserProfile = Omit<User, 'role' | 'isActive' | 'createdAt' | 'updatedAt'> & {

@@ -285,6 +285,8 @@
         {#if !$isCollapsed}
           <div 
             class="flex items-center justify-between px-4 mb-2 cursor-pointer"
+            role="button"
+            tabindex="0"
             on:click={() => toggleSection(section.label)}
             on:keydown={(e) => e.key === 'Enter' && toggleSection(section.label)}
           >
