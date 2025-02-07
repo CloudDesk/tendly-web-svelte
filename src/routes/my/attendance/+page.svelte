@@ -29,14 +29,11 @@
   <div class="mt-4">
     {#if $viewMode === 'calendar'}
       <CalendarView />
+      {:else if $viewMode ==='list'}
+      <ListView />
     {:else}
-    List
-      <!-- <ListView /> -->
-    {/if}
-  </div>
-
-  <div class="mt-4">
     <AttendanceHeatmap />
+    {/if}
   </div>
 </div>
 

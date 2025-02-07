@@ -1,12 +1,12 @@
 <!-- ToggleView.svelte -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import {Grid,List} from 'lucide-svelte';
-  
-  export let viewMode: 'calendar' | 'list';
+  import {Grid,List,ChartScatter} from 'lucide-svelte';
+ 
+  export let viewMode: 'calendar' | 'list' |'heat';
   const dispatch = createEventDispatcher();
 
-  function setViewMode(mode: 'calendar' | 'list') {
+  function setViewMode(mode: 'calendar' | 'list'|'heat') {
     viewMode = mode;
     dispatch('viewModeChange', mode);
   }
@@ -33,6 +33,17 @@
   >
     <div class="icon">
       <List />
+    </div>
+  </button>
+  <button 
+    class="btn" 
+    class:active={viewMode === 'heat'}
+    on:click={() => setViewMode('heat')}
+    aria-label="Heat Map"
+    aria-pressed={viewMode === 'heat'}
+  >
+    <div class="icon">
+      <ChartScatter />
     </div>
   </button>
 </div>

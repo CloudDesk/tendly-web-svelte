@@ -16,17 +16,27 @@
   let showCheckIn = true;
   let showCheckOut = false;
   let swipesCount = 0;
+  let outOfWindowSwipes = 0;
+
+  let error = { ishow: false, message: '' };
 
   // Methods
   function updateTime() {
     currentTime.set(new Date());
   }
 
-  function updateButtonStates(swipes: any[] = []) {
-    swipesCount = swipes?.length || 0;
-    
-    // Always allow check-in if no swipes exist
-    if (swipesCount === 0) {
+  function updateButtonStates(attendance: any) {
+    console.log("updateButtonStates", attendance);
+    outOfWindowSwipes = attendance.outOfWindowSwipes?.length || 0;
+    swipesCount = attendance.swipes?.length || 0;
+    console.log(outOfWindowSwipes, "outOfWindowSwipes");
+
+    if (outOfWindowSwipes >= 1) {
+      showCheckIn = false;
+      showCheckOut = false;
+      error.ishow = true;
+      error.message = attendance.outOfWindowSwipes[0].reason;
+    } else if (swipesCount === 0) {
       showCheckIn = true;
       showCheckOut = false;
     } else if (swipesCount === 1) {
@@ -54,7 +64,6 @@
 
       console.log('API Response:', response);
 
-      // If we have records and today's record exists
       if (response.data.length > 0 && response.data[0].records.length > 0) {
         const userRecords = response.data[0].records;
         const todayRecord = startDate ? 
@@ -64,18 +73,16 @@
 
         console.log('Today\'s Record:', todayRecord);
 
-        if (todayRecord && todayRecord.swipes) {
+        if (todayRecord) {
           record = todayRecord;
-          updateButtonStates(todayRecord.swipes);
+          updateButtonStates(todayRecord);
         } else {
-          // No record for today - enable check-in
           record = null;
           showCheckIn = true;
           showCheckOut = false;
           swipesCount = 0;
         }
       } else {
-        // No records found - enable check-in
         record = null;
         showCheckIn = true;
         showCheckOut = false;
@@ -83,7 +90,6 @@
       }
     } catch (error) {
       console.error('Failed to fetch attendance records:', error);
-      // On error, enable check-in as default state
       record = null;
       showCheckIn = true;
       showCheckOut = false;
@@ -93,20 +99,20 @@
 
   async function handleSwipe() {
     isLoading.set(true);
-
     try {
       const response = await attendanceApi.swipe({ biometricId });
       console.log('Swipe Response:', response);
-
-      if (response.success) {
-        // Refresh records after successful swipe
-        await fetchAttendanceRecords();
-      }
+      await fetchAttendanceRecords();
     } catch (error) {
       console.error('Swipe error:', error);
     } finally {
       isLoading.set(false);
     }
+  }
+
+  function handleContactHR() {
+    // Implement HR contact functionality here
+    console.log('Contacting HR for regularization');
   }
 
   // Initialize real-time clock and fetch attendance records
@@ -121,6 +127,17 @@
   <div class="live-clock">
     <p>{$currentTime.toLocaleTimeString()}</p>
   </div>
+
+  {#if error.ishow}
+    <div class="error-message">
+      <p>{error.message}</p>
+      <button 
+        class="btn contact-hr" 
+        on:click={handleContactHR}>
+        Contact HR for Regularization
+      </button>
+    </div>
+  {/if}
 
   <div class="swipe-buttons">
     <button 
@@ -184,6 +201,29 @@
 
   .btn:hover:enabled {
     background-color: #005bb5;
+  }
+
+  .error-message {
+    margin: 1rem 0;
+    padding: 1rem;
+    border-radius: 4px;
+    background-color: #fff2f2;
+    border: 1px solid #ffcdd2;
+    text-align: center;
+  }
+
+  .error-message p {
+    color: #d32f2f;
+    margin-bottom: 1rem;
+    font-weight: 500;
+  }
+
+  .contact-hr {
+    background-color: #d32f2f;
+  }
+
+  .contact-hr:hover {
+    background-color: #b71c1c;
   }
 
   .status {
