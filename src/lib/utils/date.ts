@@ -37,6 +37,31 @@ export function toDate(localDateTime: string | undefined): string | undefined {
   return date.toISOString().split('T')[0];
 }
 
+export function getMonthStartEnd(
+  year?: number,
+  month?: number
+): { start: string; end: string } {
+  const now = new Date();
+
+  // Default to current year and month if not provided
+  const targetYear = year ?? now.getUTCFullYear();
+  const targetMonth = month ? month - 1 : now.getUTCMonth(); // JS months are 0-based
+
+  // Start of the month
+  const start = new Date(Date.UTC(targetYear, targetMonth, 1, 0, 0, 0, 0)).toISOString();
+
+  let end: string;
+  if (year || month) {
+    // If year/month is provided, return full month end
+    end = new Date(Date.UTC(targetYear, targetMonth + 1, 0, 23, 59, 59, 999)).toISOString();
+  } else {
+    // If no params, return today's end time
+    end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999)).toISOString();
+  }
+
+  return { start, end };
+}
+
 
 /**
  * Formats a Date object or date string into YYYY-MM-DD format

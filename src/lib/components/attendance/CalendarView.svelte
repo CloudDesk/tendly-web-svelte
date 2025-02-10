@@ -1,27 +1,20 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
+  import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, isBefore, isWeekend, isToday } from 'date-fns';
   import { ArrowLeft, ArrowRight } from 'lucide-svelte';
+  import { attendanceStore, fetchAttendanceRecords } from '$lib/stores/attendance';
+  import { onMount } from 'svelte';
+  import { getMonthStartEnd } from '$lib/utils/date';
+  import { auth } from '$lib/stores/auth';
 
-  // Types
-  interface AttendanceData {
-    date: string;
-    status?: 'present' | 'absent' | 'leave';
-    workHours?: number;
-    actualWorkHours?: number;
-    penalties?: number;
-  }
-
-  // Props and state
   let currentDate = new Date();
   let calendarDays: Date[] = [];
-  let attendance: AttendanceData[] = []; // This would come from your API/store
-  let weekOffs = ["sun", "sat"]; // Example week-offs
-
-  // Stats for the month
-  let avgWorkHours = '-';
-  let avgActualWorkHours = '-';
-  let penaltyDays = 0;
+  const userId: string = $auth.user?._id ?? '';
+  const ATTENDANCE_LEGEND = [
+    { status: 'W', label: 'Weekend', className: 'bg-gray-50 text-gray-500' },
+    { status: '?', label: 'No Record', className: 'bg-yellow-50 text-yellow-600' },
+    { status: 'R', label: 'Needs Regularization', className: 'bg-red-50 text-red-600' },
+    { status: 'P', label: 'Present', className: 'bg-green-50 text-green-600' }
+  ];
 
   function generateCalendarDays(date: Date) {
     const start = startOfWeek(startOfMonth(date));
@@ -33,130 +26,149 @@
     currentDate = direction === 'next' 
       ? addMonths(currentDate, 1)
       : subMonths(currentDate, 1);
-    calendarDays = generateCalendarDays(currentDate);
+
+    //get start and end dates of the month
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth()+1;
+    const {start,end}= getMonthStartEnd(year, month);
+    fetchAttendanceRecords([userId], start, end);
   }
 
-  function getAttendanceForDate(date: Date): AttendanceData | undefined {
-    return attendance.find(a => a.date === format(date, 'yyyy-MM-dd'));
+  interface AttendanceRecord {
+    shiftDay: string;
+    attendanceStatus: 'incomplete' | 'complete' | 'duplicate_swipes' | 'missing_checkout';
+    needsRegularization: boolean;
+    shiftCode?: string;
   }
 
-  function getDayClass(date: Date) {
-    const att = getAttendanceForDate(date);
-    const baseClass = 'calendar-day relative p-4 border border-gray-200';
-    const todayClass = isToday(date) ? 'bg-blue-100 font-bold' : '';
-    const weekOffClass = isWeekOff(date) ? 'bg-gray-100 text-gray-500' : '';
+  function getAttendanceStatus(date: Date) {
+    if (!isBefore(date, new Date())) {
+      return null;
+    }
+
+    if (isWeekend(date)) {
+      return {
+        status: 'W',
+        className: 'bg-gray-50 text-gray-500'
+      };
+    }
+
+    const { records } = $attendanceStore;
+    const formattedDate = format(date, 'yyyy-MM-dd');
+    const record = records.find(a => a.shiftDay.split('T')[0] === formattedDate);
+console.log("date", date, "record", record);
+    if (!record) {
+      return {
+        status: '?',
+        className: 'bg-yellow-50 text-yellow-600'
+      };
+    }
+
+    if (!record.status.includes('complete') || record.needsRegularization) {
+      return {
+        status: 'R',
+        className: 'bg-red-50 text-red-600'
+      };
+    }
+
+    return {
+      status: 'P',
+      className: 'bg-green-50 text-green-600'
+    };
+  }
+
+  function getShiftCode(date: Date): string | null {
+    const { records } = $attendanceStore;
+    const record = records.find(a => a.shiftDay.split('T')[0] === format(date, 'yyyy-MM-dd'));
+    return record?.shiftCode || null;
+  }
+
+  function getDateStyles(date: Date): string {
+    const isCurrentMonth = isSameMonth(date, currentDate);
+    const todayClass = isToday(date) ? 'border-blue-400 border-2' : 'border-gray-200';
+    const monthClass = !isCurrentMonth ? 'text-gray-400' : '';
     
-    if (!isSameMonth(date, currentDate)) {
-      return `${baseClass} text-gray-400`;
-    }
-
-    if (att?.status === 'present') {
-      return `${baseClass} bg-green-50 ${todayClass} ${weekOffClass}`;
-    } else if (att?.status === 'absent') {
-      return `${baseClass} bg-red-50 ${todayClass} ${weekOffClass}`;
-    } else if (att?.status === 'leave') {
-      return `${baseClass} bg-yellow-50 ${todayClass} ${weekOffClass}`;
-    }
-
-    return `${baseClass} ${todayClass} ${weekOffClass}`;
-  }
-
-  function isToday(date: Date): boolean {
-    const today = new Date();
-    return date.getDate() === today.getDate() &&
-           date.getMonth() === today.getMonth() &&
-           date.getFullYear() === today.getFullYear();
-  }
-
-  function isWeekOff(date: Date): boolean {
-    const day = format(date, 'eee').toLowerCase();
-    return weekOffs.includes(day);
+    return `relative h-24 p-2 border ${todayClass} ${monthClass}`;
   }
 
   $: calendarDays = generateCalendarDays(currentDate);
+
+  onMount(() => {
+    const {start,end} = getMonthStartEnd();
+    console.log(start,end);
+    fetchAttendanceRecords([userId], start, end);
+  });
+
 </script>
 
 <div class="calendar-container">
-  <!-- Stats Section -->
-  <div class="stats-grid mb-6 grid grid-cols-3 gap-4">
-    <div class="stat-card p-4 border rounded-lg">
-      <h3 class="text-sm text-gray-600">AVG. WORK HRS</h3>
-      <p class="text-xl font-semibold">{avgWorkHours}</p>
-    </div>
-    <div class="stat-card p-4 border rounded-lg">
-      <h3 class="text-sm text-gray-600">AVG. ACTUAL WORK HRS</h3>
-      <p class="text-xl font-semibold">{avgActualWorkHours}</p>
-    </div>
-    <div class="stat-card p-4 border rounded-lg">
-      <h3 class="text-sm text-gray-600">PENALTY DAYS</h3>
-      <p class="text-xl font-semibold">{penaltyDays}</p>
-    </div>
-  </div>
-
-  <!-- Calendar Header -->
-  <div class="calendar-header flex justify-between items-center mb-4">
+  <div class="calendar-header flex items-center justify-between p-4 border-b">
     <button 
-      class="p-2 rounded hover:bg-gray-100"
+      class="flex items-center text-gray-600 hover:text-gray-800" 
       on:click={() => navigateMonth('prev')}
     >
-      <ArrowLeft class="w-6 h-6" />
+      <ArrowLeft class="w-4 h-4 mr-1" />
+      <span>Prev</span>
     </button>
-    <h2 class="text-xl font-semibold">
-      {format(currentDate, 'MMMM yyyy')}
-    </h2>
+    <h2 class="text-lg font-medium">{format(currentDate, 'MMMM yyyy')}</h2>
     <button 
-      class="p-2 rounded hover:bg-gray-100"
+      class="flex items-center text-gray-600 hover:text-gray-800" 
       on:click={() => navigateMonth('next')}
     >
-      <ArrowRight class="w-6 h-6" />
+      <span>Next</span>
+      <ArrowRight class="w-4 h-4 ml-1" />
     </button>
   </div>
 
-  <!-- Calendar Grid -->
-  <div class="calendar-grid">
-    <!-- Week days header -->
-    <div class="grid grid-cols-7 mb-2">
+  <div class="calendar-body">
+    <div class="grid grid-cols-7 text-sm">
       {#each ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as day}
-        <div class="text-center text-sm text-gray-600 py-2">{day}</div>
+        <div class="p-2 text-center font-medium text-gray-600 border-b border-r">
+          {day}
+        </div>
       {/each}
     </div>
 
-    <!-- Calendar days -->
-    <div class="grid grid-cols-7 gap-px bg-gray-200">
+    <div class="grid grid-cols-7">
       {#each calendarDays as day}
-        <div class={getDayClass(day)}>
-          <!-- Top-left: Display the day number -->
-          <span class="absolute top-2 left-2 text-sm">
+        {@const attendance = getAttendanceStatus(day)}
+        {@const shiftCode = getShiftCode(day)}
+        <div class={getDateStyles(day)}>
+          <!-- Day number in top-left -->
+          <div class="text-sm">
             {format(day, 'dd')}
-          </span>
+          </div>
           
-          <!-- Top-right: Reserved for potential future data -->
-          <div class="absolute top-2 right-2 text-xs">
-            <!-- Future data -->
-          </div>
-
-          <!-- Center: Display the status -->
-          {#if getAttendanceForDate(day)}
-            <div class="mt-4 text-xs text-gray-600">
-              {getAttendanceForDate(day)?.status === 'present' ? 'P' : getAttendanceForDate(day)?.status === 'absent' ? 'A' : 'L'}
-            </div>
-          {:else if isWeekOff(day)}
-            <div class="mt-4 text-xs text-gray-600">
-              O
+          <!-- Status in center -->
+          {#if attendance}
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+              <span class="text-lg font-medium {attendance.className} px-2 py-1 rounded">
+                {attendance.status}
+              </span>
             </div>
           {/if}
 
-          <!-- Bottom-left: Reserved for potential future data -->
-          <div class="absolute bottom-2 left-2 text-xs">
-            <!-- Future data -->
-          </div>
-
-          <!-- Bottom-right: Display shift code -->
-          {#if getAttendanceForDate(day)?.status}
-            <div class="absolute bottom-2 right-2 text-xs text-gray-600">
-              {getAttendanceForDate(day)?.status}
+          <!-- Shift code in bottom-right -->
+          {#if shiftCode}
+            <div class="absolute bottom-1 right-2 text-xs text-gray-600">
+              {shiftCode}
             </div>
           {/if}
+        </div>
+      {/each}
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="border-t mt-4 p-4">
+    <div class="text-sm font-medium mb-2">Legend:</div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {#each ATTENDANCE_LEGEND as item}
+        <div class="flex items-center space-x-2">
+          <span class={`inline-flex items-center justify-center w-6 h-6 rounded ${item.className}`}>
+            {item.status}
+          </span>
+          <span class="text-sm text-gray-600">{item.label}</span>
         </div>
       {/each}
     </div>
@@ -166,64 +178,20 @@
 <style>
   .calendar-container {
     background-color: white;
+    border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    padding: 1.5rem;
+    overflow: hidden;
   }
 
-  .calendar-day {
-    min-height: 100px;
+  .calendar-body {
     background-color: white;
-    transition: background-color 0.3s;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    position: relative;
   }
 
-  .calendar-day:hover {
-    background-color: #f0f0f0;
+  :global(.calendar-day) {
+    transition: background-color 0.2s ease;
   }
 
-  .calendar-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #888;
-    transition: color 0.3s;
-  }
-
-  .calendar-icon:hover {
-    color: #555;
-  }
-
-  .calendar-grid {
-    aspect-ratio: 7/5;
-  }
-
-  .stat-card {
-    background-color: white;
-    transition: all 0.3s ease;
-  }
-
-  .stat-card:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  .calendar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .calendar-header button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-
-  .calendar-header button:hover {
-    background-color: #f0f0f0;
+  :global(.calendar-day:hover) {
+    background-color: #f7fafc;
   }
 </style>

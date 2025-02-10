@@ -3,8 +3,8 @@
   import { writable } from 'svelte/store';
   import { attendanceApi } from '$lib/services/api';
   import { auth } from '$lib/stores/auth';
-  import { toUTCDateTime } from '$lib/utils/date';
-
+  import { attendanceStore, fetchAttendanceRecords } from '$lib/stores/attendance';
+  
   // State
   const currentTime = writable(new Date());
   const isLoading = writable<boolean>(false);
@@ -50,59 +50,77 @@
     console.log('Button States Updated:', { showCheckIn, showCheckOut, swipesCount });
   }
 
-  async function fetchAttendanceRecords() {
-    try {
-      const startDate = toUTCDateTime(new Date().toISOString());
-      const endDate = toUTCDateTime(new Date().toISOString());
-      console.log('Fetching records for:', { startDate, endDate });
-
-      const response = await attendanceApi.search({ 
-        userIds: [userId], 
-        startDate, 
-        endDate 
-      });
-
-      console.log('API Response:', response);
-
-      if (response.data.length > 0 && response.data[0].records.length > 0) {
-        const userRecords = response.data[0].records;
-        const todayRecord = startDate ? 
-          userRecords.find(record => 
-            record.shiftDay.split('T')[0] === startDate.split('T')[0]
-          ) : null;
-
-        console.log('Today\'s Record:', todayRecord);
-
-        if (todayRecord) {
-          record = todayRecord;
-          updateButtonStates(todayRecord);
-        } else {
-          record = null;
-          showCheckIn = true;
-          showCheckOut = false;
-          swipesCount = 0;
-        }
+  $: {
+    const { records } = $attendanceStore;
+    console.log(record,"inside record");
+    if (records.length > 0) {
+      const todayRecord = records.find(record => record.shiftDay.split('T')[0] === new Date().toISOString().split('T')[0]);
+     console.log(todayRecord,"todayRecord");
+      if (todayRecord) {
+        record = todayRecord;
+        updateButtonStates(todayRecord);
       } else {
         record = null;
         showCheckIn = true;
         showCheckOut = false;
         swipesCount = 0;
       }
-    } catch (error) {
-      console.error('Failed to fetch attendance records:', error);
-      record = null;
-      showCheckIn = true;
-      showCheckOut = false;
-      swipesCount = 0;
     }
   }
+
+  // async function fetchAttendanceData() {
+  //   try {
+  //     const startDate = toUTCDateTime(new Date().toISOString());
+  //     const endDate = toUTCDateTime(new Date().toISOString());
+  //     console.log('Fetching records for:', { startDate, endDate });
+
+  //     const response = await attendanceApi.search({ 
+  //       userIds: [userId], 
+  //       startDate, 
+  //       endDate 
+  //     });
+
+  //     console.log('API Response:', response);
+
+  //     if (response.data.length > 0 && response.data[0].records.length > 0) {
+  //       const userRecords = response.data[0].records;
+  //       const todayRecord = startDate ? 
+  //         userRecords.find(record => 
+  //           record.shiftDay.split('T')[0] === startDate.split('T')[0]
+  //         ) : null;
+
+  //       console.log('Today\'s Record:', todayRecord);
+
+  //       if (todayRecord) {
+  //         record = todayRecord;
+  //         updateButtonStates(todayRecord);
+  //       } else {
+  //         record = null;
+  //         showCheckIn = true;
+  //         showCheckOut = false;
+  //         swipesCount = 0;
+  //       }
+  //     } else {
+  //       record = null;
+  //       showCheckIn = true;
+  //       showCheckOut = false;
+  //       swipesCount = 0;
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to fetch attendance records:', error);
+  //     record = null;
+  //     showCheckIn = true;
+  //     showCheckOut = false;
+  //     swipesCount = 0;
+  //   }
+  // }
 
   async function handleSwipe() {
     isLoading.set(true);
     try {
       const response = await attendanceApi.swipe({ biometricId });
       console.log('Swipe Response:', response);
-      await fetchAttendanceRecords();
+      await fetchAttendanceRecords([userId], new Date().toISOString(), new Date().toISOString());
     } catch (error) {
       console.error('Swipe error:', error);
     } finally {
@@ -115,12 +133,7 @@
     console.log('Contacting HR for regularization');
   }
 
-  // Initialize real-time clock and fetch attendance records
-  onMount(() => {
-    const interval = setInterval(updateTime, 1000);
-    fetchAttendanceRecords();
-    return () => clearInterval(interval);
-  });
+
 </script>
 
 <div class="swipes-tracking">
