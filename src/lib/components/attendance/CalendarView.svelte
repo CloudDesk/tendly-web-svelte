@@ -2,11 +2,18 @@
   import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, isBefore, isWeekend, isToday } from 'date-fns';
   import { ArrowLeft, ArrowRight } from 'lucide-svelte';
   import { attendanceStore } from '$lib/stores/attendance';
-  import { onMount } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import { getMonthStartEnd } from '$lib/utils/date';
   import { auth } from '$lib/stores/auth';
-  import { writable,derived } from 'svelte/store';
+  import { writable, derived } from 'svelte/store';
 
+
+  export let selectedDate: Date;
+  export let records: any[];
+
+  const dispatch = createEventDispatcher<{
+    dateSelect: Date;
+  }>();
   let currentDate = new Date();
   let calendarDays: Date[] = [];
   const userId: string = $auth.user?._id ?? '';
@@ -19,8 +26,8 @@
     { status: 'P', label: 'Present', className: 'bg-green-50 text-green-600' }
   ];
 
-    // Create a derived store for attendance records
-    const attendanceRecords = derived(attendanceStore, ($store) => $store.records);
+  // Create a derived store for attendance records
+  const attendanceRecords = derived(attendanceStore, ($store) => $store.records);
 
   function generateCalendarDays(date: Date) {
     const start = startOfWeek(startOfMonth(date));
@@ -32,20 +39,17 @@
     currentDate = direction === 'next' 
       ? addMonths(currentDate, 1)
       : subMonths(currentDate, 1);
-console.log(currentDate,"currentDate");
+
     calendarDays = generateCalendarDays(currentDate);
-    console.log(calendarDays,"calendarDays")
     const year = currentDate.getFullYear();
-    const month = currentDate.getMonth()+1;
-    console.log(year,"year",month,"month");
+    const month = currentDate.getMonth() + 1;
     const { start, end } = getMonthStartEnd(year, month);
-console.log(start,"start",end,"end");
     isLoading.set(true);
     await attendanceStore.fetch([userId], start, end);
     isLoading.set(false);
   }
 
-  function getAttendanceStatus(date: Date, records:any[]) {
+  function getAttendanceStatus(date: Date, records: any[]) {
     if (!isBefore(date, new Date())) {
       return null;
     }
@@ -57,11 +61,8 @@ console.log(start,"start",end,"end");
       };
     }
 
-    // const { records } = $attendanceStore;
-    console.log(records,"store Records");
     const formattedDate = format(date, 'yyyy-MM-dd');
     const record = records.find(a => a.shiftDay.split('T')[0] === formattedDate);
-    console.log("date", date, "record", record);
     if (!record) {
       return {
         status: 'U',
@@ -82,7 +83,7 @@ console.log(start,"start",end,"end");
     };
   }
 
-  function getShiftCode(date: Date,records:any[]): string | null {
+  function getShiftCode(date: Date, records: any[]): string | null {
     const record = records.find(a => a.shiftDay.split('T')[0] === format(date, 'yyyy-MM-dd'));
     return record?.shiftCode || null;
   }
@@ -90,18 +91,35 @@ console.log(start,"start",end,"end");
   function getDateStyles(date: Date): string {
     const isCurrentMonth = isSameMonth(date, currentDate);
     const todayClass = isToday(date) ? 'border-blue-400 border-2' : 'border-gray-200';
-    const monthClass = !isCurrentMonth ? 'text-gray-400' : '';
+    const monthClass = !isCurrentMonth ? 'text-gray-400 cursor-not-allowed' : '';
     
     return `relative h-24 p-2 border ${todayClass} ${monthClass}`;
   }
 
- // Make calendar days reactive to currentDate changes
- $: calendarDays = generateCalendarDays(currentDate);
+  function handleDateSelect(date: Date) {
+    if (!isSameMonth(date, currentDate)) {
+      return;
+    }
+    dispatch('dateSelect', date);
+  }
+
+  $: {
+    if (selectedDate && !isSameMonth(selectedDate, currentDate)) {
+      currentDate = selectedDate;
+      const { start, end } = getMonthStartEnd(
+        currentDate.getFullYear(), 
+        currentDate.getMonth() + 1
+      );
+      attendanceStore.fetch([userId], start, end);
+    }
+  }
+  
+  $: calendarDays = generateCalendarDays(currentDate);
 
   onMount(async () => {
     const { start, end } = getMonthStartEnd();
     isLoading.set(true);
-    await attendanceStore.fetch([userId],start, end);
+    await attendanceStore.fetch([userId], start, end);
     isLoading.set(false);
   });
 </script>
@@ -135,7 +153,10 @@ console.log(start,"start",end,"end");
         {#each calendarDays as day}
           {@const attendance = getAttendanceStatus(day, $attendanceRecords)}
           {@const shiftCode = getShiftCode(day, $attendanceRecords)}
-          <div class={getDateStyles(day)}>
+          <button class="day-cell {getDateStyles(day)}"
+            disabled={!isSameMonth(day, currentDate)}
+            on:click={() => handleDateSelect(day)}
+          >
             <div class="text-sm">{format(day, 'dd')}</div>
             {#if attendance}
               <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
@@ -145,7 +166,7 @@ console.log(start,"start",end,"end");
             {#if shiftCode}
               <div class="absolute bottom-1 right-2 text-xs text-gray-600">{shiftCode}</div>
             {/if}
-          </div>
+          </button>
         {/each}
       </div>
     </div>
@@ -196,5 +217,13 @@ console.log(start,"start",end,"end");
   @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+  }
+
+  .cursor-pointer {
+    cursor: pointer;
+  }
+
+  .cursor-not-allowed {
+    cursor: not-allowed;
   }
 </style>

@@ -10,6 +10,7 @@
   import {  attendanceStore } from '$lib/stores/attendance';
   import { auth } from '$lib/stores/auth';
   import { getMonthStartEnd } from '$lib/utils/date';
+  import AttendanceDashboard from '$lib/components/attendance/AttendanceDashboard.svelte';
 
 
   const viewMode = writable<'calendar' | 'list' | 'heat'>('calendar');
@@ -56,7 +57,7 @@
 
   <div class="mt-4">
     {#if $viewMode === 'calendar'}
-      <CalendarView />
+      <AttendanceDashboard />
       {:else if $viewMode ==='list'}
       <ListView />
     {:else}
