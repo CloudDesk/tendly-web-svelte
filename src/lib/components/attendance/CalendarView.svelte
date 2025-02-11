@@ -1,20 +1,26 @@
 <script lang="ts">
   import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, isBefore, isWeekend, isToday } from 'date-fns';
   import { ArrowLeft, ArrowRight } from 'lucide-svelte';
-  import { attendanceStore, fetchAttendanceRecords } from '$lib/stores/attendance';
+  import { attendanceStore } from '$lib/stores/attendance';
   import { onMount } from 'svelte';
   import { getMonthStartEnd } from '$lib/utils/date';
   import { auth } from '$lib/stores/auth';
+  import { writable,derived } from 'svelte/store';
 
   let currentDate = new Date();
   let calendarDays: Date[] = [];
   const userId: string = $auth.user?._id ?? '';
+  const isLoading = writable<boolean>(false);
+
   const ATTENDANCE_LEGEND = [
     { status: 'W', label: 'Weekend', className: 'bg-gray-50 text-gray-500' },
-    { status: '?', label: 'No Record', className: 'bg-yellow-50 text-yellow-600' },
+    { status: 'U', label: 'Unknown', className: 'bg-yellow-50 text-yellow-600' },
     { status: 'R', label: 'Needs Regularization', className: 'bg-red-50 text-red-600' },
     { status: 'P', label: 'Present', className: 'bg-green-50 text-green-600' }
   ];
+
+    // Create a derived store for attendance records
+    const attendanceRecords = derived(attendanceStore, ($store) => $store.records);
 
   function generateCalendarDays(date: Date) {
     const start = startOfWeek(startOfMonth(date));
@@ -22,26 +28,24 @@
     return eachDayOfInterval({ start, end });
   }
 
-  function navigateMonth(direction: 'prev' | 'next') {
+  async function navigateMonth(direction: 'prev' | 'next') {
     currentDate = direction === 'next' 
       ? addMonths(currentDate, 1)
       : subMonths(currentDate, 1);
-
-    //get start and end dates of the month
+console.log(currentDate,"currentDate");
+    calendarDays = generateCalendarDays(currentDate);
+    console.log(calendarDays,"calendarDays")
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth()+1;
-    const {start,end}= getMonthStartEnd(year, month);
-    fetchAttendanceRecords([userId], start, end);
+    console.log(year,"year",month,"month");
+    const { start, end } = getMonthStartEnd(year, month);
+console.log(start,"start",end,"end");
+    isLoading.set(true);
+    await attendanceStore.fetch([userId], start, end);
+    isLoading.set(false);
   }
 
-  interface AttendanceRecord {
-    shiftDay: string;
-    attendanceStatus: 'incomplete' | 'complete' | 'duplicate_swipes' | 'missing_checkout';
-    needsRegularization: boolean;
-    shiftCode?: string;
-  }
-
-  function getAttendanceStatus(date: Date) {
+  function getAttendanceStatus(date: Date, records:any[]) {
     if (!isBefore(date, new Date())) {
       return null;
     }
@@ -53,13 +57,14 @@
       };
     }
 
-    const { records } = $attendanceStore;
+    // const { records } = $attendanceStore;
+    console.log(records,"store Records");
     const formattedDate = format(date, 'yyyy-MM-dd');
     const record = records.find(a => a.shiftDay.split('T')[0] === formattedDate);
-console.log("date", date, "record", record);
+    console.log("date", date, "record", record);
     if (!record) {
       return {
-        status: '?',
+        status: 'U',
         className: 'bg-yellow-50 text-yellow-600'
       };
     }
@@ -77,8 +82,7 @@ console.log("date", date, "record", record);
     };
   }
 
-  function getShiftCode(date: Date): string | null {
-    const { records } = $attendanceStore;
+  function getShiftCode(date: Date,records:any[]): string | null {
     const record = records.find(a => a.shiftDay.split('T')[0] === format(date, 'yyyy-MM-dd'));
     return record?.shiftCode || null;
   }
@@ -91,83 +95,68 @@ console.log("date", date, "record", record);
     return `relative h-24 p-2 border ${todayClass} ${monthClass}`;
   }
 
-  $: calendarDays = generateCalendarDays(currentDate);
+ // Make calendar days reactive to currentDate changes
+ $: calendarDays = generateCalendarDays(currentDate);
 
-  onMount(() => {
-    const {start,end} = getMonthStartEnd();
-    console.log(start,end);
-    fetchAttendanceRecords([userId], start, end);
+  onMount(async () => {
+    const { start, end } = getMonthStartEnd();
+    isLoading.set(true);
+    await attendanceStore.fetch([userId],start, end);
+    isLoading.set(false);
   });
-
 </script>
 
 <div class="calendar-container">
   <div class="calendar-header flex items-center justify-between p-4 border-b">
-    <button 
-      class="flex items-center text-gray-600 hover:text-gray-800" 
-      on:click={() => navigateMonth('prev')}
-    >
+    <button class="flex items-center text-gray-600 hover:text-gray-800" on:click={() => navigateMonth('prev')}>
       <ArrowLeft class="w-4 h-4 mr-1" />
       <span>Prev</span>
     </button>
     <h2 class="text-lg font-medium">{format(currentDate, 'MMMM yyyy')}</h2>
-    <button 
-      class="flex items-center text-gray-600 hover:text-gray-800" 
-      on:click={() => navigateMonth('next')}
-    >
+    <button class="flex items-center text-gray-600 hover:text-gray-800" on:click={() => navigateMonth('next')}>
       <span>Next</span>
       <ArrowRight class="w-4 h-4 ml-1" />
     </button>
   </div>
 
-  <div class="calendar-body">
-    <div class="grid grid-cols-7 text-sm">
-      {#each ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as day}
-        <div class="p-2 text-center font-medium text-gray-600 border-b border-r">
-          {day}
-        </div>
-      {/each}
+  {#if $isLoading}
+    <div class="flex justify-center items-center h-64">
+      <div class="loader"></div>
     </div>
+  {:else}
+    <div class="calendar-body">
+      <div class="grid grid-cols-7 text-sm">
+        {#each ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as day}
+          <div class="p-2 text-center font-medium text-gray-600 border-b border-r">{day}</div>
+        {/each}
+      </div>
 
-    <div class="grid grid-cols-7">
-      {#each calendarDays as day}
-        {@const attendance = getAttendanceStatus(day)}
-        {@const shiftCode = getShiftCode(day)}
-        <div class={getDateStyles(day)}>
-          <!-- Day number in top-left -->
-          <div class="text-sm">
-            {format(day, 'dd')}
+      <div class="grid grid-cols-7">
+        {#each calendarDays as day}
+          {@const attendance = getAttendanceStatus(day, $attendanceRecords)}
+          {@const shiftCode = getShiftCode(day, $attendanceRecords)}
+          <div class={getDateStyles(day)}>
+            <div class="text-sm">{format(day, 'dd')}</div>
+            {#if attendance}
+              <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <span class="text-lg font-medium {attendance.className} px-2 py-1 rounded">{attendance.status}</span>
+              </div>
+            {/if}
+            {#if shiftCode}
+              <div class="absolute bottom-1 right-2 text-xs text-gray-600">{shiftCode}</div>
+            {/if}
           </div>
-          
-          <!-- Status in center -->
-          {#if attendance}
-            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-              <span class="text-lg font-medium {attendance.className} px-2 py-1 rounded">
-                {attendance.status}
-              </span>
-            </div>
-          {/if}
-
-          <!-- Shift code in bottom-right -->
-          {#if shiftCode}
-            <div class="absolute bottom-1 right-2 text-xs text-gray-600">
-              {shiftCode}
-            </div>
-          {/if}
-        </div>
-      {/each}
+        {/each}
+      </div>
     </div>
-  </div>
+  {/if}
 
-  <!-- Legend -->
   <div class="border-t mt-4 p-4">
     <div class="text-sm font-medium mb-2">Legend:</div>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       {#each ATTENDANCE_LEGEND as item}
         <div class="flex items-center space-x-2">
-          <span class={`inline-flex items-center justify-center w-6 h-6 rounded ${item.className}`}>
-            {item.status}
-          </span>
+          <span class={`inline-flex items-center justify-center w-6 h-6 rounded ${item.className}`}>{item.status}</span>
           <span class="text-sm text-gray-600">{item.label}</span>
         </div>
       {/each}
@@ -193,5 +182,19 @@ console.log("date", date, "record", record);
 
   :global(.calendar-day:hover) {
     background-color: #f7fafc;
+  }
+
+  .loader {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 2s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 </style>

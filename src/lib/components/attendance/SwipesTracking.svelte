@@ -1,24 +1,23 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import { writable } from 'svelte/store';
   import { attendanceApi } from '$lib/services/api';
   import { auth } from '$lib/stores/auth';
-  import { attendanceStore, fetchAttendanceRecords } from '$lib/stores/attendance';
-  
+  import { attendanceStore, todayRecord } from '$lib/stores/attendance';
+  import { toast } from '../common/stores/toast.store';
+  import { format } from 'date-fns';
+  import { getMonthStartEnd } from '$lib/utils/date';
+
   // State
+  const dispatch = createEventDispatcher();
   const currentTime = writable(new Date());
   const isLoading = writable<boolean>(false);
   const biometricId = $auth.user?.biometricId || '';
   const userId = $auth.user?._id || '';
 
-  // Reactive states for attendance
-  let record: any = null;
   let showCheckIn = true;
   let showCheckOut = false;
-  let swipesCount = 0;
-  let outOfWindowSwipes = 0;
-
-  let error = { ishow: false, message: '' };
+  let error = { isShow: false, message: '' };
 
   // Methods
   function updateTime() {
@@ -26,15 +25,13 @@
   }
 
   function updateButtonStates(attendance: any) {
-    console.log("updateButtonStates", attendance);
-    outOfWindowSwipes = attendance.outOfWindowSwipes?.length || 0;
-    swipesCount = attendance.swipes?.length || 0;
-    console.log(outOfWindowSwipes, "outOfWindowSwipes");
+    const swipesCount = attendance?.swipes?.length || 0;
+    const outOfWindowSwipes = attendance?.outOfWindowSwipes?.length || 0;
 
     if (outOfWindowSwipes >= 1) {
       showCheckIn = false;
       showCheckOut = false;
-      error.ishow = true;
+      error.isShow = true;
       error.message = attendance.outOfWindowSwipes[0].reason;
     } else if (swipesCount === 0) {
       showCheckIn = true;
@@ -46,94 +43,42 @@
       showCheckIn = false;
       showCheckOut = false;
     }
-
-    console.log('Button States Updated:', { showCheckIn, showCheckOut, swipesCount });
   }
 
-  $: {
-    const { records } = $attendanceStore;
-    console.log(record,"inside record");
-    if (records.length > 0) {
-      const todayRecord = records.find(record => record.shiftDay.split('T')[0] === new Date().toISOString().split('T')[0]);
-     console.log(todayRecord,"todayRecord");
-      if (todayRecord) {
-        record = todayRecord;
-        updateButtonStates(todayRecord);
-      } else {
-        record = null;
-        showCheckIn = true;
-        showCheckOut = false;
-        swipesCount = 0;
-      }
-    }
-  }
-
-  // async function fetchAttendanceData() {
-  //   try {
-  //     const startDate = toUTCDateTime(new Date().toISOString());
-  //     const endDate = toUTCDateTime(new Date().toISOString());
-  //     console.log('Fetching records for:', { startDate, endDate });
-
-  //     const response = await attendanceApi.search({ 
-  //       userIds: [userId], 
-  //       startDate, 
-  //       endDate 
-  //     });
-
-  //     console.log('API Response:', response);
-
-  //     if (response.data.length > 0 && response.data[0].records.length > 0) {
-  //       const userRecords = response.data[0].records;
-  //       const todayRecord = startDate ? 
-  //         userRecords.find(record => 
-  //           record.shiftDay.split('T')[0] === startDate.split('T')[0]
-  //         ) : null;
-
-  //       console.log('Today\'s Record:', todayRecord);
-
-  //       if (todayRecord) {
-  //         record = todayRecord;
-  //         updateButtonStates(todayRecord);
-  //       } else {
-  //         record = null;
-  //         showCheckIn = true;
-  //         showCheckOut = false;
-  //         swipesCount = 0;
-  //       }
-  //     } else {
-  //       record = null;
-  //       showCheckIn = true;
-  //       showCheckOut = false;
-  //       swipesCount = 0;
-  //     }
-  //   } catch (error) {
-  //     console.error('Failed to fetch attendance records:', error);
-  //     record = null;
-  //     showCheckIn = true;
-  //     showCheckOut = false;
-  //     swipesCount = 0;
-  //   }
-  // }
-
-  async function handleSwipe() {
+  async function handleSwipe(swipeType: 'check-in' | 'check-out') {
     isLoading.set(true);
     try {
       const response = await attendanceApi.swipe({ biometricId });
-      console.log('Swipe Response:', response);
-      await fetchAttendanceRecords([userId], new Date().toISOString(), new Date().toISOString());
+      if (response.success) {
+        const time = format(new Date(), 'hh:mm a');
+        toast.success(`${swipeType === 'check-in' ? 'Check-in' : 'Check-out'} recorded at ${time} ✅`);
+        dispatch('swipeSuccess');
+        const { start, end } = getMonthStartEnd();
+        await attendanceStore.fetch([userId], start, end);
+      } else {
+        toast.error('Swipe not allowed! Please check shift timings ❌');
+      }
     } catch (error) {
       console.error('Swipe error:', error);
+      toast.error('Failed to record swipe ❌');
     } finally {
       isLoading.set(false);
     }
   }
 
   function handleContactHR() {
-    // Implement HR contact functionality here
     console.log('Contacting HR for regularization');
   }
 
+  // Update button states whenever today's record changes
+  $: if ($todayRecord) {
+    updateButtonStates($todayRecord);
+  }
 
+  onMount(() => {
+    const interval = setInterval(() => currentTime.set(new Date()), 1000);
+    return () => clearInterval(interval);
+  });
 </script>
 
 <div class="swipes-tracking">
@@ -141,36 +86,16 @@
     <p>{$currentTime.toLocaleTimeString()}</p>
   </div>
 
-  {#if error.ishow}
+  {#if error.isShow}
     <div class="error-message">
       <p>{error.message}</p>
-      <button 
-        class="btn contact-hr" 
-        on:click={handleContactHR}>
-        Contact HR for Regularization
-      </button>
+      <button class="btn contact-hr" on:click={handleContactHR}>Contact HR for Regularization</button>
     </div>
   {/if}
 
   <div class="swipe-buttons">
-    <button 
-      class="btn" 
-      on:click={handleSwipe} 
-      disabled={$isLoading || !showCheckIn}>
-      Check In
-    </button>
-    <button 
-      class="btn" 
-      on:click={handleSwipe} 
-      disabled={$isLoading || !showCheckOut}>
-      Check Out
-    </button>
-  </div>
-
-  <div class="status">
-    {#if swipesCount > 0}
-      <p>Total Swipes Today: {swipesCount}</p>
-    {/if}
+    <button class="btn" on:click={() => handleSwipe('check-in')} disabled={$isLoading || !showCheckIn}>Check In</button>
+    <button class="btn" on:click={() => handleSwipe('check-out')} disabled={$isLoading || !showCheckOut}>Check Out</button>
   </div>
 </div>
 

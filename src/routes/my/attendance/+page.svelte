@@ -7,18 +7,34 @@
   import FiltersSearch from '$lib/components/attendance/FiltersSearch.svelte';
   import { writable } from 'svelte/store';
   import { onMount } from 'svelte';
-  import {  fetchAttendanceRecords } from '$lib/stores/attendance';
+  import {  attendanceStore } from '$lib/stores/attendance';
   import { auth } from '$lib/stores/auth';
-  import { getMonthStartEnd, toUTCDateTime } from '$lib/utils/date';
+  import { getMonthStartEnd } from '$lib/utils/date';
 
 
   const viewMode = writable<'calendar' | 'list' | 'heat'>('calendar');
   const userId: string = $auth.user?._id ?? '';
-//endDate: "2025-02-10T06:44:57.987Z"startDate: "2025-02-10T06:44:57.987Z"
+
+
+  // Function to initialize and refresh data
+  async function initializeData() {
+    const { start, end } = getMonthStartEnd();
+    attendanceStore.setFilters({
+      startDate: start,
+      endDate: end,
+      userIds: [userId]
+    });
+    await attendanceStore.fetch([userId], start, end);
+  }
+
+  // Handle successful swipe
+  function handleSwipeSuccess() {
+    console.log("callback called");
+    attendanceStore.refreshCurrentView();
+  }
+
   onMount(() => {
-    const {start,end} = getMonthStartEnd();
-    console.log(start,end);
-    fetchAttendanceRecords([userId], start, end);
+    initializeData();
   });
 
 </script>
@@ -31,7 +47,7 @@
     />
   </div>
   <div class="mt-4">
-    <SwipesTracking />
+    <SwipesTracking on:swipeSuccess={handleSwipeSuccess} />
   </div>
 
   <div class="mt-4">
