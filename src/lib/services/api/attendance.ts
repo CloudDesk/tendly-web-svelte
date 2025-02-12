@@ -1,4 +1,6 @@
 import { fetchApi } from './base';
+import type { ApiResponse } from '$lib/types/api';
+import type { AttendanceRegularization } from '$lib/types';
 
 type AttendanceRecord = {
   shiftDay: string;
@@ -62,5 +64,21 @@ export const attendanceApi = {
       method: 'POST',
       body: JSON.stringify(payload)
     });
-  }
+  },
+
+  regularize: async (AttendanceRegularization: Omit<AttendanceRegularization, '_id'>): Promise<ApiResponse<AttendanceRegularization>> => {
+    return await fetchApi<AttendanceRegularization>('/attendance/regularize', {
+      method: 'POST',
+      body: JSON.stringify(AttendanceRegularization)
+    });
+  },
+  updateRegularizationStatus: async (id: string, status: string): Promise<ApiResponse<AttendanceRegularization>> => {
+    return await fetchApi<AttendanceRegularization>(`/attendance/regularize/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status })
+    });
+  },
+
+
+
 }; 

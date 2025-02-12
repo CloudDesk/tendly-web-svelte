@@ -38,3 +38,18 @@ export type AttendanceState = {
     isLoading: boolean;
     error: Error | null;
 }
+
+export type AttendanceRegularization = {
+    _id: string;
+    attendanceId: string;
+    from: Date;                // Start date/time for regularization
+    to: Date;                  // End date/time for regularization
+    reason: string;              // Reason for regularization
+    status: string[];              // Status of the request (e.g., Pending, Approved, Rejected)
+    approver: {
+        id: string;              // Approver's ID
+        name: string;            // Approver's Name
+    };
+    approvedDate?: string;       // Date of approval (if approved)
+    comments?: string;           // Optional comments from approver
+};
