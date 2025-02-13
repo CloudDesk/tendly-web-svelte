@@ -39,7 +39,7 @@
     currentDate = direction === 'next' 
       ? addMonths(currentDate, 1)
       : subMonths(currentDate, 1);
-
+console.log("nnavigateMonthav",currentDate);
     calendarDays = generateCalendarDays(currentDate);
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth() + 1;
