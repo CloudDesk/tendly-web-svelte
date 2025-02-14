@@ -6,5 +6,6 @@ export * from './training';
 export * from './lov';
 export * from './leaves';
 export * from './common';
-export * from './payroll'
-export * from './attendance'    
+export * from './payroll';
+export * from './attendance';
+export * from './salaryStructure';

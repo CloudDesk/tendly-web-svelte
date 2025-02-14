@@ -6,12 +6,15 @@
   import TrainingManagement from '$lib/components/management/TrainingManagement.svelte';
   import ConfigManagement from '$lib/components/management/ConfigManagement.svelte';
   import OrgChart from '$lib/components/employee/OrgChart.svelte';
+  import SalaryStructureForm from '$lib/components/employee/salary-structure/SalaryStructureForm.svelte';
+  import SalaryStructure from '$lib/components/salary-structure/SalaryStructure.svelte';
 
   const tabs = [
     { id: 'configs', label: 'Configs' },
     { id: 'shifts', label: 'Shifts' },
     { id: 'trainings', label: 'Trainings' },
-    {id:'org',label:'Org Chart'}
+    {id:'org',label:'Org Chart'},
+    {id:'salary',label:'Salary Structure'}
 
   ];
 
@@ -34,6 +37,8 @@
           <ConfigManagement />
         {:else if activeTab ==='org'}
         <OrgChart/>
+        {:else if activeTab ==='salary'}
+        <SalaryStructure/>
         {/if}
       </Tabs>
     </div>

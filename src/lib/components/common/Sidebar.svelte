@@ -105,6 +105,14 @@
         {
           label: 'LOVs',
           href: '/admin/configurations?tab=lovs'
+        },
+        {
+          label:'Salary Structure',
+          href:'/admin/configurations?tab=salaryStructure'
+        },
+        {
+          label: 'Org Chart',
+          href: '/admin/configurations?tab=org'
         }
       ]
     }
