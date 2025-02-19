@@ -43,6 +43,13 @@ export const taxstates = [
     { value: 'Telangana', label: 'Telangana' }
 ]
 
+// Tax term options
+export const taxTerms = [
+    { value: "monthly", label: "Monthly" },
+    { value: "half_yearly", label: "Half Yearly" },
+    { value: "yearly", label: "Yearly" },
+];
+
 export const professionalTaxs = [
     {
         "state": "Andhra Pradesh",

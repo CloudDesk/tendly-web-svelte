@@ -1,24 +1,17 @@
-<script>
-  import { taxstates, professionalTaxs } from "$lib/constants/users";
-  import sl from "date-fns/locale/sl";
+<script lang="ts">
+  import { taxstates, taxTerms } from "$lib/constants/users";
   import { createEventDispatcher } from "svelte";
+  import type { SalaryStructure, IProfessionalTaxSlab } from "$lib/types";
 
-  export let initialData = null;
+  export let initialData: SalaryStructure | null = null;
   export let readOnly = false;
 
   const dispatch = createEventDispatcher();
 
   let formErrors = {
-    fixedEarnings: {},
-    professionalTax: [],
+    fixedEarnings: {} as Record<string, string>,
+    professionalTax: [] as Record<string, string>[],
   };
-
-  // Tax term options
-  const taxTerms = [
-    { value: "monthly", label: "Monthly" },
-    { value: "half_yearly", label: "Half Yearly" },
-    { value: "yearly", label: "Yearly" },
-  ];
 
   // Initialize form data with all values set to 0 by default
   let formData = {
@@ -54,7 +47,7 @@
           initialData?.statutoryDeductions?.professionalTax?.term ||
           "half_yearly",
         slabs: initialData?.statutoryDeductions?.professionalTax?.slabs || [
-          { fromAmount: 0, toAmount: 0, taxAmount: 0, errors: {} },
+          { fromAmount: 0, toAmount: undefined, taxAmount: 0, errors: {} },
         ],
       },
     },
@@ -75,14 +68,22 @@
       const isValid = validateAllSlabs();
       console.log(isValid, formData);
       if (isValid) {
-        dispatch("submit", formData);
+        let isUpdate = !!initialData && !!initialData._id;
+        let newFormData =
+          isUpdate && initialData
+            ? { ...formData, _id: initialData._id }
+            : { ...formData };
+        dispatch("submit", newFormData);
       }
     }
   }
 
   // Input handler for fixed earnings percentages
-  function handleFixedEarningsChange(field, event) {
-    let value = event.target.value;
+  function handleFixedEarningsChange(
+    field: keyof typeof formData.fixedEarnings,
+    event: Event
+  ) {
+    let value = (event.target as HTMLInputElement).value;
 
     // Remove ALL leading zeros, not just prefix
     if (value.startsWith("0") && value.length > 1 && value[1] !== ".") {
@@ -117,28 +118,18 @@
 
     formData.statutoryDeductions.professionalTax.slabs = [
       ...formData.statutoryDeductions.professionalTax.slabs,
-      { fromAmount: newFromAmount, toAmount: null, taxAmount: 0, errors: {} },
+      {
+        fromAmount: newFromAmount,
+        toAmount: undefined,
+        taxAmount: 0,
+        errors: {},
+      },
     ];
     validateAllSlabs();
   }
 
-  function handleFromAmountChange(index, value) {
-    value = value.replace(/^0+/, "") || "0";
-    const newValue = parseInt(value) || 0;
-    formData.statutoryDeductions.professionalTax.slabs[index].fromAmount =
-      newValue;
-    validateAllSlabs();
-  }
-
-  function handleToAmountChange(index, value) {
-    value = value.replace(/^0+/, "") || "0";
-    const newValue = value === "0" ? null : parseInt(value) || null;
-    formData.statutoryDeductions.professionalTax.slabs[index].toAmount =
-      newValue;
-    validateAllSlabs();
-  }
-
-  function handletaxAmountChange(index, value) {
+  function handletaxAmountChange(index: number, event: Event) {
+    let value = (event.target as HTMLInputElement).value;
     value = value.replace(/^0+/, "") || "0";
     const newValue = parseInt(value) || 0;
     formData.statutoryDeductions.professionalTax.slabs[index].taxAmount =
@@ -146,7 +137,7 @@
     validateAllSlabs();
   }
 
-  function removeSlabRow(index) {
+  function removeSlabRow(index: number) {
     formData.statutoryDeductions.professionalTax.slabs =
       formData.statutoryDeductions.professionalTax.slabs.filter(
         (_, i) => i !== index
@@ -154,8 +145,8 @@
     validateAllSlabs();
   }
 
-  function validateSlab(slab, index, slabs) {
-    const errors = {};
+  function validateSlab(slab: any, index: number, slabs: any) {
+    const errors: Record<string, string> = {};
 
     // Validate fromAmount is non-negative
     if (slab.fromAmount < 0) {
@@ -231,9 +222,12 @@
   }
 
   // Handle Professional Tax amount changes with leading zero removal
-  function handleProfessionalTaxChange(index, field, event) {
-    let value = event.target.value;
-
+  function handleProfessionalTaxChange(
+    index: number,
+    field: keyof IProfessionalTaxSlab,
+    event: Event
+  ) {
+    let value = (event.target as HTMLInputElement).value;
     // Remove leading zeros
     value = value.replace(/^0+/, "") || "0";
 
@@ -241,7 +235,8 @@
     const numValue = parseInt(value) || 0;
 
     // Update the form data
-    formData.statutoryDeductions.professionalTax.slabs[index][field] = numValue;
+    (formData.statutoryDeductions.professionalTax.slabs[index] as any)[field] =
+      numValue;
 
     // Validate the slab
     validateAllSlabs();
@@ -627,11 +622,14 @@
             >
               <div class="grid grid-cols-10 gap-4">
                 <div class="col-span-3 space-y-2">
-                  <label class="block text-sm font-medium text-gray-700"
+                  <label
+                    for="fromAmount-{index}"
+                    class="block text-sm font-medium text-gray-700"
                     >From Amount (₹)</label
                   >
                   <input
                     type="number"
+                    id="fromAmount-{index}"
                     class="w-full h-10 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     value={slab.fromAmount}
                     on:input={(e) =>
@@ -646,7 +644,10 @@
                 </div>
 
                 <div class="col-span-3 space-y-2">
-                  <label class="block text-sm font-medium text-gray-700">
+                  <label
+                    for="toAmount-{index}"
+                    class="block text-sm font-medium text-gray-700"
+                  >
                     To Amount (₹)
                     {#if index === formData.statutoryDeductions.professionalTax.slabs.length - 1}
                       <span class="text-gray-500 text-xs ml-1">(Optional)</span>
@@ -654,6 +655,7 @@
                   </label>
                   <input
                     type="number"
+                    id="toAmount-{index}"
                     class="w-full h-10 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     value={slab.toAmount}
                     on:input={(e) =>
@@ -668,15 +670,16 @@
                 </div>
 
                 <div class="col-span-3 space-y-2">
-                  <label class="block text-sm font-medium text-gray-700"
+                  <label
+                    for="taxAmount-{index}"
+                    class="block text-sm font-medium text-gray-700"
                     >Tax Amount (₹)</label
                   >
                   <input
                     type="number"
                     class="w-full h-10 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     value={slab.taxAmount}
-                    on:input={(e) =>
-                      handletaxAmountChange(index, "taxAmount", e)}
+                    on:input={(e) => handletaxAmountChange(index, e)}
                     disabled={readOnly}
                   />
                   {#if slab.errors?.taxAmount}

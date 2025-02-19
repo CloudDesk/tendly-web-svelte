@@ -1,4 +1,4 @@
-export type SalaryStructure = {
+export type payrollSalaryStructure = {
     userId: string;
     basic: number;
     hra: number;

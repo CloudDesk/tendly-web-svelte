@@ -1,15 +1,17 @@
-<script>
+<script lang="ts">
   import { onMount } from "svelte";
   import { salaryStructureApi } from "$lib/services/api/salaryStructure";
   import Modal from "../common/Modal.svelte";
   import { Plus } from "lucide-svelte";
   import SalaryStructureForm from "./SalaryStructureForm.svelte";
+  import type { SalaryStructure } from "$lib/types/salaryStructure";
 
-  let configurations = [];
+  let configurations: SalaryStructure[] = [];
   let isLoading = false;
   let isModalOpen = false;
   let modalMode = "add"; // 'add', 'view', 'edit'
-  let selectedConfig = null;
+  let readOnly = false;
+  let selectedConfig: SalaryStructure | null = null;
 
   onMount(async () => {
     await fetchData();
@@ -32,17 +34,20 @@
   function handleAddClick() {
     modalMode = "add";
     selectedConfig = null;
+    let readOnly = false;
     isModalOpen = true;
   }
 
-  function handleViewClick(config) {
+  function handleViewClick(config: SalaryStructure) {
     modalMode = "view";
+    readOnly = true;
     selectedConfig = { ...config };
     isModalOpen = true;
   }
 
-  function handleEditClick(config) {
+  function handleEditClick(config: SalaryStructure) {
     modalMode = "edit";
+    readOnly = false;
     selectedConfig = { ...config };
     isModalOpen = true;
   }
@@ -51,7 +56,7 @@
     isModalOpen = false;
   }
 
-  async function handleFormSubmit(event) {
+  async function handleFormSubmit(event: CustomEvent) {
     console.log(event, "event handleFormSubmit");
     const formData = event.detail;
     isLoading = true;
@@ -71,11 +76,15 @@
     }
   }
 
-  async function saveSalaryConfig(data) {
+  async function saveSalaryConfig(data: SalaryStructure) {
     if (modalMode === "add") {
       await salaryStructureApi.create(data);
     } else if (modalMode === "edit") {
-      await salaryStructureApi.update(data._id, data);
+      if (data._id) {
+        await salaryStructureApi.update(data._id, data);
+      } else {
+        throw new Error("ID is required for updating salary configuration");
+      }
     }
   }
 </script>
@@ -107,27 +116,34 @@
       <table class="min-w-full bg-white border border-gray-200">
         <thead>
           <tr>
+            <th class="py-2 px-4 border-b">Name</th>
             <th class="py-2 px-4 border-b">Basic (% of Gross)</th>
             <th class="py-2 px-4 border-b">HRA (% of Gross)</th>
-            <th class="py-2 px-4 border-b">DA (% of Basic)</th>
             <th class="py-2 px-4 border-b">Other Allowance (% of Gross)</th>
+            <th class="py-2 px-4 border-b">State</th>
+            <th class="py-2 px-4 border-b">Terms</th>
             <th class="py-2 px-4 border-b">Actions</th>
           </tr>
         </thead>
         <tbody>
           {#each configurations as config}
             <tr class="hover:bg-gray-50">
+              <td class="py-2 px-4 border-b text-center">{config.name}</td>
               <td class="py-2 px-4 border-b text-center"
-                >{config.basicPercentage}%</td
+                >{config.fixedEarnings.basicPercentage}%</td
               >
               <td class="py-2 px-4 border-b text-center"
-                >{config.hraPercentage}%</td
+                >{config.fixedEarnings.hraPercentage}%</td
+              >
+
+              <td class="py-2 px-4 border-b text-center"
+                >{config.fixedEarnings.otherAllowancePercentage}%</td
               >
               <td class="py-2 px-4 border-b text-center"
-                >{config.daPercentage}%</td
+                >{config.statutoryDeductions.professionalTax.state}</td
               >
               <td class="py-2 px-4 border-b text-center"
-                >{config.otherAllowancePercentage}%</td
+                >{config.statutoryDeductions.professionalTax.term}</td
               >
               <td class="py-2 px-4 border-b">
                 <div class="flex space-x-2 justify-center">
@@ -164,8 +180,8 @@
       wide={true}
     >
       <SalaryStructureForm
-        initialData={null}
-        readOnly={false}
+        initialData={selectedConfig}
+        {readOnly}
         on:submit={handleFormSubmit}
       />
     </Modal>

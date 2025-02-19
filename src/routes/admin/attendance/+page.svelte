@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { attendanceApi, employeesApi } from '$lib/services/api';
-  import type { User } from '$lib/types_old';
-  import Tabs from '$lib/components/common/Tabs.svelte';
-  import EmployeeAttendance from '$lib/components/attendance/EmployeeAttendance.svelte';
-  import EmployeeTrainingAttendance from '$lib/components/attendance/EmployeeTrainingAttendance.svelte';
-  import { page } from '$app/stores';
-  import { navigationContext } from '$lib/stores/navigation';
+  import { onMount } from "svelte";
+  import { attendanceApi, employeesApi } from "$lib/services/api";
+  import type { User } from "$lib/types_old";
+  import Tabs from "$lib/components/common/Tabs.svelte";
+  import EmployeeAttendance from "$lib/components/attendance/EmployeeAttendance.svelte";
+  import EmployeeTrainingAttendance from "$lib/components/attendance/EmployeeTrainingAttendance.svelte";
+  import { page } from "$app/stores";
+  import { navigationContext } from "$lib/stores/navigation";
 
   let loading = false;
   let error: string | null = null;
@@ -14,22 +14,22 @@
   let selectedEmployeeIds: Set<string> = new Set();
 
   const tabs = [
-    { id: 'shift', label: 'Shift Attendance' },
-    { id: 'training', label: 'Training Attendance' }
+    { id: "shift", label: "Shift Attendance" },
+    { id: "training", label: "Training Attendance" },
   ];
 
-  $: activeTab = $page.url.searchParams.get('tab') || tabs[0]?.id;
+  $: activeTab = $page.url.searchParams.get("tab") || tabs[0]?.id;
 
   async function loadEmployees() {
     try {
       loading = true;
       const response = await employeesApi.list({
         page: 1,
-        limit: 100 // Load more employees for better filtering
+        limit: 100, // Load more employees for better filtering
       });
       employees = response.data;
     } catch (err) {
-      error = 'Failed to load employees';
+      error = "Failed to load employees";
       console.error(err);
     } finally {
       loading = false;
@@ -38,7 +38,7 @@
 
   function handleSelectAll(checked: boolean) {
     if (checked) {
-      selectedEmployeeIds = new Set(employees.map(emp => emp._id));
+      selectedEmployeeIds = new Set(employees.map((emp) => emp._id));
     } else {
       selectedEmployeeIds.clear();
     }
@@ -55,7 +55,7 @@
   }
 
   onMount(() => {
-    navigationContext.set('admin');
+    navigationContext.set("admin");
     loadEmployees();
   });
 </script>
@@ -104,12 +104,20 @@
         <div class="loading">Loading...</div>
       {:else}
         <Tabs {tabs}>
-          {#if activeTab === 'shift'}
-            <EmployeeAttendance mode="multi" employeeIds={Array.from(selectedEmployeeIds)} />
-          {:else if activeTab === 'training'}
-            <EmployeeTrainingAttendance mode="multi" employeeIds={Array.from(selectedEmployeeIds)} />
+          {#if activeTab === "shift"}
+            <EmployeeAttendance
+              mode="multi"
+              employeeIds={Array.from(selectedEmployeeIds)}
+            />
+          {:else if activeTab === "training"}
+            <EmployeeTrainingAttendance
+              mode="multi"
+              employeeIds={Array.from(selectedEmployeeIds)}
+            />
           {:else}
-            <div class="alert alert-info">Please select at least one employee to view attendance records.</div>
+            <div class="alert alert-info">
+              Please select at least one employee to view attendance records.
+            </div>
           {/if}
         </Tabs>
       {/if}
@@ -123,4 +131,4 @@
     padding: 2rem;
     color: #6b7280;
   }
-</style> 
+</style>

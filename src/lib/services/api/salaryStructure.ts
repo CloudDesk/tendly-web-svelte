@@ -24,5 +24,9 @@ export const salaryStructureApi = {
             body: JSON.stringify(data)
         });
         return response
+    },
+    getById: async (id: string) => {
+        const response = await fetchApi<SalaryStructure>(`/salary-structure/${id}`);
+        return response
     }
 }
