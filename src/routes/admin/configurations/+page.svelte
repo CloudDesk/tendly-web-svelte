@@ -13,8 +13,8 @@
     { id: "configs", label: "Configs" },
     { id: "shifts", label: "Shifts" },
     { id: "trainings", label: "Trainings" },
-    { id: "org", label: "Org Chart" },
     { id: "salary", label: "Salary Structure" },
+    { id: "org", label: "Org Chart" },
   ];
 
   $: activeTab = $page.url.searchParams.get("tab") || tabs[0]?.id;

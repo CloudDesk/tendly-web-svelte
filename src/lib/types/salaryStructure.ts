@@ -43,10 +43,36 @@ export interface IProfessionalTaxSlab {
 
     fromAmount: number;
 
-    toAmount?: number | undefined;
+    toAmount?: number | null;
 
     taxAmount: number;
 
     errors?: Record<string, string>;
 
+}
+
+export interface SalaryComponentsType {
+    monthly: {
+        gross: number;
+        net: number;
+        basic: number;
+        hra: number;
+        da: number;
+        otherAllowance: number;
+        deductions: {
+            epf: number;
+            esi: number;
+            professionalTax: number;
+            total: number;
+        };
+    };
+    annual: {
+        ctc: number;
+        gross: number;
+        net: number;
+    };
+    employerContributions: {
+        epf: number;
+        esi: number;
+    };
 }

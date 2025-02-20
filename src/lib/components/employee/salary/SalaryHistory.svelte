@@ -4,7 +4,6 @@
   import { salaryAssignmentApi } from "../../../services/api/salaryAssignments";
   import type { SalaryAssignment } from "$lib/types";
   import Loader from "$lib/components/common/Loader.svelte";
-  import { toast } from "$lib/components/common/stores/toast.store";
   import Modal from "$lib/components/common/Modal.svelte";
 
   export let employeeId: string;
@@ -48,7 +47,7 @@
     selectedRecord.set(null);
   };
 
-  const handleFormSubmit = async (event: CustomEvent) => {
+  /* const handleFormSubmit = async (event: CustomEvent) => {
     try {
       const formData = event.detail;
 
@@ -74,12 +73,12 @@
     } finally {
       closeModal();
     }
-  };
+  };*/
 </script>
 
 <div class="p-6">
   {#if $loading}
-    <div>Loading...</div>
+    <Loader />
   {:else if $error}
     <div class="text-red-500">Error: {$error}</div>
   {:else if $salaryAssignmentHistory.length === 0}
@@ -135,15 +134,15 @@
             >
             <td
               class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600"
-              >{formatCurrency(record.monthlyGross)}</td
+              >{formatCurrency(Number(record.monthlyGross))}</td
             >
             <td
               class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600"
-              >{formatCurrency(record.reimbursement)}</td
+              >{formatCurrency(Number(record.reimbursement))}</td
             >
             <td
               class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600"
-              >{formatCurrency(record.monthlyInsurance)}</td
+              >{formatCurrency(Number(record.monthlyInsurance))}</td
             >
             <td
               class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600"
@@ -157,7 +156,7 @@
               class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600"
             >
               <button
-                class="btn btn-sm btn-ghost"
+                class=" w-full table-action-view"
                 on:click={() => openModal(record)}>View</button
               >
             </td>
@@ -177,15 +176,15 @@
           </p>
           <p>
             <strong>Monthly Gross:</strong>
-            {formatCurrency($selectedRecord.monthlyGross)}
+            {formatCurrency(Number($selectedRecord.monthlyGross))}
           </p>
           <p>
             <strong>Reimbursement:</strong>
-            {formatCurrency($selectedRecord.reimbursement)}
+            {formatCurrency(Number($selectedRecord.reimbursement))}
           </p>
           <p>
             <strong>Monthly Insurance:</strong>
-            {formatCurrency($selectedRecord.monthlyInsurance)}
+            {formatCurrency(Number($selectedRecord.monthlyInsurance))}
           </p>
           <p>
             <strong>Effective From:</strong>
@@ -203,21 +202,24 @@
 
 <style>
   .btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: #676879;
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0.5rem 1rem;
     border-radius: 0.375rem;
     font-weight: 500;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s; */
   }
-  .btn-primary {
-    background-color: #3b82f6;
-    color: white;
-  }
-  .btn-primary:hover {
-    background-color: #2563eb;
-  }
+
   .table-auto {
     width: 100%;
     border-collapse: collapse;

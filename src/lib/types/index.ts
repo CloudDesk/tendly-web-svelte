@@ -9,5 +9,4 @@ export * from './common';
 export * from './payroll';
 export * from './attendance';
 export * from './salaryStructure';
-export * from './employeeSalary';
-export * from './salaryAssignment'
+export * from './salaryAssignment';

@@ -3,6 +3,7 @@ export type SalaryAssignment = {
     monthlyInsurance: Number;
     reimbursement: Number;
     salaryStructureId: String;
+    employeeId: String;
     isActive: Boolean;
     effectiveFrom: Date;
     effectiveTo: Date;

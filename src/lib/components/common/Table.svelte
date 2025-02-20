@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  import type { PaginationMeta } from '$lib/types';
-  
+  import { createEventDispatcher } from "svelte";
+  import type { PaginationMeta } from "$lib/types";
+
   type Column<T> = {
     key: keyof T;
     label: string;
@@ -16,11 +16,12 @@
   export let error: string | null = null;
   export let meta: PaginationMeta | null = null;
   export let serverSide: boolean = false;
-  export let variant: 'contained' | 'transparent' = 'contained';
-  
-  let searchQuery = '';
+  export let variant: "contained" | "transparent" = "contained";
+  export let showSearchInput: boolean = true;
+
+  let searchQuery = "";
   let sortKey: string | null = null;
-  let sortDirection: 'asc' | 'desc' = 'asc';
+  let sortDirection: "asc" | "desc" = "asc";
   let currentPage = 1;
   let itemsPerPage = 10;
 
@@ -31,82 +32,85 @@
     itemsPerPage = meta.limit;
   }
 
-  $: filteredData = !serverSide && searchQuery && searchable
-    ? data.filter(item => 
-        Object.values(item).some(value => 
-          String(value).toLowerCase().includes(searchQuery.toLowerCase())
+  $: filteredData =
+    !serverSide && searchQuery && searchable
+      ? data.filter((item) =>
+          Object.values(item).some((value) =>
+            String(value).toLowerCase().includes(searchQuery.toLowerCase())
+          )
         )
-      )
-    : data;
+      : data;
 
-  $: sortedData = !serverSide && sortKey
-    ? [...filteredData].sort((a, b) => {
-        const aVal = a[sortKey!];
-        const bVal = b[sortKey!];
-        const modifier = sortDirection === 'asc' ? 1 : -1;
-        
-        if (typeof aVal === 'string') {
-          return aVal.localeCompare(bVal) * modifier;
-        }
-        return (aVal - bVal) * modifier;
-      })
-    : filteredData;
+  $: sortedData =
+    !serverSide && sortKey
+      ? [...filteredData].sort((a, b) => {
+          const aVal = a[sortKey!];
+          const bVal = b[sortKey!];
+          const modifier = sortDirection === "asc" ? 1 : -1;
 
-    $: containerClasses = variant === 'contained' 
-    ? 'bg-white rounded-lg shadow-sm p-4' 
-    : 'bg-transparent';
+          if (typeof aVal === "string") {
+            return aVal.localeCompare(bVal) * modifier;
+          }
+          return (aVal - bVal) * modifier;
+        })
+      : filteredData;
+
+  $: containerClasses =
+    variant === "contained"
+      ? "bg-white rounded-lg shadow-sm p-4"
+      : "bg-transparent";
 
   function handleSort(column: Column<any>) {
     if (!column.sortable) return;
 
     if (sortKey === column.key) {
-      sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+      sortDirection = sortDirection === "asc" ? "desc" : "asc";
     } else {
       sortKey = column.key as string;
-      sortDirection = 'asc';
+      sortDirection = "asc";
     }
 
     if (serverSide) {
-      dispatch('sort', { key: sortKey, direction: sortDirection });
+      dispatch("sort", { key: sortKey, direction: sortDirection });
     }
   }
 
   function handleSearch(event: Event) {
     const query = (event.target as HTMLInputElement).value;
     if (serverSide) {
-      dispatch('search', { query });
+      dispatch("search", { query });
     } else {
       searchQuery = query;
     }
   }
-
+  console.log(searchQuery, "searchquery");
   function handlePageChange(page: number) {
-    console.log(serverSide,page,"handlePageChange")
+    console.log(serverSide, page, "handlePageChange");
     if (serverSide) {
-      dispatch('page', { page });
+      dispatch("page", { page });
     }
   }
 
   function handleRowClick(item: any) {
-    dispatch('rowClick', item);
+    dispatch("rowClick", item);
   }
 
   function handleActionClick(event: MouseEvent) {
-    const button = (event.target as HTMLElement).closest('button');
+    const button = (event.target as HTMLElement).closest("button");
     if (!button) return;
 
     const action = button.dataset.action;
     const id = button.dataset.id;
-    
+
     if (action && id) {
       event.stopPropagation();
-      dispatch('action', { action, id });
+      dispatch("action", { action, id });
     }
   }
 </script>
 
 <div class={`table-container ${containerClasses}`}>
-  {#if searchable}
+  {#if searchable && showSearchInput}
     <div class="search-container">
       <input
         type="text"
@@ -128,19 +132,17 @@
       {error}
     </div>
   {:else if sortedData.length === 0}
-    <div class="empty">
-      No data available
-    </div>
+    <div class="empty">No data available</div>
   {:else}
     <table>
       <thead>
         <tr>
           {#each columns as column}
-            <th 
+            <th
               class:sortable={column.sortable}
               class:sorted={sortKey === column.key}
-              class:asc={sortKey === column.key && sortDirection === 'asc'}
-              class:desc={sortKey === column.key && sortDirection === 'desc'}
+              class:asc={sortKey === column.key && sortDirection === "asc"}
+              class:desc={sortKey === column.key && sortDirection === "desc"}
               on:click={() => handleSort(column)}
             >
               <div class="th-content">
@@ -158,10 +160,7 @@
       </thead>
       <tbody>
         {#each sortedData as item}
-          <tr 
-            on:click={() => handleRowClick(item)}
-            class="clickable"
-          >
+          <tr on:click={() => handleRowClick(item)} class="clickable">
             {#each columns as column}
               <td on:click={handleActionClick}>
                 {#if column.render}
@@ -178,21 +177,21 @@
 
     {#if meta}
       <div class="pagination">
-        <button 
-          class="btn-page" 
+        <button
+          class="btn-page"
           disabled={meta.page === 1}
           on:click={() => handlePageChange(meta.page - 1)}
         >
           Previous
         </button>
-        
+
         <div class="page-info">
           Page {meta.page} of {meta.totalPages}
           <span class="total-items">({meta.total} items)</span>
         </div>
 
-        <button 
-          class="btn-page" 
+        <button
+          class="btn-page"
           disabled={meta.page === meta.totalPages}
           on:click={() => handlePageChange(meta.page + 1)}
         >
@@ -308,7 +307,9 @@
     background: #f9fafb;
   }
 
-  .loading, .error, .empty {
+  .loading,
+  .error,
+  .empty {
     padding: 2rem;
     text-align: center;
     color: #6b7280;
@@ -374,4 +375,4 @@
     margin-left: 0.5rem;
     color: #9ca3af;
   }
-</style> 
+</style>

@@ -123,6 +123,10 @@
     @apply overflow-hidden text-ellipsis whitespace-nowrap;
   }
 
+  .input {
+    @apply border border-gray-300 rounded px-4 py-2;
+  }
+  
   .form-group {
     @apply space-y-1;
   }
@@ -138,4 +142,12 @@
   button:disabled {
     @apply opacity-50 cursor-not-allowed;
   }
+  .table-action-view {
+    @apply w-7 h-7 p-0 rounded border border-gray-300 text-gray-600 flex items-center justify-center transition-colors;
+  }
+
+  .table-action-view:hover {
+    @apply bg-gray-200 text-gray-800;
+  }
+  
 } 

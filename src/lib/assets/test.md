@@ -40,106 +40,394 @@
 
 ---
 
-## 3. **Employee Salary Breakup**
+// Types for better type safety
+type TaxRegime = 'OLD' | 'NEW';
+type ProofStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'RESUBMISSION_REQUESTED' | 'RESUBMITTED';
+type DocumentStatus = 'PENDING' | 'VERIFIED' | 'REJECTED' | 'RESUBMISSION_REQUESTED';
 
-### Table: `employee_salary_breakups`
-| Field                  | Type       | Description                                     |
-|------------------------|------------|-------------------------------------------------|
-| `_id`                  | ObjectId   | Primary Key                                      |
-| `employee_id`          | ObjectId   | Reference to Users Collection                    |
-| `employee_salary_id`   | ObjectId   | Reference to Employee Salaries Collection         |
-| `month`                | Number     | Month of Salary Breakup (1 to 12)                |
-| `year`                 | Number     | Year of Salary Breakup                           |
-| `basic`                | Number     | Calculated Basic Salary                          |
-| `hra`                  | Number     | Calculated HRA                                   |
-| `allowance`            | Number     | Calculated Allowances                            |
-| `gross`                | Number     | Gross Salary                                     |
-| `epf_employee`         | Number     | Employee EPF Contribution                        |
-| `esi_employee`         | Number     | Employee ESI Contribution                        |
-| `epf_employer`         | Number     | Employer EPF Contribution                        |
-| `professional_tax`     | Number     | Professional Tax Deduction                       |
-| `income_tax`           | Number     | Income Tax Deduction                             |
-| `net_salary`           | Number     | Net Salary after all deductions                  |
-| `created_at`           | Date       | Record Creation Date                             |
-| `updated_at`           | Date       | Record Last Update Date                          |
+import { Schema, model, Document, Types } from 'mongoose';
 
----
+// Employee Schema
+interface IEmployee extends Document {
+  employeeId: string;
+  name: string;
+  dateOfJoining: Date;
+  state: string;
+  selectedTaxRegime: TaxRegime;
+  currentSalaryAssignment: Types.ObjectId;
+}
 
-## 4. **Employee Income Tax**
+const EmployeeSchema = new Schema<IEmployee>({
+  employeeId: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  dateOfJoining: { type: Date, required: true },
+  state: { type: String, required: true },
+  selectedTaxRegime: { 
+    type: String,
+    enum: ['OLD', 'NEW'],
+    required: true 
+  },
+  currentSalaryAssignment: { 
+    type: Schema.Types.ObjectId, 
+    ref: 'SalaryAssignment' 
+  }
+});
 
-### Table: `employee_income_taxes`
-| Field                  | Type       | Description                                     |
-|------------------------|------------|-------------------------------------------------|
-| `_id`                  | ObjectId   | Primary Key                                      |
-| `employee_id`          | ObjectId   | Reference to Users Collection                    |
-| `regime`               | String     | Tax Regime Selected (Old/New)                    |
-| `declared_investments` | Number     | Amount Declared for Tax Savings                  |
-| `annual_gross`         | Number     | Annual Gross Income                              |
-| `total_taxable_income` | Number     | Total Taxable Income after Deductions             |
-| `total_tax`            | Number     | Calculated Total Tax Amount                      |
-| `cess`                 | Number     | 4% Cess on Total Tax Amount                      |
-| `total_payable`        | Number     | Total Tax Payable                                |
-| `month`                | Number     | Month of Tax Calculation                         |
-| `created_at`           | Date       | Record Creation Date                             |
-| `updated_at`           | Date       | Record Last Update Date                          |
+// Salary Structure Schema
+interface ISalaryStructure extends Document {
+  name: string;
+  components: {
+    basic: number;
+    hra: number;
+    specialAllowance: number;
+  };
+  statutoryDeductions: {
+    professionalTax: {
+      stateWiseSlabs: [{
+        state: string;
+        slabs: [{
+          min: number;
+          max: number;
+          amount: number;
+        }];
+      }];
+    };
+    epf: {
+      employeeContribution: number;
+      employerContribution: number;
+    };
+    esi: {
+      employeeContribution: number;
+      employerContribution: number;
+    };
+  };
+}
 
----
+const SalaryStructureSchema = new Schema<ISalaryStructure>({
+  name: { type: String, required: true },
+  components: {
+    basic: { type: Number, required: true }, // Percentage of gross
+    hra: { type: Number, required: true },
+    specialAllowance: { type: Number, required: true }
+  },
+  statutoryDeductions: {
+    professionalTax: {
+      stateWiseSlabs: [{
+        state: String,
+        slabs: [{
+          min: Number,
+          max: Number,
+          amount: Number
+        }]
+      }]
+    },
+    epf: {
+      employeeContribution: Number,
+      employerContribution: Number
+    },
+    esi: {
+      employeeContribution: Number,
+      employerContribution: Number
+    }
+  }
+});
 
-## 5. **Insurance**
+// Tax Declaration Schema
+interface ITaxDeclaration extends Document {
+  employee: Types.ObjectId;
+  financialYear: string;
+  regime: TaxRegime;
+  declarations: [{
+    section: string;
+    subSection: string;
+    declaredAmount: number;
+    proofStatus: ProofStatus;
+    verifiedAmount: number;
+    documents: [{
+      documentType: string;
+      uploadedAt: Date;
+      status: DocumentStatus;
+      remarks: string;
+      fileReference: string;
+    }];
+    resubmissionAllowed: boolean;
+    resubmissionDeadline?: Date;
+  }];
+  totalDeclaredAmount: number;
+  totalVerifiedAmount: number;
+  lastModifiedAt: Date;
+}
 
-### Table: `insurances`
-| Field                  | Type       | Description                                     |
-|------------------------|------------|-------------------------------------------------|
-| `_id`                  | ObjectId   | Primary Key                                      |
-| `provider`             | String     | Insurance Provider Name                          |
-| `type`                 | String     | Type of Insurance (Health, Life, Accidental)      |
-| `coverage_amount`      | Number     | Maximum Coverage Amount                          |
-| `premium_amount`       | Number     | Premium Amount per Term                          |
-| `term`                 | String     | Premium Term (Monthly, Yearly)                   |
-| `created_at`           | Date       | Record Creation Date                             |
-| `updated_at`           | Date       | Record Last Update Date                          |
+const TaxDeclarationSchema = new Schema<ITaxDeclaration>({
+  employee: { type: Schema.Types.ObjectId, ref: 'Employee', required: true },
+  financialYear: { type: String, required: true },
+  regime: { 
+    type: String, 
+    enum: ['OLD', 'NEW'], 
+    required: true 
+  },
+  declarations: [{
+    section: { type: String, required: true },
+    subSection: { type: String, required: true },
+    declaredAmount: { type: Number, required: true },
+    proofStatus: { 
+      type: String,
+      enum: ['PENDING', 'APPROVED', 'REJECTED', 'RESUBMISSION_REQUESTED', 'RESUBMITTED'],
+      default: 'PENDING'
+    },
+    verifiedAmount: { type: Number, default: 0 },
+    documents: [{
+      documentType: String,
+      uploadedAt: Date,
+      status: { 
+        type: String,
+        enum: ['PENDING', 'VERIFIED', 'REJECTED', 'RESUBMISSION_REQUESTED'],
+        default: 'PENDING'
+      },
+      remarks: String,
+      fileReference: String
+    }],
+    resubmissionAllowed: { type: Boolean, default: true },
+    resubmissionDeadline: Date
+  }],
+  totalDeclaredAmount: { type: Number, default: 0 },
+  totalVerifiedAmount: { type: Number, default: 0 },
+  lastModifiedAt: { type: Date, default: Date.now }
+});
 
----
+// Monthly Tax Calculation Schema
+interface IMonthlyTaxCalculation extends Document {
+  employee: Types.ObjectId;
+  financialYear: string;
+  month: number;
+  grossSalary: number;
+  standardDeduction: number;
+  declaredDeductions: number;
+  verifiedDeductions: number;
+  taxableIncome: number;
+  calculatedTax: number;
+  cessAmount: number;
+  adjustments: {
+    amount: number;
+    reason: string;
+    appliedFrom: Date;
+    appliedTo: Date;
+  }[];
+  finalTaxAmount: number;
+}
 
-## 6. **Employee Insurances**
+const MonthlyTaxCalculationSchema = new Schema<IMonthlyTaxCalculation>({
+  employee: { type: Schema.Types.ObjectId, ref: 'Employee', required: true },
+  financialYear: { type: String, required: true },
+  month: { type: Number, required: true },
+  grossSalary: { type: Number, required: true },
+  standardDeduction: { type: Number, required: true },
+  declaredDeductions: { type: Number, required: true },
+  verifiedDeductions: { type: Number, required: true },
+  taxableIncome: { type: Number, required: true },
+  calculatedTax: { type: Number, required: true },
+  cessAmount: { type: Number, required: true },
+  adjustments: [{
+    amount: Number,
+    reason: String,
+    appliedFrom: Date,
+    appliedTo: Date
+  }],
+  finalTaxAmount: { type: Number, required: true }
+});
 
-### Table: `employee_insurances`
-| Field                  | Type       | Description                                     |
-|------------------------|------------|-------------------------------------------------|
-| `_id`                  | ObjectId   | Primary Key                                      |
-| `employee_id`          | ObjectId   | Reference to Users Collection                    |
-| `insurance_id`         | ObjectId   | Reference to Insurances Collection                |
-| `policy_number`        | String     | Policy Number Issued by Provider                  |
-| `premium_amount`       | Number     | Premium Paid by Employee                         |
-| `employer_contribution`| Number     | Employer Contribution towards Premium             |
-| `effective_date`       | Date       | Policy Effective Date                            |
-| `expiry_date`          | Date       | Policy Expiry Date                               |
-| `active`               | Boolean    | Policy Status (Active/Inactive)                  |
-| `dependents`           | Array      | List of Dependents Covered                       |
-| `created_at`           | Date       | Record Creation Date                             |
-| `updated_at`           | Date       | Record Last Update Date                          |
+// Salary Assignment Schema
+interface ISalaryAssignment extends Document {
+  employee: Types.ObjectId;
+  salaryStructure: Types.ObjectId;
+  effectiveFrom: Date;
+  effectiveTo?: Date;
+  monthlyGross: number;
+  isActive: boolean;
+}
 
----
+const SalaryAssignmentSchema = new Schema<ISalaryAssignment>({
+  employee: { type: Schema.Types.ObjectId, ref: 'Employee', required: true },
+  salaryStructure: { type: Schema.Types.ObjectId, ref: 'SalaryStructure', required: true },
+  effectiveFrom: { type: Date, required: true },
+  effectiveTo: Date,
+  monthlyGross: { type: Number, required: true },
+  isActive: { type: Boolean, default: true }
+});
 
-## **Relationships:**
-1. **Salary Structure:**
-   - `employee_salaries.salary_structure_id` → `salary_structures._id`
+// Export models
+export const Employee = model<IEmployee>('Employee', EmployeeSchema);
+export const SalaryStructure = model<ISalaryStructure>('SalaryStructure', SalaryStructureSchema);
+export const TaxDeclaration = model<ITaxDeclaration>('TaxDeclaration', TaxDeclarationSchema);
+export const MonthlyTaxCalculation = model<IMonthlyTaxCalculation>('MonthlyTaxCalculation', MonthlyTaxCalculationSchema);
+export const SalaryAssignment = model<ISalaryAssignment>('SalaryAssignment', SalaryAssignmentSchema);
 
-2. **Employee Salary Breakup:**
-   - `employee_salary_breakups.employee_salary_id` → `employee_salaries._id`
 
-3. **Employee Income Tax:**
-   - `employee_income_taxes.employee_id` → `users._id`
 
-4. **Insurance:**
-   - `employee_insurances.insurance_id` → `insurances._id`
+import { Schema, model, Document, Types } from 'mongoose';
 
-5. **Employee Insurances:**
-   - `employee_insurances.employee_id` → `users._id`
+interface IPayslip extends Document {
+  employee: Types.ObjectId;
+  salaryAssignment: Types.ObjectId;
+  monthlyTaxCalculation: Types.ObjectId;
+  month: number;
+  year: number;
+  payPeriod: {
+    startDate: Date;
+    endDate: Date;
+  };
+  earnings: {
+    basic: number;
+    hra: number;
+    specialAllowance: number;
+    otherAllowances: {
+      name: string;
+      amount: number;
+    }[];
+    totalEarnings: number;
+  };
+  deductions: {
+    epf: {
+      employeeContribution: number;
+      employerContribution: number;
+    };
+    esi: {
+      employeeContribution: number;
+      employerContribution: number;
+    };
+    professionalTax: number;
+    incomeTax: number;
+    otherDeductions: {
+      name: string;
+      amount: number;
+    }[];
+    totalDeductions: number;
+  };
+  netSalary: number;
+  paymentDetails: {
+    bankName: string;
+    accountNumber: string;
+    paymentDate: Date;
+    paymentStatus: 'PENDING' | 'PROCESSED' | 'FAILED';
+    transactionReference?: string;
+  };
+  employerContributions: {
+    epf: number;
+    esi: number;
+    gratuity?: number;
+    others: {
+      name: string;
+      amount: number;
+    }[];
+    total: number;
+  };
+  leaveDetails: {
+    paidLeaves: number;
+    unpaidLeaves: number;
+    totalWorkingDays: number;
+    paidDays: number;
+  };
+  ctc: {
+    monthly: number;
+    annual: number;
+  };
+  status: 'DRAFT' | 'GENERATED' | 'APPROVED' | 'PAID';
+  createdAt: Date;
+  updatedAt: Date;
+  approvedBy?: Types.ObjectId;
+  approvedAt?: Date;
+}
 
----
+const PayslipSchema = new Schema<IPayslip>({
+  employee: { type: Schema.Types.ObjectId, ref: 'Employee', required: true },
+  salaryAssignment: { type: Schema.Types.ObjectId, ref: 'SalaryAssignment', required: true },
+  monthlyTaxCalculation: { type: Schema.Types.ObjectId, ref: 'MonthlyTaxCalculation', required: true },
+  month: { type: Number, required: true },
+  year: { type: Number, required: true },
+  payPeriod: {
+    startDate: { type: Date, required: true },
+    endDate: { type: Date, required: true }
+  },
+  earnings: {
+    basic: { type: Number, required: true },
+    hra: { type: Number, required: true },
+    specialAllowance: { type: Number, required: true },
+    otherAllowances: [{
+      name: { type: String, required: true },
+      amount: { type: Number, required: true }
+    }],
+    totalEarnings: { type: Number, required: true }
+  },
+  deductions: {
+    epf: {
+      employeeContribution: { type: Number, required: true },
+      employerContribution: { type: Number, required: true }
+    },
+    esi: {
+      employeeContribution: { type: Number, required: true },
+      employerContribution: { type: Number, required: true }
+    },
+    professionalTax: { type: Number, required: true },
+    incomeTax: { type: Number, required: true },
+    otherDeductions: [{
+      name: { type: String, required: true },
+      amount: { type: Number, required: true }
+    }],
+    totalDeductions: { type: Number, required: true }
+  },
+  netSalary: { type: Number, required: true },
+  paymentDetails: {
+    bankName: { type: String, required: true },
+    accountNumber: { type: String, required: true },
+    paymentDate: { type: Date },
+    paymentStatus: { 
+      type: String, 
+      enum: ['PENDING', 'PROCESSED', 'FAILED'],
+      default: 'PENDING'
+    },
+    transactionReference: String
+  },
+  employerContributions: {
+    epf: { type: Number, required: true },
+    esi: { type: Number, required: true },
+    gratuity: Number,
+    others: [{
+      name: { type: String, required: true },
+      amount: { type: Number, required: true }
+    }],
+    total: { type: Number, required: true }
+  },
+  leaveDetails: {
+    paidLeaves: { type: Number, required: true },
+    unpaidLeaves: { type: Number, required: true },
+    totalWorkingDays: { type: Number, required: true },
+    paidDays: { type: Number, required: true }
+  },
+  ctc: {
+    monthly: { type: Number, required: true },
+    annual: { type: Number, required: true }
+  },
+  status: { 
+    type: String,
+    enum: ['DRAFT', 'GENERATED', 'APPROVED', 'PAID'],
+    default: 'DRAFT'
+  },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+  approvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+  approvedAt: Date
+}, {
+  timestamps: true
+});
 
-## **Benefits of this Design:**
-- **Scalable:** Supports multiple salary structures, insurances, and tax regimes.
-- **Maintainable:** Modular approach makes it easy to update or extend.
-- **Efficient Reporting:** Facilitates comprehensive salary, tax, and insurance reports.
+// Indexes for better query performance
+PayslipSchema.index({ employee: 1, month: 1, year: 1 }, { unique: true });
+PayslipSchema.index({ status: 1 });
+PayslipSchema.index({ paymentDetails: { paymentStatus: 1 } });
+
+// Virtual for full period representation
+PayslipSchema.virtual('payPeriodString').get(function() {
+  return `${this.payPeriod.startDate.toDateString()} - ${this.payPeriod.endDate.toDateString()}`;
+});
+
+export const Payslip = model<IPayslip>('Payslip', PayslipSchema);

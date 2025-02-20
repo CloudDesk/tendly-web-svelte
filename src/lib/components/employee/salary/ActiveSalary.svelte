@@ -1,7 +1,11 @@
 <script lang="ts">
-  import { derived, writable } from "svelte/store";
+  import { derived, writable, type Writable } from "svelte/store";
   import Modal from "$lib/components/common/Modal.svelte";
-  import type { EmployeeSalary, SalaryStructure } from "$lib/types";
+  import type {
+    SalaryAssignment,
+    SalaryComponentsType,
+    SalaryStructure,
+  } from "$lib/types";
   import Loader from "$lib/components/common/Loader.svelte";
   import SalaryDetails from "./SalaryDetails.svelte";
   import { salaryAssignmentApi } from "../../../services/api/salaryAssignments";
@@ -27,12 +31,12 @@
 
   export let employeeId: string;
 
-  const employeeSalary = writable<EmployeeSalary | null>(null);
-  const salaryStructure = writable<SalaryStructure | null>(null);
-  const loading = writable(false);
-  const error = writable(null);
-  const showModal = writable(false);
-  const isEditMode = writable(false);
+  const assignedSalary: Writable<SalaryAssignment | null> = writable(null);
+  const salaryStructure: Writable<SalaryStructure | null> = writable(null);
+  const loading: Writable<boolean> = writable(true);
+  const error: Writable<string | null> = writable(null);
+  const showModal: Writable<boolean> = writable(false);
+  const isEditMode: Writable<boolean> = writable(false);
 
   function calculateProfessionalTax(
     monthlyGross: number,
@@ -70,15 +74,20 @@
     return taxAmount;
   }
 
-  // Derived store for calculated salary components
-  const salaryComponents = derived(
-    [employeeSalary, salaryStructure],
-    ([$employeeSalary, $salaryStructure]) => {
-      if (!$employeeSalary || !$salaryStructure) return null;
+  // Derived store with proper typing
+  const salaryComponents = derived<
+    [Writable<SalaryAssignment | null>, Writable<SalaryStructure | null>],
+    SalaryComponentsType | null
+  >(
+    [assignedSalary, salaryStructure],
+    ([$assignedSalary, $salaryStructure]) => {
+      if (!$assignedSalary || !$salaryStructure) return null;
 
-      const monthlyGross = $employeeSalary.monthlyGross;
+      const monthlyGross = Number($assignedSalary.monthlyGross);
       const basic =
-        (monthlyGross * $salaryStructure.fixedEarnings.basicPercentage) / 100;
+        (monthlyGross *
+          Number($salaryStructure.fixedEarnings.basicPercentage)) /
+        100;
       const hra =
         (monthlyGross * $salaryStructure.fixedEarnings.hraPercentage) / 100;
       const da =
@@ -88,7 +97,6 @@
           $salaryStructure.fixedEarnings.otherAllowancePercentage) /
         100;
 
-      // EPF Calculations
       const epfWages = Math.min(
         basic,
         $salaryStructure.statutoryDeductions.epf.maxLimit
@@ -102,7 +110,6 @@
           $salaryStructure.statutoryDeductions.epf.employerContribution) /
         100;
 
-      // ESI Calculations
       let esiEmployee = 0;
       let esiEmployer = 0;
       if (
@@ -119,7 +126,6 @@
           100;
       }
 
-      // Calculate Professional Tax
       const professionalTax = calculateProfessionalTax(
         monthlyGross,
         $salaryStructure.statutoryDeductions.professionalTax.term as
@@ -135,8 +141,8 @@
         monthlyGross +
         epfEmployer +
         esiEmployer +
-        $employeeSalary.reimbursement +
-        $employeeSalary.monthlyInsurance;
+        Number($assignedSalary.reimbursement) +
+        Number($assignedSalary.monthlyInsurance);
 
       return {
         monthly: {
@@ -166,17 +172,14 @@
     }
   );
 
-  onMount(() => {
-    getActiveAssignment();
-  });
-
   async function getActiveAssignment() {
     loading.set(true);
     try {
       const result = await salaryAssignmentApi.getActiveByUserId(employeeId);
-      if (result.success) {
-        employeeSalary.set(result.data);
-        await getSalaryStructure(result.data.salaryStructureId as string);
+      console.log(result.data);
+      if (result.success && result.data) {
+        assignedSalary.set(result.data);
+        await getSalaryStructure(result.data.salaryStructureId.toString());
       }
     } catch (err: any) {
       error.set(err.message);
@@ -189,6 +192,7 @@
     try {
       const result = await salaryStructureApi.getById(id);
       if (result.success) {
+        console.log(result.data);
         salaryStructure.set(result.data);
       }
     } catch (err: any) {
@@ -207,14 +211,16 @@
     showModal.set(false);
   };
 
-  const handleFormSubmit = async (event: CustomEvent) => {
+  const handleFormSubmit = async (event: CustomEvent<SalaryAssignment>) => {
     console.log("event", event.detail);
     loading.set(true);
     try {
       let API = event.detail._id ? true : false;
-      const result = API
-        ? await salaryAssignmentApi.update(event.detail._id, event.detail)
-        : await salaryAssignmentApi.create(event.detail);
+      const data = event.detail;
+      const result = data._id
+        ? await salaryAssignmentApi.update(data._id.toString(), data)
+        : await salaryAssignmentApi.create(data);
+
       if (result.success) {
         await getActiveAssignment();
       }
@@ -233,21 +239,25 @@
       maximumFractionDigits: 0,
     }).format(value);
   };
+
+  onMount(() => {
+    getActiveAssignment();
+  });
 </script>
 
 <div class="p-2">
   <!-- Header Section -->
-  <div class="flex justify-end items-center mb-6">
-    {#if !$employeeSalary}
-      <button class="btn btn-primary" on:click={() => handleOpenModal(false)}>
-        Assign Salary Structure
-      </button>
-    {/if}
-  </div>
 
   {#if $loading}
     <Loader />
-  {:else if !$employeeSalary || !$salaryComponents}
+  {:else if !$assignedSalary || !$salaryComponents}
+    <div class="flex justify-end items-center mb-6">
+      {#if !$assignedSalary}
+        <button class="btn btn-primary" on:click={() => handleOpenModal(false)}>
+          Assign Salary Structure
+        </button>
+      {/if}
+    </div>
     <div
       class="flex flex-col items-center justify-center py-16 bg-gray-50 rounded-lg"
     >
@@ -276,7 +286,7 @@
                 {formatCurrency($salaryComponents.monthly.basic)}
               </span>
               <span class="text-blue-900/70 text-xs mt-1">
-                ({$salaryStructure.fixedEarnings.basicPercentage}% of Gross)
+                ({$salaryStructure?.fixedEarnings.basicPercentage}% of Gross)
               </span>
             </div>
             <div class="bg-white/50 p-3 rounded-full">
@@ -296,7 +306,7 @@
                 {formatCurrency($salaryComponents.monthly.hra)}
               </span>
               <span class="text-blue-900/70 text-xs mt-1">
-                ({$salaryStructure.fixedEarnings.hraPercentage}% of Gross)
+                ({$salaryStructure?.fixedEarnings.hraPercentage}% of Gross)
               </span>
             </div>
             <div class="bg-white/50 p-3 rounded-full">
@@ -318,7 +328,7 @@
                 {formatCurrency($salaryComponents.monthly.otherAllowance)}
               </span>
               <span class="text-blue-900/70 text-xs mt-1">
-                ({$salaryStructure.fixedEarnings.otherAllowancePercentage}% of
+                ({$salaryStructure?.fixedEarnings.otherAllowancePercentage}% of
                 Gross)
               </span>
             </div>
@@ -395,7 +405,7 @@
                   {formatCurrency($salaryComponents.monthly.deductions.epf)}
                 </span>
                 <span class="text-white text-xs mt-1">
-                  ({$salaryStructure.statutoryDeductions.epf
+                  ({$salaryStructure?.statutoryDeductions.epf
                     .employeeContribution}% of Basic)
                 </span>
               </div>
@@ -416,7 +426,7 @@
                   {formatCurrency($salaryComponents.monthly.deductions.esi)}
                 </span>
                 <span class="text-white text-xs mt-1">
-                  ({$salaryStructure.statutoryDeductions.esi
+                  ({$salaryStructure?.statutoryDeductions.esi
                     .employeeContribution}% of Gross)
                 </span>
               </div>
@@ -441,7 +451,7 @@
                   )}
                 </span>
                 <span class="text-white text-xs mt-1 capitalize">
-                  ({$salaryStructure.statutoryDeductions.professionalTax.term.replace(
+                  ({$salaryStructure?.statutoryDeductions.professionalTax.term.replace(
                     "_",
                     " "
                   )})
@@ -492,7 +502,7 @@
   <Modal title="Employee Salary" show={$showModal} onClose={handleCloseModal}>
     <SalaryDetails
       bind:employeeId
-      data={$employeeSalary}
+      data={$assignedSalary}
       readOnly={false}
       on:submit={handleFormSubmit}
     />
