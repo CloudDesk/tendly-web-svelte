@@ -7,3 +7,6 @@ export * from './lovs';
 export * from './trainingAttendance';
 export * from './trainingMaterials';
 export * from './shifts';
+export * from './salaryAssignments';
+export * from './salaryStructure';
+export * from './taxSlab';

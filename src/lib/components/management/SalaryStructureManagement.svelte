@@ -4,7 +4,7 @@
   import { onMount } from "svelte";
   import type { SalaryStructure } from "$lib/types";
   import { salaryStructureApi } from "$lib/services/api/salaryStructure";
-  import SalaryStructureForm from "./SalaryStructureForm.svelte";
+  import SalaryStructureForm from "./salary-structure/SalaryStructureForm.svelte";
   import { page } from "$app/stores";
   import { getSelectLabel } from "$lib/utils/select";
   import { taxTerms } from "$lib/constants/users";

@@ -94,6 +94,10 @@
       icon: Settings,
       children: [
         {
+          label: "LOVs",
+          href: "/admin/configurations?tab=lovs",
+        },
+        {
           label: "Shifts",
           href: "/admin/configurations?tab=shifts",
         },
@@ -102,12 +106,12 @@
           href: "/admin/configurations?tab=trainings",
         },
         {
-          label: "LOVs",
-          href: "/admin/configurations?tab=lovs",
-        },
-        {
           label: "Salary Structure",
           href: "/admin/configurations?tab=salary",
+        },
+        {
+          label: "Tax Slab",
+          href: "/admin/configurations?tab=taxslab",
         },
         {
           label: "Org Chart",

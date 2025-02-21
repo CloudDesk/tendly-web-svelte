@@ -7,13 +7,15 @@
   import ConfigManagement from "$lib/components/management/ConfigManagement.svelte";
   import OrgChart from "$lib/components/employee/OrgChart.svelte";
   // import SalaryStructureForm from '$lib/components/employee/salary-structure/SalaryStructureForm.svelte';
-  import SalaryStructure from "$lib/components/salary-structure/SalaryStructure.svelte";
+  import SalaryStructureManagement from "$lib/components/management/SalaryStructureManagement.svelte";
+  import TaxSlabManagement from "$lib/components/management/TaxSlabManagement.svelte";
 
   const tabs = [
     { id: "configs", label: "Configs" },
     { id: "shifts", label: "Shifts" },
     { id: "trainings", label: "Trainings" },
     { id: "salary", label: "Salary Structure" },
+    { id: "taxslab", label: "Tax Slab" },
     { id: "org", label: "Org Chart" },
   ];
 
@@ -37,7 +39,9 @@
         {:else if activeTab === "org"}
           <OrgChart />
         {:else if activeTab === "salary"}
-          <SalaryStructure />
+          <SalaryStructureManagement />
+        {:else if activeTab === "taxslab"}
+          <TaxSlabManagement />
         {/if}
       </Tabs>
     </div>

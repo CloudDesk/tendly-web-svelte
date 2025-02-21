@@ -470,3 +470,8 @@ export const professionalTaxs = [
         ]
     }
 ]
+
+export const taxRegime = [
+    { value: "old", label: "Old" },
+    { value: "new", label: "New" }
+]
