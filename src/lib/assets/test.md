@@ -46,7 +46,7 @@ TaxSlab (TaxSlabSchema):
 This schema is essential for defining various tax regimes and the financial year-specific tax slabs, cess rates, and standard deductions.
 Ensure that it accommodates different regimes (e.g., old and new tax regimes in India) if applicable.
 
-TaxDeclaration (TaxDeclarationSchema):
+TaxDeclaratio`n (TaxDeclarationSchema):
 
 This schema should capture the employee's choices regarding tax regimes and deductions, which are fundamental to accurate tax calculations.
 Consider including fields for various deductions, exemptions, and any other specifics related to the employee's declarations.

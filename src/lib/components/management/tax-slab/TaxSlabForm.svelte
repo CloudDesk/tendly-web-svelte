@@ -1,8 +1,9 @@
 <script lang="ts">
   import { taxRegime } from "$lib/constants/users";
   import { createEventDispatcher } from "svelte";
-  import { writable } from "svelte/store";
+  import { derived, writable } from "svelte/store";
   import type { TaxSlab } from "$lib/types/taxSlab";
+  import { CircleX, Plus } from "lucide-svelte";
 
   export let initialData: TaxSlab | null = null;
   export let readOnly: boolean = false;
@@ -15,31 +16,38 @@
 
   const regime = writable(initialData?.regime || "old");
   const fromYear = writable(
-    initialData ? initialData.financialYear.from : currentYear
+    initialData
+      ? parseInt(initialData.financialYear.split("-")[0])
+      : currentYear
   );
   const toYear = writable(
-    initialData ? initialData.financialYear.to : currentYear + 1
+    initialData
+      ? parseInt(initialData.financialYear.split("-")[1])
+      : currentYear + 1
   );
-  const slabs = writable(
-    initialData?.slabs || [{ fromAmount: 0, toAmount: null, taxRate: 0 }]
+  type TaxSlabItem = {
+    fromAmount: number;
+    toAmount?: number | null;
+    taxRate: number;
+  };
+
+  const slabs = writable<TaxSlabItem[]>(
+    initialData?.slabs && initialData.slabs.length > 0
+      ? initialData.slabs
+      : [{ fromAmount: 0, toAmount: null, taxRate: 0 }]
   );
   const cessRate = writable(initialData?.cessRate || 0);
   const standardDeduction = writable(initialData?.standardDeduction || 0);
   const isActive = writable(initialData?.isActive || false);
 
-  // Validation store
-  let formErrors = {
-    slabs: [] as Record<string, string>[],
-    general: {} as Record<string, string>,
-  };
+  // New store for tracking focused slab
+  const focusedSlabIndex = writable<number | null>(null);
 
-  function validateSlabs() {
-    const currentSlabs = $slabs;
-    const errors: Record<string, string>[] = Array(currentSlabs.length).fill(
-      {}
-    );
+  // Reactive validation store
+  const formErrors = derived(slabs, ($slabs) => {
+    const errors: Record<string, string>[] = Array($slabs.length).fill({});
 
-    currentSlabs.forEach((slab, index) => {
+    $slabs.forEach((slab, index) => {
       const error: Record<string, string> = {};
 
       // Validate fromAmount
@@ -47,18 +55,31 @@
         error.fromAmount = "Amount cannot be negative";
       }
 
+      // Validate previous slab connection
+      if (index > 0) {
+        const prevSlab = $slabs[index - 1];
+        if (
+          prevSlab.toAmount !== null &&
+          prevSlab.toAmount !== null &&
+          prevSlab.toAmount !== undefined &&
+          slab.fromAmount !== prevSlab.toAmount + 1
+        ) {
+          error.fromAmount = "Must be previous To Amount + 1";
+        }
+      }
+
       // Validate toAmount
       if (slab.toAmount !== null) {
-        if (slab.toAmount < 0) {
+        if (slab.toAmount !== undefined && slab.toAmount < 0) {
           error.toAmount = "Amount cannot be negative";
         }
-        if (slab.toAmount <= slab.fromAmount) {
+        if (slab.toAmount !== undefined && slab.toAmount <= slab.fromAmount) {
           error.toAmount = "Must be greater than From Amount";
         }
       }
 
       // Validate last slab toAmount requirement
-      if (index !== currentSlabs.length - 1 && slab.toAmount === null) {
+      if (index !== $slabs.length - 1 && slab.toAmount === null) {
         error.toAmount = "To Amount is required";
       }
 
@@ -70,14 +91,23 @@
       errors[index] = error;
     });
 
-    formErrors.slabs = errors;
-    return errors.every((error) => Object.keys(error).length === 0);
+    return errors;
+  });
+
+  // Auto-update fromAmount when previous toAmount changes
+  function updateFromAmount(index: number, toAmount: number | null) {
+    if (toAmount !== null && index < $slabs.length - 1) {
+      slabs.update((s: TaxSlabItem[]) => {
+        const updatedSlabs = [...s];
+        updatedSlabs[index + 1].fromAmount = toAmount + 1;
+        return updatedSlabs;
+      });
+    }
   }
 
   function handleFromYearChange(event: Event) {
     const selectedYear = (event.target as HTMLSelectElement).value;
     fromYear.set(Number(selectedYear));
-    // Automatically set toYear to the next year
     toYear.set(Number(selectedYear) + 1);
   }
 
@@ -86,27 +116,26 @@
     const lastSlab = currentSlabs[currentSlabs.length - 1];
     const newFromAmount = lastSlab.toAmount ? lastSlab.toAmount + 1 : 0;
 
-    slabs.update((s) => [
+    slabs.update((s: TaxSlabItem[]) => [
       ...s,
       { fromAmount: newFromAmount, toAmount: null, taxRate: 0 },
     ]);
-    validateSlabs();
   }
 
   function removeSlab(index: number) {
-    slabs.update((s) => s.filter((_, i) => i !== index));
-    validateSlabs();
+    slabs.update((s: TaxSlabItem[]) =>
+      s.filter((_: unknown, i: number) => i !== index)
+    );
   }
 
   function handleSubmit() {
-    if (validateSlabs()) {
+    const errors = $formErrors;
+    const hasErrors = errors.some((error) => Object.keys(error).length > 0);
+
+    if (!hasErrors) {
       const formData: TaxSlab = {
         regime: $regime,
-        financialYear: {
-          from: $fromYear,
-          to: $toYear,
-          value: `${$fromYear}-${$toYear}`,
-        },
+        financialYear: `${$fromYear}-${$toYear}`,
         slabs: $slabs,
         cessRate: $cessRate,
         standardDeduction: $standardDeduction,
@@ -184,7 +213,7 @@
             <input
               type="text"
               id="financialYear"
-              value={initialData.financialYear.value}
+              value={initialData.financialYear}
               class="w-full h-10 rounded-md border border-gray-300 px-3 py-2 text-sm bg-gray-50"
               readonly
             />
@@ -225,7 +254,7 @@
       </div>
 
       <!-- Tax Slabs -->
-      <div class="space-y-4 mt-8">
+      <div class="space-y-4">
         <div class="flex justify-between items-center">
           <h3 class="text-base font-medium text-gray-900">Tax Slabs</h3>
           {#if !readOnly}
@@ -234,19 +263,7 @@
               class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               on:click={addSlab}
             >
-              <svg
-                class="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
+              <Plus class="w-4 h-4 mr-2 text-white" />
               Add Slab
             </button>
           {/if}
@@ -255,31 +272,43 @@
         <div class="space-y-4">
           {#each $slabs as slab, index}
             <div
-              class="relative bg-gray-50 rounded-lg border border-gray-200 p-6"
+              class="relative bg-gray-50 rounded-lg border {$focusedSlabIndex ===
+              index
+                ? 'border-blue-500 ring-1 ring-blue-500'
+                : 'border-gray-200'} p-6"
+              on:focus={() => focusedSlabIndex.set(index)}
+              on:blur={() => focusedSlabIndex.set(null)}
             >
-              <div class="grid grid-cols-10 gap-4 items-center">
+              <div class="grid grid-cols-10 gap-4">
                 <!-- From Amount -->
-                <div class="col-span-3 min-h-[65px] flex flex-col">
-                  <label class="block text-sm font-medium text-gray-700">
+                <div class="col-span-3 space-y-2">
+                  <label
+                    for="fromAmount-{index}"
+                    class="block text-sm font-medium text-gray-700"
+                  >
                     From Amount (₹)
                   </label>
                   <input
                     type="number"
+                    id="fromAmount-{index}"
                     bind:value={slab.fromAmount}
                     min="0"
                     class="w-full h-10 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                    disabled={readOnly}
+                    disabled={readOnly || index > 0}
                   />
-                  {#if formErrors.slabs[index]?.fromAmount}
+                  {#if $formErrors[index]?.fromAmount}
                     <p class="text-red-500 text-xs mt-1">
-                      {formErrors.slabs[index].fromAmount}
+                      {$formErrors[index].fromAmount}
                     </p>
                   {/if}
                 </div>
 
                 <!-- To Amount -->
-                <div class="col-span-3 min-h-[65px] flex flex-col">
-                  <label class="block text-sm font-medium text-gray-700">
+                <div class="col-span-3 space-y-2">
+                  <label
+                    for="toAmount-{index}"
+                    class="block text-sm font-medium text-gray-700"
+                  >
                     To Amount (₹)
                     {#if index === $slabs.length - 1}
                       <span class="text-gray-500 text-xs ml-1">(Optional)</span>
@@ -287,43 +316,59 @@
                   </label>
                   <input
                     type="number"
+                    id="toAmount-{index}"
                     bind:value={slab.toAmount}
-                    min="0"
-                    class="w-full h-10 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    on:input={() =>
+                      updateFromAmount(index, slab.toAmount ?? null)}
+                    min={slab.fromAmount + 1}
+                    class="w-full h-10 rounded-md border {$formErrors[index]
+                      ?.toAmount
+                      ? 'border-red-500'
+                      : 'border-gray-300'} px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     disabled={readOnly}
                   />
-                  {#if formErrors.slabs[index]?.toAmount}
+                  {#if $formErrors[index]?.toAmount}
                     <p class="text-red-500 text-xs mt-1">
-                      {formErrors.slabs[index].toAmount}
+                      {$formErrors[index].toAmount}
                     </p>
                   {/if}
                 </div>
 
                 <!-- Tax Rate -->
-                <div class="col-span-3 min-h-[65px] flex flex-col">
-                  <label class="block text-sm font-medium text-gray-700">
+                <div class="col-span-3 space-y-2">
+                  <label
+                    for="taxRate-{index}"
+                    class="block text-sm font-medium text-gray-700"
+                  >
                     Tax Rate (%)
                   </label>
                   <input
+                    id="taxRate-{index}"
                     type="number"
                     bind:value={slab.taxRate}
                     min="0"
                     class="w-full h-10 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     disabled={readOnly}
                   />
+                  {#if $formErrors[index]?.taxRate}
+                    <p class="text-red-500 text-xs mt-1">
+                      {$formErrors[index].taxRate}
+                    </p>
+                  {/if}
                 </div>
 
                 <!-- Remove Button -->
                 {#if !readOnly && $slabs.length > 1}
-                  <div
-                    class="col-span-1 flex items-center justify-center h-full"
-                  >
+                  <div class="col-start-10 flex items-center justify-center">
                     <button
                       type="button"
-                      class="w-8 h-8 flex items-center justify-center rounded-md border border-gray-300 text-red-500 hover:bg-red-100 focus:outline-none"
+                      class="flex items-center justify-center w-8 h-8 rounded-full {$focusedSlabIndex ===
+                      index
+                        ? 'bg-red-200'
+                        : 'bg-red-100'} hover:bg-red-200 text-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                       on:click={() => removeSlab(index)}
                     >
-                      x
+                      <CircleX />
                     </button>
                   </div>
                 {/if}
@@ -367,6 +412,7 @@
     margin: 0;
   }
   input[type="number"] {
+    appearance: textfield;
     -moz-appearance: textfield;
   }
 

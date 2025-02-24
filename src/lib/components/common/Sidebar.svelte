@@ -20,6 +20,10 @@
     Bell,
     ChevronDown,
     BookOpen,
+    FileCheck,
+    Clock,
+    GraduationCap,
+    CalendarRange,
   } from "lucide-svelte";
   import { fly } from "svelte/transition";
   import { writable } from "svelte/store";
@@ -69,24 +73,24 @@
       icon: LayoutDashboard,
     },
     {
-      label: "Employees",
+      label: "Employee",
       href: "/admin/employees",
       icon: Users,
     },
     {
       label: "Attendance",
       href: "/admin/attendance",
-      icon: CalendarCheck,
+      icon: Clock,
     },
     {
       label: "Trainings",
       href: "/admin/trainings",
-      icon: BookOpen,
+      icon: GraduationCap,
     },
     {
       label: "Leaves",
       href: "/admin/leaves",
-      icon: CalendarOff,
+      icon: CalendarRange,
     },
     {
       label: "Configurations",
@@ -141,12 +145,12 @@
     {
       label: "Attendance",
       href: "/manager/attendance",
-      icon: CalendarCheck,
+      icon: Clock,
     },
     {
       label: "Leaves",
       href: "/manager/leaves",
-      icon: CalendarOff,
+      icon: CalendarRange,
     },
   ];
 
@@ -175,7 +179,12 @@
     {
       label: "Leaves",
       href: "/my/leaves",
-      icon: CalendarCheck,
+      icon: CalendarRange,
+    },
+    {
+      label: "Tax Declaration",
+      href: "/my/tax-declaration",
+      icon: FileCheck,
     },
     {
       label: "Assignments",

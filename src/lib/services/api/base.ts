@@ -11,7 +11,8 @@ export function setCustomFetch(fn: typeof fetch) {
   customFetch = fn;
 }
 
-export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+
   const reqRole = get(navigationContext);
 
   const headers = {
@@ -29,10 +30,10 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
 
   try {
     const response = await customFetch(`${API_BASE_URL}${endpoint}`, fetchOptions);
-
+    console.log('response', response)
     // Handle 401 (Unauthorized) - Token expired or invalid
     if (response.status === 401) {
-      auth.clearAuth();  
+      auth.clearAuth();
       goto('/login');
     }
 
@@ -44,6 +45,7 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
 
     return response.json();
   } catch (error) {
+    console.log("response", error)
     // Handle network errors or other exceptions
     if (error instanceof Error) {
       throw error;

@@ -2,6 +2,7 @@
   import { taxstates, taxTerms } from "$lib/constants/users";
   import { createEventDispatcher } from "svelte";
   import type { SalaryStructure, IProfessionalTaxSlab } from "$lib/types";
+  import { AlertCircle, Check, CircleX, Plus } from "lucide-svelte";
 
   export let initialData: SalaryStructure | null = null;
   export let readOnly = false;
@@ -597,19 +598,7 @@
               class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               on:click={addSlabRow}
             >
-              <svg
-                class="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
+              <Plus class="w-4 h-4 mr-2 text-white" />
               Add Slab
             </button>
           {/if}
@@ -696,19 +685,7 @@
                       class="flex items-center justify-center w-8 h-8 rounded-full bg-red-100 hover:bg-red-200 text-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                       on:click={() => removeSlabRow(index)}
                     >
-                      <svg
-                        class="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
+                      <CircleX />
                     </button>
                   </div>
                 {/if}
@@ -731,34 +708,10 @@
         disabled={hasErrors || !isValidTotal}
       >
         {#if hasErrors}
-          <svg
-            class="w-4 h-4 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+          <AlertCircle class="w-4 h-4 mr-2 text-red-500" />
           Please Fix Errors
         {:else}
-          <svg
-            class="w-4 h-4 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
+          <Check class="w-4 h-4 mr-2 text-green-500" />
           Save Configuration
         {/if}
       </button>

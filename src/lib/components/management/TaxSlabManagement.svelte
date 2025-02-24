@@ -8,10 +8,10 @@
   import { page } from "$app/stores";
   import { writable } from "svelte/store";
   import { goto } from "$app/navigation";
+  import { toast } from "../common/stores/toast.store";
 
   let taxSlabs: TaxSlab[] = [];
   let loading = false;
-  let error: string | null = null;
   let showForm = false;
   let showDetails = false;
   let editingSlab: TaxSlab | null = null;
@@ -51,7 +51,7 @@
     let search = $page.url.searchParams.get("search") || undefined;
     try {
       loading = true;
-      const response = await taxSlabApi.list({
+      const response: any = await taxSlabApi.list({
         page: pagination.page,
         limit: pagination.limit,
         search: search,
@@ -65,7 +65,6 @@
 
       taxSlabs = response.data;
     } catch (err) {
-      error = "Failed to load tax slabs";
       console.error(err);
     } finally {
       loading = false;
@@ -74,22 +73,31 @@
 
   async function handleSubmit(event: CustomEvent) {
     console.log(event.detail, "formData");
+    console.log(editingSlab, "editingSlab");
     try {
       loading = true;
       const formData = event.detail;
+      let result;
 
       if (editingSlab?._id) {
-        await taxSlabApi.update(editingSlab._id, formData);
+        result = await taxSlabApi.update(editingSlab._id, {
+          ...formData,
+          _id: editingSlab._id,
+        });
       } else {
-        await taxSlabApi.create(formData);
+        result = await taxSlabApi.create(formData);
       }
+      console.log(result, "result");
 
-      showForm = false;
       await loadTaxSlabs();
+      toast.success("Tax slab saved successfully");
     } catch (err) {
-      error = "Failed to save tax slab";
+      console.log("error", err);
+      // error = "Failed to save tax slab";
       console.error(err);
+      toast.error("Failed to save tax slab");
     } finally {
+      showForm = false;
       loading = false;
     }
   }
@@ -145,7 +153,7 @@
       <input
         type="text"
         class="input"
-        placeholder="Search tax slabs..."
+        placeholder="Search tax slabs by Regime..."
         bind:value={$searchQuery}
         on:input={handleSearch}
       />
@@ -160,10 +168,6 @@
       </button>
     </div>
   </div>
-
-  {#if error}
-    <div class="alert alert-error">{error}</div>
-  {/if}
 
   {#if loading}
     <div class="loading">Loading...</div>
