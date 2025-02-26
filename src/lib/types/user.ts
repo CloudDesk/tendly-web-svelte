@@ -16,6 +16,7 @@ export type User = {
   updatedAt: string;
   lastLoginAt?: string;
   profileImageUrl?: string;
+  joiningDate?: string;
   managerId?: string;
   managerName?: string;
   currentShiftAssignment?: string;

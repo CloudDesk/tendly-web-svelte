@@ -2,13 +2,14 @@
   import Card from "$lib/components/common/Card.svelte";
   import Loader from "$lib/components/common/Loader.svelte";
   import Modal from "$lib/components/common/Modal.svelte";
+  import TaxDeclarationViewer from "$lib/components/taxDeclaration/TaxDeclarationViewer.svelte";
   import { taxSlabApi } from "$lib/services/api";
   import { taxDeclarationApi } from "$lib/services/api/taxDeclaration";
   import { auth } from "$lib/stores/auth";
   import type { TaxSlab } from "$lib/types";
   import { getCurrentFinancialYear } from "$lib/utils/date";
   import { ReceiptIndianRupee } from "lucide-svelte";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
 
   let isLoading = false;
   let taxDeclaration: any = null;
@@ -17,7 +18,7 @@
   let taxSlabs: TaxSlab[] = [];
   let selectedRegime: "new" | "old" | null = null;
   let currentFY = getCurrentFinancialYear();
-
+  console.log(user, "user");
   function selectRegime(regime: "new" | "old"): void {
     selectedRegime = regime;
   }
@@ -25,13 +26,18 @@
   async function fetchUserTaxDeclaration() {
     isLoading = true;
     try {
-      const result: any = await taxDeclarationApi.getUserCurrentFY(
-        user?._id || ""
-      );
-      taxDeclaration = result.data;
-    } catch (error) {
-      console.error("Error fetching tax declaration:", error);
-      getCurrentFYTaxSlabs();
+      if (user?._id) {
+        try {
+          const result: any = await taxDeclarationApi.getUserCurrentFY(
+            user?._id || ""
+          );
+          console.log(result, "result");
+          taxDeclaration = result.data;
+        } catch (error) {
+          console.error("Error fetching tax declaration:", error);
+        }
+      }
+      await getCurrentFYTaxSlabs();
     } finally {
       isLoading = false;
     }
@@ -41,8 +47,10 @@
     isLoading = true;
     try {
       const response: any = await taxSlabApi.getCurrentFY();
+      console.log(response, "*****");
       if (response.success) {
-        taxSlabs = response.data;
+        taxSlabs = [...response.data];
+        await tick();
       }
     } catch (error) {
       console.error("Error fetching tax slabs:", error);
@@ -78,10 +86,9 @@
     } catch (error) {
       console.log(error, "error ");
     } finally {
-      setTimeout(() => {
-        isLoading = false;
-        selectedRegime = null;
-      }, 2000);
+      isLoading = false;
+      selectedRegime = null;
+      await fetchUserTaxDeclaration();
     }
   }
 
@@ -107,8 +114,8 @@
 
 <div class="container">
   <header class="header">
-    <h1>Tax Declaration</h1>
-    <div class="actions">
+    <h1>Tax Declaration {currentFY}</h1>
+    <!-- <div class="actions">
       <button class="btn-secondary">
         <i class="fas fa-file-export"></i> Export
       </button>
@@ -117,7 +124,7 @@
           <i class="fas fa-plus"></i> Update
         </button>
       {/if}
-    </div>
+    </div> -->
   </header>
 
   {#if isLoading}
@@ -300,7 +307,9 @@
       {/if}
     </Card>
   {/if}
-
+  {#if taxDeclaration && taxSlabs.length > 0}
+    <TaxDeclarationViewer {taxSlabs} {taxDeclaration} />
+  {/if}
   {#if showModal}
     <Modal
       show={showModal}

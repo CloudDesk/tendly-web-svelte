@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ComponentType, SvelteComponentTyped } from "svelte";
+  import type { ComponentType } from "svelte";
 
   // Define types for props
   type ShadowSize = "none" | "sm" | "md" | "lg" | "xl" | "2xl";
