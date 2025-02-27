@@ -3,6 +3,8 @@
   import EmployeeDetailsSection from "./EmployeeDetailsSection.svelte";
   import TaxableIncomeSummarySection from "./TaxableIncomeSummarySection.svelte";
   import TaxRegimeSection from "./TaxRegimeSection.svelte";
+  import TaxComputationSection from "./TaxComputationSection.svelte";
+  import ItDeclarationSection from "./ITDeclarationSection.svelte";
 
   export let taxDeclaration;
   export let taxSlabs;
@@ -16,16 +18,8 @@
     const { id, isOpen } = event.detail;
     openAccordion = isOpen ? id : null;
   }
-  /*
-TaxDeclaration.svelte (Container)
-├── TaxRegimeSection.svelte
-├── EmployeeDetailsSection.svelte
-├── IncomeDetailsSection.svelte
-├── TaxableIncomeSummarySection.svelte
-├── TaxCalculationPreviewSection.svelte
-└── ITDeclarationSection.svelte (Conditional for Old Regime)
-*/
-  let sections = [
+
+  $: sections = [
     {
       id: 1,
       title: "Employee Details",
@@ -50,17 +44,35 @@ TaxDeclaration.svelte (Container)
       title: "Taxable Income Summary",
       isOpen: false,
       component: TaxableIncomeSummarySection,
-      props: {
-        taxDeclaration,
-      },
+      props: { taxDeclaration },
     },
     {
       id: 4,
-      title: "Tax Calculation Preview",
+      title: "IT Declaration",
       isOpen: false,
-      content: "Content for section 5...",
+      subtitle: "Section 80C, 80D, HRA, and other deductions",
+      component: ItDeclarationSection,
+      props: { taxDeclaration },
+      visible: showITDeclaration,
     },
-  ];
+    {
+      id: 5,
+      title: "Proof of Investment",
+      isOpen: false,
+      subtitle: "Upload and track proof documents",
+      content: "POI",
+      props: { taxDeclaration },
+      visible: showITDeclaration,
+    },
+    {
+      id: 6,
+      title: "Tax & Statutory Deductions",
+      isOpen: false,
+      subtitle: "Monthly projection and payment schedule",
+      component: TaxComputationSection,
+      props: { taxDeclaration },
+    },
+  ].filter((section) => section.visible !== false);
 </script>
 
 <div class="container">

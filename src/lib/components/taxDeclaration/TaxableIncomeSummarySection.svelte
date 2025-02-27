@@ -2,9 +2,20 @@
   import { ReceiptIndianRupee } from "lucide-svelte";
   import Card from "../common/Card.svelte";
   import { formatCurrency } from "$lib/utils/currency";
+  import type { TaxDeclaration } from "$lib/types";
 
-  export let taxDeclaration;
+  export let taxDeclaration: TaxDeclaration;
   console.log(taxDeclaration, "taxDeclaration");
+
+  const getDisplayToAmount = (
+    slabToAmount: number | null,
+    taxableIncome: number
+  ): number => {
+    if (slabToAmount === null || slabToAmount > taxableIncome) {
+      return taxableIncome;
+    }
+    return slabToAmount;
+  };
 
   const capitalize = (s: string) =>
     (s && String(s[0]).toUpperCase() + String(s).slice(1)) || "";
@@ -120,9 +131,12 @@
           {#each taxDeclaration.initialTaxBreakdown.slabwiseTax as slab, index}
             <tr class={index % 2 === 0 ? "bg-gray-50" : ""}>
               <td class="px-3 py-2 text-xs text-gray-700">
-                {formatCurrency(slab.fromAmount)} - {slab.toAmount === null
-                  ? "∞"
-                  : formatCurrency(slab.toAmount ?? null)}
+                {formatCurrency(slab.fromAmount)} - {formatCurrency(
+                  getDisplayToAmount(
+                    slab.toAmount ?? null,
+                    taxDeclaration.initialTaxBreakdown.taxableIncome
+                  )
+                )}
               </td>
               <td class="px-3 py-2 text-xs text-gray-700 text-right">
                 {formatCurrency(slab.amount)}
@@ -132,5 +146,5 @@
         </tbody>
       </table>
     </div>
-  </div>
-</Card>
+  </div></Card
+>

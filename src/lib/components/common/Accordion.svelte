@@ -24,7 +24,7 @@
 </script>
 
 <div
-  class="accordion border border-gray-200 rounded-lg mb-2 bg-white shadow-sm overflow-hidden"
+  class={`accordion border ${isOpen ? "border-blue-400" : "border-gray-200"}  rounded-lg mb-2 bg-white shadow-sm overflow-hidden`}
 >
   <button
     class={`w-full flex justify-between items-center p-4 text-left transition-all duration-300 

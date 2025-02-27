@@ -18,6 +18,7 @@
     { label: "Account No", value: "N/A" },
     { label: "PAN", value: "N/A" },
     { label: "IFSC Code", value: "N/A" },
+    { label: "Employee ID", value: user?.biometricId || "N/A" },
   ];
 </script>
 

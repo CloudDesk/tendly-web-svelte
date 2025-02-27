@@ -11,3 +11,4 @@ export * from './attendance';
 export * from './salaryStructure';
 export * from './salaryAssignment';
 export * from './taxSlab';
+export * from './taxDeclaration';

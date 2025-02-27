@@ -79,7 +79,7 @@
                     <td class="px-4 py-2 text-sm text-gray-700">
                       {formatCurrency(slab.fromAmount)} - {slab.toAmount ===
                       null
-                        ? "∞"
+                        ? "Above"
                         : formatCurrency(slab.toAmount ?? null)}
                     </td>
                     <td class="px-4 py-2 text-sm text-gray-700 text-right">
@@ -118,7 +118,7 @@
                         <td class="px-3 py-2 text-xs text-gray-700">
                           {formatCurrency(slab.fromAmount)} - {slab.toAmount ===
                           null
-                            ? "∞"
+                            ? "Above"
                             : formatCurrency(slab.toAmount ?? null)}
                         </td>
                         <td class="px-3 py-2 text-xs text-gray-700 text-right">
