@@ -1,33 +1,48 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
   import { formatCurrency } from "$lib/utils/currency";
+  import { writable } from "svelte/store";
   import type { TaxDeclaration } from "$lib/types";
 
-  export let taxDeclaration: TaxDeclaration;
+  // Extend TaxDeclaration type to include annualGross for dynamic limits
+  export let taxDeclaration: TaxDeclaration & { annualGross?: number };
 
-  // Define deduction sections data structure
+  // Error store for better UI feedback
+  export const errors = writable<string[]>([]);
+
+  const dispatch = createEventDispatcher();
+
+  $: {
+    if (editMode) {
+      const activeErrors = Object.values(editErrors).filter(Boolean);
+      if (activeErrors.length > 0) {
+        errors.set(activeErrors);
+      } else {
+        errors.set([]);
+      }
+    }
+  }
+
+  // Define deduction sections with improved structure for limits
   const deductionSections = [
     {
       id: "80C",
       title: "Section 80C",
       description: "Deduction for Investment in Specified Savings Instruments",
-      maxLimit: 150000,
+      maxLimit: 150000, // Overall section limit of ₹1.5 lakh
+      limitType: "section", // Indicates the limit applies to whole section
       subsections: [
         { id: "life_insurance", name: "Life Insurance Premium" },
         { id: "epf", name: "Employee Provident Fund (EPF)" },
-        { id: "ppf", name: "Public Provident Fund (PPF)" },
-        { id: "nsc", name: "National Savings Certificate (NSC)" },
-        { id: "tax_saving_fd", name: "Tax-saving Fixed Deposit (FD)" },
-        { id: "post_office_fd", name: "5-year fixed deposit with post office" },
-        { id: "scss", name: "Senior Citizens Savings Scheme (SCSS)" },
-        { id: "nps_80c", name: "National Pension Scheme (NPS)" },
+        // Additional subsections can be added here
       ],
     },
     {
       id: "80D",
       title: "Section 80D",
       description: "Deduction for Premium Paid on Health Insurance",
-      maxLimit: null,
+      maxLimit: null, // No overall section limit
+      limitType: "subsection", // Indicates limits are at subsection level
       subsections: [
         {
           id: "self_family",
@@ -42,161 +57,35 @@
         },
       ],
     },
-    {
-      id: "80E",
-      title: "Section 80E",
-      description: "Deduction for Interest on Education Loan",
-      maxLimit: null, // No limit, but for 8 years
-      subsections: [
-        {
-          id: "education_loan",
-          name: "Education Loan Interest",
-          note: "Available for up to 8 years",
-        },
-      ],
-    },
-    {
-      id: "80G",
-      title: "Section 80G",
-      description: "Deduction for Donations to Charitable Institutions",
-      maxLimit: null, // Depends on institution
-      subsections: [
-        {
-          id: "donations",
-          name: "Donation to Charitable Institutions",
-          note: "50% or 100% depending on institution",
-        },
-      ],
-    },
-    {
-      id: "80TTA",
-      title: "Section 80TTA",
-      description: "Deduction for Interest on Savings Account",
-      maxLimit: 10000,
-      subsections: [
-        { id: "savings_interest", name: "Interest on Savings Account" },
-      ],
-    },
+    // Add other sections like 80GG, 80CCD2 etc. with appropriate limit types
     {
       id: "80GG",
       title: "Section 80GG",
       description: "Deduction for Rent Paid",
-      maxLimit: 60000,
-      subsections: [
-        {
-          id: "rent_paid",
-          name: "Rent Paid",
-          note: "When HRA is not received",
-        },
-      ],
-    },
-    {
-      id: "80CCG",
-      title: "Section 80CCG",
-      description:
-        "Deduction for Investment in Rajiv Gandhi Equity Savings Scheme",
-      maxLimit: 25000,
-      subsections: [
-        {
-          id: "rgess",
-          name: "Investment in RGESS",
-          note: "For first-time retail investors",
-        },
-      ],
-    },
-    {
-      id: "80U",
-      title: "Section 80U",
-      description: "Deduction for Persons with Disabilities",
-      maxLimit: 125000, // Max for severe disability
-      subsections: [
-        {
-          id: "disability",
-          name: "Persons with Disabilities",
-          note: "₹75,000 for normal disability, ₹1.25 lakh for severe disability",
-        },
-      ],
-    },
-    {
-      id: "80RRB",
-      title: "Section 80RRB",
-      description: "Deduction for Income from Patents",
-      maxLimit: 300000,
-      subsections: [{ id: "patents", name: "Income from Patents" }],
-    },
-    {
-      id: "80DDB",
-      title: "Section 80DDB",
-      description: "Deduction for Medical Treatment of Specified Diseases",
-      maxLimit: 100000, // Max for senior citizens
-      subsections: [
-        {
-          id: "medical_treatment",
-          name: "Medical Treatment",
-          note: "₹40,000 general, ₹1 lakh for senior citizens",
-        },
-      ],
-    },
-    {
-      id: "80CCD1",
-      title: "Section 80CCD(1)",
-      description:
-        "Deduction for Contributions to National Pension Scheme (NPS)",
-      maxLimit: 150000, // Under 80C limit
-      subsections: [
-        { id: "employee_nps", name: "Employee's Contribution to NPS" },
-      ],
+      limitType: "dynamic", // Special case with dynamic limit
+      maxLimit: null, // Will be calculated dynamically
+      subsections: [{ id: "rent_paid", name: "Rent Paid" }],
     },
     {
       id: "80CCD2",
       title: "Section 80CCD(2)",
-      description: "Deduction for Employer's Contribution to NPS",
-      maxLimit: null, // 10% of salary, no upper limit
+      description: "Employer's contribution to NPS",
+      limitType: "dynamic", // Special case with dynamic limit
+      maxLimit: null, // Will be calculated dynamically
       subsections: [
-        {
-          id: "employer_nps",
-          name: "Employer's Contribution to NPS",
-          note: "10% of salary",
-        },
-      ],
-    },
-    {
-      id: "10_14",
-      title: "Section 10(14)",
-      description: "Allowances",
-      maxLimit: null, // Depends on actual expense
-      subsections: [
-        { id: "hra", name: "House Rent Allowance (HRA)" },
-        {
-          id: "special_allowance",
-          name: "Special Allowance for children, transport, etc.",
-        },
-      ],
-    },
-    {
-      id: "24b",
-      title: "Section 24(b)",
-      description: "Deduction on Home Loan Interest",
-      maxLimit: 200000, // For self-occupied property
-      subsections: [
-        {
-          id: "home_loan_interest",
-          name: "Interest on Home Loan",
-          note: "For self-occupied property",
-        },
+        { id: "employer_nps", name: "Employer's NPS Contribution" },
       ],
     },
   ];
 
   // Get declarations by section
-  const getDeclarationsBySection = (section) => {
-    console.log(section, "getDeclarationsBySection");
+  const getDeclarationsBySection = (section: string) => {
     if (!taxDeclaration || !taxDeclaration.declarations) return [];
     return taxDeclaration.declarations.filter((d) => d.section === section);
   };
 
   // Get declaration by section and subsection
-  const getDeclaration = (section, subSection) => {
+  const getDeclaration = (section: string, subSection: string) => {
     if (!taxDeclaration || !taxDeclaration.declarations) return null;
     return taxDeclaration.declarations.find(
       (d) => d.section === section && d.subSection === subSection
@@ -204,41 +93,98 @@
   };
 
   // Calculate total declared amount for a section
-  const getSectionTotal = (sectionId) => {
+  const getSectionTotal = (sectionId: string) => {
     if (!taxDeclaration || !taxDeclaration.declarations) return 0;
 
-    // When in edit mode, use the current edit values
     if (editMode) {
       let total = 0;
-      // Go through all edit values and sum those that belong to this section
       Object.entries(editValues).forEach(([key, value]) => {
-        const [section, _] = key.split("_");
+        const [section] = key.split("_");
         if (section === sectionId) {
-          total += parseFloat(value) || 0;
+          total += parseFloat(value as string) || 0;
         }
       });
       return total;
     } else {
-      // Use the stored declaration values when not in edit mode
       return taxDeclaration.declarations
         .filter((d) => d.section === sectionId)
         .reduce((total, decl) => total + (decl.declaredAmount || 0), 0);
     }
   };
-  // Check if section total exceeds limit
-  const isOverLimit = (section, limit) => {
-    if (!limit) return false;
-    const total = getSectionTotal(section);
-    return total > limit;
+
+  // Check if section or subsection total exceeds limit
+  const isOverLimit = (sectionId: string, subsectionId?: string) => {
+    const section = deductionSections.find((s) => s.id === sectionId);
+    if (!section) return false;
+
+    if (subsectionId) {
+      // Check subsection limit
+      const subsection = section.subsections.find(
+        (ss) => ss.id === subsectionId
+      );
+      if (!subsection || !subsection.maxLimit) return false;
+
+      const key = `${sectionId}_${subsectionId}`;
+      const value = editMode
+        ? parseFloat(editValues[key] as string) || 0
+        : getDeclaration(sectionId, subsectionId)?.declaredAmount || 0;
+
+      return value > calculateDynamicLimit(sectionId, subsectionId);
+    } else {
+      // Check section limit
+      if (
+        section.limitType !== "section" &&
+        section.limitType !== "both" &&
+        section.limitType !== "dynamic"
+      )
+        return false;
+
+      const limit = calculateDynamicLimit(sectionId);
+      if (limit === Infinity) return false;
+
+      return getSectionTotal(sectionId) > limit;
+    }
   };
 
-  // Track edits
+  // Calculate dynamic limits based on section/subsection
+  const calculateDynamicLimit = (sectionId: string, subsectionId?: string) => {
+    const section = deductionSections.find((s) => s.id === sectionId);
+    if (!section) return Infinity;
+
+    // Handle special cases with dynamic limits
+    if (sectionId === "80GG") {
+      const annualGross = taxDeclaration.annualGross || 0;
+      const rentPaid =
+        parseFloat(editValues["80GG_rent_paid"] as unknown as string) || 0;
+
+      const incomeLimit = (taxDeclaration.annualGross || 0) * 0.25;
+      const excessRent = rentPaid - annualGross * 0.1;
+      return Math.min(60000, incomeLimit);
+    } else if (sectionId === "80CCD2") {
+      return (taxDeclaration.annualGross || 0) * 0.1;
+    }
+
+    // Handle subsection limits if specified
+    if (subsectionId) {
+      const subsection = section.subsections.find(
+        (ss) => ss.id === subsectionId
+      );
+      if (subsection?.maxLimit) return subsection.maxLimit;
+    }
+
+    // Return section limit or infinity if no limit applies
+    return section.maxLimit || Infinity;
+  };
+
+  // Track edits and errors
   let editMode = false;
-  let editValues = {};
+  let editValues: { [key: string]: number } = {};
+  let editErrors: { [key: string]: string } = {};
+  let uploadedFiles: { [key: string]: File } = {};
 
   onMount(() => {
     if (taxDeclaration && taxDeclaration.declarations) {
-      editValues = {}; // Reset editValues first
+      editValues = {};
       taxDeclaration.declarations.forEach((decl) => {
         editValues[`${decl.section}_${decl.subSection}`] = decl.declaredAmount;
       });
@@ -249,18 +195,17 @@
   const toggleEditMode = () => {
     editMode = !editMode;
 
-    // Reset edit values when entering edit mode
     if (editMode) {
-      editValues = {}; // Start fresh
+      editValues = {};
+      editErrors = {};
+      uploadedFiles = {};
 
-      // First, initialize all possible fields to 0
       deductionSections.forEach((section) => {
         section.subsections.forEach((subsection) => {
           editValues[`${section.id}_${subsection.id}`] = 0;
         });
       });
 
-      // Then, populate with existing declaration values
       if (taxDeclaration && taxDeclaration.declarations) {
         taxDeclaration.declarations.forEach((decl) => {
           if (decl.section && decl.subSection) {
@@ -269,102 +214,235 @@
           }
         });
       }
-
-      console.log("Edit values initialized:", editValues);
     }
   };
 
-  // Handle input change
-  const handleInputChange = (section, subSection, value) => {
-    console.log(section, "section InputChange");
-    console.log(subSection, "subSection InputChange");
-    console.log(value, "value InputChange");
+  // Handle input change with comprehensive validation for all limit types
+  const handleInputChange = (
+    section: string,
+    subSection: string,
+    value: string
+  ) => {
     const key = `${section}_${subSection}`;
-    console.log(editValues, "editValues");
-    editValues[key] = parseFloat(value) || 0;
+    const parsedValue = parseFloat(value) || 0;
+    const sectionObj = deductionSections.find((s) => s.id === section);
+    if (!sectionObj) return;
+
+    // Clear previous error for this field
+    delete editErrors[key];
+
+    // Set the value first
+    editValues[key] = parsedValue;
+
+    // Validate based on limit type
+    if (
+      sectionObj.limitType === "subsection" ||
+      sectionObj.limitType === "both"
+    ) {
+      // Check subsection limit
+      const subsection = sectionObj.subsections.find(
+        (ss) => ss.id === subSection
+      );
+      const subSectionLimit = calculateDynamicLimit(section, subSection);
+
+      if (subSectionLimit !== Infinity && parsedValue > subSectionLimit) {
+        editErrors[key] =
+          `Exceeds max limit of ${formatCurrency(subSectionLimit)}`;
+        editValues[key] = subSectionLimit; // Cap at max limit
+      }
+    }
+
+    if (
+      sectionObj.limitType === "section" ||
+      sectionObj.limitType === "both" ||
+      sectionObj.limitType === "dynamic"
+    ) {
+      // Check section total limit
+      const sectionLimit = calculateDynamicLimit(section);
+      if (sectionLimit !== Infinity) {
+        const sectionTotal = getSectionTotal(section);
+
+        if (sectionTotal > sectionLimit) {
+          // Calculate how much this subsection needs to be reduced
+          const excess = sectionTotal - sectionLimit;
+          const newValue = Math.max(0, parsedValue - excess);
+
+          editValues[key] = newValue;
+          editErrors[key] =
+            `Section limit reached. Adjusted to ${formatCurrency(newValue)}`;
+        }
+      }
+    }
+
+    // Update the errors store
+    const activeErrors = Object.values(editErrors).filter(Boolean);
+    if (activeErrors.length > 0) {
+      errors.set(activeErrors);
+    } else {
+      errors.set([]);
+    }
+  };
+
+  // Handle file upload for POI
+  const handleFileUpload = (
+    section: string,
+    subSection: string,
+    event: Event
+  ) => {
+    const key = `${section}_${subSection}`;
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      uploadedFiles[key] = input.files[0];
+    }
+  };
+
+  // Validate all declarations based on limit types
+  const validateDeclarations = () => {
+    const validationErrors: string[] = [];
+
+    deductionSections.forEach((section) => {
+      // Validate section limits
+      if (
+        section.limitType === "section" ||
+        section.limitType === "both" ||
+        section.limitType === "dynamic"
+      ) {
+        const sectionLimit = calculateDynamicLimit(section.id);
+        if (sectionLimit !== Infinity) {
+          const sectionTotal = getSectionTotal(section.id);
+          if (sectionTotal > sectionLimit) {
+            validationErrors.push(
+              `${section.title} exceeds max limit of ${formatCurrency(sectionLimit)}`
+            );
+          }
+        }
+      }
+
+      // Validate subsection limits
+      if (section.limitType === "subsection" || section.limitType === "both") {
+        section.subsections.forEach((subsection) => {
+          const key = `${section.id}_${subsection.id}`;
+          const value = parseFloat(editValues[key] as string) || 0;
+          const subsectionLimit = calculateDynamicLimit(
+            section.id,
+            subsection.id
+          );
+
+          if (subsectionLimit !== Infinity && value > subsectionLimit) {
+            validationErrors.push(
+              `${subsection.name} exceeds max limit of ${formatCurrency(subsectionLimit)}`
+            );
+          }
+        });
+      }
+    });
+
+    return validationErrors;
   };
 
   // Save declaration changes
   const saveChanges = () => {
-    console.log(editValues, "submit");
-    // Create declarations array clone for update
-    const updatedDeclarations: any = [];
+    // Validate all declarations
+    const validationErrors = validateDeclarations();
 
-    // For each possible declaration in our structure
+    if (validationErrors.length > 0) {
+      errors.set(validationErrors);
+      return;
+    }
+
+    const updatedDeclarations: any[] = [];
+
     deductionSections.forEach((section) => {
       section.subsections.forEach((subsection) => {
         const key = `${section.id}_${subsection.id}`;
-        const value = parseFloat(editValues[key]) || 0;
-
-        // Find if this declaration already exists
-        const existingDecl = taxDeclaration.declarations.find(
-          (d) => d.section === section.id && d.subSection === subsection.id
-        );
+        const value = parseFloat(editValues[key] as string) || 0;
 
         if (value > 0) {
-          // Only add/update declarations with non-zero amounts
+          const existingDecl = taxDeclaration.declarations.find(
+            (d) => d.section === section.id && d.subSection === subsection.id
+          );
+
+          const file = uploadedFiles[key];
+          const documents = file
+            ? [
+                {
+                  documentName: file.name,
+                  documentPath: "",
+                  uploadDate: new Date(),
+                  isLatestVersion: true,
+                },
+              ]
+            : existingDecl?.documents || [];
+
           if (existingDecl) {
-            // Update existing declaration
             updatedDeclarations.push({
               ...existingDecl,
               declaredAmount: value,
-              lastUpdated: new Date(),
+              documents,
+              // lastUpdated: new Date(),
             });
           } else {
-            // Add new declaration
+            // Determine the appropriate maxLimit for this declaration
+            let declMaxLimit: number;
+            if (
+              section.limitType === "subsection" ||
+              section.limitType === "both"
+            ) {
+              declMaxLimit = calculateDynamicLimit(section.id, subsection.id);
+            } else {
+              declMaxLimit = calculateDynamicLimit(section.id);
+            }
+
             updatedDeclarations.push({
-              sectionId: section.id,
               section: section.id,
-              subSectionId: subsection.id,
               subSection: subsection.id,
-              maxLimit: subsection.maxLimit || section.maxLimit || 0,
-              description: section.description || "",
+              maxLimit: declMaxLimit === Infinity ? null : declMaxLimit,
               declaredAmount: value,
               verifiedAmount: 0,
               status: "pending",
-              documents: [],
-              lastUpdated: new Date(),
+              documents,
+              // lastUpdated: new Date(),
             });
           }
-        } else if (existingDecl) {
-          // For existing declarations with 0 value, maintain them with status "no_declaration"
-          // or remove them entirely (depending on your business logic)
-          // Option 1: Keep with special status
-          updatedDeclarations.push({
-            ...existingDecl,
-            declaredAmount: 0,
-            status: "pending", // Or use a more appropriate status for your enum
-            lastUpdated: new Date(),
-          });
-
-          // Option 2: Remove entirely (uncomment this and comment Option 1 if preferred)
-          // Do nothing, which effectively removes the declaration
         }
       });
     });
 
-    console.log("Updated declarations:", updatedDeclarations);
-
-    // For demo, update local state
+    console.log(updatedDeclarations, "updatedDeclarations");
     taxDeclaration = {
       ...taxDeclaration,
-      declarations: updatedDeclarations,
+      declarations: [...updatedDeclarations],
     };
-
-    // Exit edit mode
+    dispatch("update", {
+      updatedTaxDeclaration: {
+        ...taxDeclaration,
+        declarations: updatedDeclarations,
+      },
+    });
+    console.log(taxDeclaration, "taxDeclaration");
     editMode = false;
+    uploadedFiles = {};
+    errors.set([]);
+  };
+
+  const updatedDeclaration = async (taxDeclaration: TaxDeclaration) => {
+    try {
+    } catch (error) {}
   };
 
   // Cancel edit
   const cancelEdit = () => {
     editMode = false;
+    editErrors = {};
+    uploadedFiles = {};
+    errors.set([]);
   };
 
   // Calculate total declared amount
   $: totalDeclared =
     taxDeclaration && taxDeclaration.declarations
       ? taxDeclaration.declarations.reduce(
-          (sum, d) => sum + d.declaredAmount,
+          (sum, d) => sum + (d.declaredAmount || 0),
           0
         )
       : 0;
@@ -373,13 +451,23 @@
   $: totalVerified =
     taxDeclaration && taxDeclaration.declarations
       ? taxDeclaration.declarations.reduce(
-          (sum, d) => sum + d.verifiedAmount,
+          (sum, d) => sum + (d.verifiedAmount || 0),
           0
         )
       : 0;
 </script>
 
 <div class="it-declaration">
+  {#if $errors.length > 0}
+    <div class="error-box">
+      <ul>
+        {#each $errors as error}
+          <li>{error}</li>
+        {/each}
+      </ul>
+    </div>
+  {/if}
+
   <div class="header">
     <div class="summary">
       <div class="summary-item">
@@ -400,18 +488,32 @@
       {/if}
 
       {#if editMode}
-        <button class="btn-cancel" on:click={cancelEdit}> Cancel </button>
-        <button class="btn-save" on:click={saveChanges}> Save Changes </button>
+        <button class="btn-cancel" on:click={cancelEdit}>Cancel</button>
+        <button
+          class="btn-save"
+          on:click={saveChanges}
+          disabled={Object.keys(editErrors).length > 0 ||
+            Object.keys(editValues).every((key) => editValues[key] === 0)}
+        >
+          Save Changes
+        </button>
       {/if}
     </div>
   </div>
 
   {#if taxDeclaration.isLocked}
     <div class="locked-notice">
-      <p>
-        Declaration window is closed. You cannot make further changes to your
-        declarations.
-      </p>
+      {#if !taxDeclaration.declarations || taxDeclaration.declarations.length === 0}
+        <p>
+          IT declaration will open soon, please contact admin for further
+          information.
+        </p>
+      {:else}
+        <p>
+          Declaration window is closed. You cannot make further changes to your
+          declaration and ALL declarations.
+        </p>
+      {/if}
     </div>
   {/if}
 
@@ -422,11 +524,18 @@
           <h3>{section.title}</h3>
           <div class="section-info">
             <p>{section.description}</p>
-            {#if section.maxLimit}
+            {#if section.limitType === "section" || section.limitType === "both" || section.limitType === "dynamic"}
+              {@const dynamicLimit = calculateDynamicLimit(section.id)}
               <p class="limit">
-                Max Limit: {formatCurrency(section.maxLimit)}
-
-                {#if isOverLimit(section.id, section.maxLimit)}
+                Max Limit:
+                {dynamicLimit === Infinity
+                  ? section.limitType === "dynamic"
+                    ? section.id === "80CCD2"
+                      ? "10% of salary"
+                      : "Calculated based on income"
+                    : "No fixed limit"
+                  : formatCurrency(dynamicLimit)}
+                {#if isOverLimit(section.id)}
                   <span class="over-limit">Limit Exceeded</span>
                 {/if}
               </p>
@@ -448,10 +557,19 @@
                   {#if subsection.note}
                     <span class="note">({subsection.note})</span>
                   {/if}
-                  {#if subsection.maxLimit}
-                    <span class="sublimit"
-                      >Max: {formatCurrency(subsection.maxLimit)}</span
-                    >
+                  {#if subsection.maxLimit || section.limitType === "subsection" || section.limitType === "both"}
+                    {@const subsectionLimit = calculateDynamicLimit(
+                      section.id,
+                      subsection.id
+                    )}
+                    {#if subsectionLimit !== Infinity}
+                      <span class="sublimit"
+                        >Max: {formatCurrency(subsectionLimit)}</span
+                      >
+                      {#if isOverLimit(section.id, subsection.id)}
+                        <span class="over-limit">Limit Exceeded</span>
+                      {/if}
+                    {/if}
                   {/if}
                 </div>
 
@@ -460,6 +578,7 @@
                     <input
                       type="number"
                       min="0"
+                      value={editValues[`${section.id}_${subsection.id}`] || 0}
                       on:input={(e) =>
                         handleInputChange(
                           section.id,
@@ -467,6 +586,18 @@
                           e.target.value
                         )}
                     />
+                    <input
+                      type="file"
+                      on:change={(e) =>
+                        handleFileUpload(section.id, subsection.id, e)}
+                      disabled={editValues[`${section.id}_${subsection.id}`] ===
+                        0}
+                    />
+                    {#if editErrors[`${section.id}_${subsection.id}`]}
+                      <span class="error"
+                        >{editErrors[`${section.id}_${subsection.id}`]}</span
+                      >
+                    {/if}
                   </div>
                 {:else}
                   <div class="amount-status">
@@ -500,6 +631,11 @@
                       </div>
                     {/if}
                   </div>
+                  {#if declaration && declaration.documents.length > 0}
+                    <div class="documents">
+                      <span>Documents: {declaration.documents.length}</span>
+                    </div>
+                  {/if}
                 {/if}
               </div>
             </div>
@@ -512,252 +648,152 @@
 
 <style>
   .it-declaration {
-    font-family:
-      system-ui,
-      -apple-system,
-      sans-serif;
-    color: #333;
+    padding: 20px;
   }
-
   .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #eee;
+    margin-bottom: 20px;
   }
-
   .summary {
     display: flex;
-    gap: 2rem;
+    gap: 20px;
   }
-
   .summary-item {
-    display: flex;
-    flex-direction: column;
+    font-size: 1.1em;
   }
-
-  .summary-item .label {
-    font-size: 0.9rem;
-    color: #666;
+  .label {
+    font-weight: bold;
   }
-
-  .summary-item .value {
-    font-size: 1.25rem;
-    font-weight: 600;
-  }
-
-  .actions {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  button {
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    font-weight: 500;
+  .actions button {
+    margin-left: 10px;
+    padding: 8px 16px;
     cursor: pointer;
-    border: none;
   }
-
   .btn-edit {
-    background-color: #e0f2fe;
-    color: #0369a1;
-  }
-
-  .btn-cancel {
-    background-color: #f1f5f9;
-    color: #64748b;
-  }
-
-  .btn-save {
-    background-color: #0369a1;
+    background-color: #007bff;
     color: white;
   }
-
+  .btn-save {
+    background-color: #28a745;
+    color: white;
+  }
+  .btn-cancel {
+    background-color: #dc3545;
+    color: white;
+  }
   .locked-notice {
-    background-color: #fff4e5;
-    border-left: 4px solid #ff9800;
-    padding: 0.75rem 1rem;
-    margin-bottom: 1.5rem;
-    border-radius: 4px;
+    background-color: #f8d7da;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 5px;
   }
-
-  .locked-notice p {
-    margin: 0;
-    color: #804a00;
-  }
-
   .section {
-    margin-bottom: 2rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    overflow: hidden;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 5px;
   }
-
   .section-header {
-    background-color: #f8fafc;
-    padding: 1rem;
-    border-bottom: 1px solid #e2e8f0;
-  }
-
-  .section-header h3 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.1rem;
-    color: #0f172a;
-  }
-
-  .section-info {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 10px;
   }
-
   .section-info p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: #64748b;
+    margin: 5px 0;
   }
-
   .limit {
-    font-weight: 500;
-    color: #475569;
+    font-weight: bold;
   }
-
   .over-limit {
-    color: #ef4444;
-    font-weight: 600;
-    margin-left: 0.5rem;
+    color: red;
+    margin-left: 10px;
   }
-
   .section-total {
-    font-weight: 600;
-    color: #0f172a;
-    text-align: right;
+    font-weight: bold;
   }
-
-  .subsections {
-    padding: 0.5rem;
-  }
-
   .subsection {
-    padding: 0.75rem;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 10px;
+    border-top: 1px solid #eee;
   }
-
-  .subsection:last-child {
-    border-bottom: none;
-  }
-
-  .subsection-details {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
   .subsection-name {
-    font-weight: 500;
-    color: #1e293b;
+    flex: 1;
   }
-
   .note {
-    font-weight: normal;
-    font-size: 0.85rem;
-    color: #64748b;
-    margin-left: 0.25rem;
+    font-size: 0.9em;
+    color: #666;
   }
-
   .sublimit {
-    font-size: 0.85rem;
-    color: #475569;
-    background-color: #f1f5f9;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    margin-left: 0.5rem;
+    margin-left: 10px;
+    font-weight: bold;
   }
-
-  .amount-status {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .amounts {
-    display: flex;
-    gap: 1rem;
-  }
-
-  .declared,
-  .verified {
+  .input-container {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
   }
-
-  .declared .label,
-  .verified .label {
-    font-size: 0.8rem;
-    color: #64748b;
+  .input-container input[type="number"] {
+    width: 100px;
+    padding: 5px;
+    margin-bottom: 5px;
   }
-
-  .declared .value {
-    color: #0369a1;
-    font-weight: 500;
+  .input-container input[type="file"] {
+    font-size: 0.9em;
   }
-
-  .verified .value {
-    color: #047857;
-    font-weight: 500;
+  .error {
+    color: red;
+    font-size: 0.8em;
   }
-
-  .no-declaration {
-    font-style: italic;
-    color: #94a3b8;
+  .amount-status {
+    display: flex;
+    gap: 20px;
+    align-items: center;
   }
-
-  .status {
-    font-size: 0.8rem;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    font-weight: 500;
-    text-transform: uppercase;
-  }
-
-  .status-pending {
-    background-color: #f1f5f9;
-    color: #64748b;
-  }
-
-  .status-verified {
-    background-color: #dcfce7;
-    color: #047857;
-  }
-
-  .status-rejected {
-    background-color: #fee2e2;
-    color: #b91c1c;
-  }
-
-  .status-resubmission_requested {
-    background-color: #fff7ed;
-    color: #c2410c;
-  }
-
-  .input-container input {
-    width: 150px;
-    padding: 0.5rem;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
+  .amounts {
     text-align: right;
   }
-
-  input:focus {
-    outline: none;
-    border-color: #0ea5e9;
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+  .declared,
+  .verified {
+    margin: 5px 0;
+  }
+  .no-declaration {
+    color: #666;
+  }
+  .status {
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-transform: capitalize;
+  }
+  .status-pending {
+    background-color: #ffc107;
+  }
+  .status-verified {
+    background-color: #28a745;
+    color: white;
+  }
+  .status-rejected {
+    background-color: #dc3545;
+    color: white;
+  }
+  .status-resubmission_requested {
+    background-color: #17a2b8;
+    color: white;
+  }
+  .error-box {
+    background-color: #f8d7da;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+  }
+  .error-box ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+  .documents {
+    margin-top: 5px;
+    font-size: 0.9em;
+    color: #666;
   }
 </style>

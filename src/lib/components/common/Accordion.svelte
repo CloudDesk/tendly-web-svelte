@@ -6,7 +6,7 @@
   export let title: string = "Accordion Title";
   export let subtitle: string = "";
   export let isOpen: boolean = false;
-  export let id: number = 1;
+  export let id: number | string = 1;
   export let icon: any = null;
   export let headerClass: string = "";
   export let contentClass: string = "";

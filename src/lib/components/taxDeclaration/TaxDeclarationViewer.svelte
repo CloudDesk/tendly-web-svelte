@@ -5,9 +5,12 @@
   import TaxRegimeSection from "./TaxRegimeSection.svelte";
   import TaxComputationSection from "./TaxComputationSection.svelte";
   import ItDeclarationSection from "./ITDeclarationSection.svelte";
+  import { createEventDispatcher } from "svelte";
 
   export let taxDeclaration;
   export let taxSlabs;
+
+  const dispatch = createEventDispatcher();
   $: showITDeclaration = taxDeclaration?.regime === "old";
 
   console.log(taxSlabs, taxDeclaration, showITDeclaration);
@@ -54,6 +57,12 @@
       component: ItDeclarationSection,
       props: { taxDeclaration },
       visible: showITDeclaration,
+      events: {
+        update: (event: CustomEvent) => {
+          console.log("called", event);
+          dispatch("update", event.detail);
+        },
+      },
     },
     {
       id: 5,
@@ -73,6 +82,11 @@
       props: { taxDeclaration },
     },
   ].filter((section) => section.visible !== false);
+
+  function handleGrandchildUpdate(event: CustomEvent) {
+    console.log("Forwarding update from grandchild", event.detail);
+    dispatch("update", event.detail);
+  }
 </script>
 
 <div class="container">
@@ -85,7 +99,11 @@
       on:toggle={handleToggle}
     >
       {#if section.component}
-        <svelte:component this={section.component} {...section.props || {}} />
+        <svelte:component
+          this={section.component}
+          {...section.props || {}}
+          on:update={handleGrandchildUpdate}
+        />
       {:else}
         {section.content}
       {/if}

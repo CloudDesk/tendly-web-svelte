@@ -19,6 +19,7 @@
   let selectedRegime: "new" | "old" | null = null;
   let currentFY = getCurrentFinancialYear();
   console.log(user, "user");
+
   function selectRegime(regime: "new" | "old"): void {
     selectedRegime = regime;
   }
@@ -98,6 +99,11 @@
 
   const handleCloseTaxModal = () => {
     showModal = false;
+  };
+
+  const handleUpdate = async (event: CustomEvent) => {
+    let updatedValue = event.detail.updatedTaxDeclaration;
+    console.log(updatedValue, "updatedValue+page");
   };
 
   onMount(() => {
@@ -308,7 +314,11 @@
     </Card>
   {/if}
   {#if taxDeclaration && taxSlabs.length > 0}
-    <TaxDeclarationViewer {taxSlabs} {taxDeclaration} />
+    <TaxDeclarationViewer
+      {taxSlabs}
+      {taxDeclaration}
+      on:update={handleUpdate}
+    />
   {/if}
   {#if showModal}
     <Modal
