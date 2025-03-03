@@ -3,12 +3,16 @@
   import { formatCurrency } from "$lib/utils/currency";
   import { writable } from "svelte/store";
   import type { TaxDeclaration } from "$lib/types";
+  import Modal from "../common/Modal.svelte";
+  import InvestmentProofUploader from "./InvestmentProofUploader.svelte";
 
   // Extend TaxDeclaration type to include annualGross for dynamic limits
   export let taxDeclaration: TaxDeclaration & { annualGross?: number };
 
   // Error store for better UI feedback
   export const errors = writable<string[]>([]);
+
+  let isShowModal = false;
 
   const dispatch = createEventDispatcher();
 
@@ -181,6 +185,7 @@
   let editValues: { [key: string]: number } = {};
   let editErrors: { [key: string]: string } = {};
   let uploadedFiles: { [key: string]: File } = {};
+  let showUploadModal = false;
 
   onMount(() => {
     if (taxDeclaration && taxDeclaration.declarations) {
@@ -284,16 +289,10 @@
   };
 
   // Handle file upload for POI
-  const handleFileUpload = (
-    section: string,
-    subSection: string,
-    event: Event
-  ) => {
-    const key = `${section}_${subSection}`;
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files[0]) {
-      uploadedFiles[key] = input.files[0];
-    }
+  const handleFileUpload = (event: CustomEvent) => {
+    const { files } = event.detail;
+    console.log("Files in ItDeclarationSection:", files);
+    dispatch("fileupload", files);
   };
 
   // Validate all declarations based on limit types
@@ -439,6 +438,13 @@
     errors.set([]);
   };
 
+  const openModal = () => {
+    isShowModal = true;
+  };
+  const closeModal = () => {
+    isShowModal = false;
+  };
+
   // Calculate total declared amount
   $: totalDeclared =
     taxDeclaration && taxDeclaration.declarations
@@ -486,6 +492,9 @@
         <button class="btn-edit" on:click={toggleEditMode}>
           Edit Declarations
         </button>
+        <button class="btn-upload" on:click={openModal}>
+          Upload Documents
+        </button>
       {/if}
 
       {#if editMode}
@@ -493,8 +502,7 @@
         <button
           class="btn-save"
           on:click={saveChanges}
-          disabled={Object.keys(editErrors).length > 0 ||
-            Object.keys(editValues).every((key) => editValues[key] === 0)}
+          disabled={Object.keys(editErrors).length > 0}
         >
           Save Changes
         </button>
@@ -587,15 +595,14 @@
                           e.target.value
                         )}
                     />
-                    <input
+                    <!-- <input
                       type="file"
                       accept="application/pdf"
-                      on:change={(e) =>
-                        handleFileUpload(section.id, subsection.id, e)}
+                      on:change={(e) => handleFileUpload(e)}
                       disabled={editValues[`${section.id}_${subsection.id}`] ===
                         0}
                       class="block text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
-                    />
+                    /> -->
                     {#if editErrors[`${section.id}_${subsection.id}`]}
                       <span class="error"
                         >{editErrors[`${section.id}_${subsection.id}`]}</span
@@ -648,6 +655,14 @@
     {/each}
   </div>
 </div>
+
+<Modal show={isShowModal} title="Upload Investment Proofs" onClose={closeModal}>
+  <InvestmentProofUploader
+    declarations={taxDeclaration.declarations}
+    sections={deductionSections}
+    on:upload={handleFileUpload}
+  />
+</Modal>
 
 <style>
   .it-declaration {

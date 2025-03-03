@@ -57,12 +57,16 @@
       component: ItDeclarationSection,
       props: { taxDeclaration },
       visible: showITDeclaration,
-      events: {
-        update: (event: CustomEvent) => {
-          console.log("called", event);
-          dispatch("update", event.detail);
-        },
-      },
+      // events: {
+      //   update: (event: CustomEvent) => {
+      //     console.log("called", event);
+      //     dispatch("update", event.detail);
+      //   },
+      //   fileupload: (event: CustomEvent) => {
+      //     console.log("fileupload", event);
+      //     dispatch("fileupload", event.detail);
+      //   },
+      // },
     },
     {
       id: 5,
@@ -87,6 +91,11 @@
     console.log("Forwarding update from grandchild", event.detail);
     dispatch("update", event.detail);
   }
+
+  function handleFileUplaod(event: CustomEvent) {
+    console.log("handleFileUplaod", event.detail);
+    dispatch("fileupload", event.detail);
+  }
 </script>
 
 <div class="container">
@@ -103,6 +112,7 @@
           this={section.component}
           {...section.props || {}}
           on:update={handleGrandchildUpdate}
+          on:fileupload={handleFileUplaod}
         />
       {:else}
         {section.content}

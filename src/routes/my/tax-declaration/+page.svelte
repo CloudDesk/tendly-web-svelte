@@ -124,6 +124,9 @@
     }
   };
 
+  const handleFileUpload = async (event: CustomEvent) => {
+    console.log(event.detail, "handleFileUpload page");
+  };
   onMount(() => {
     fetchUserTaxDeclaration();
   });
@@ -336,6 +339,7 @@
       {taxSlabs}
       {taxDeclaration}
       on:update={handleUpdate}
+      on:fileupload={handleFileUpload}
     />
   {/if}
   {#if showModal}
