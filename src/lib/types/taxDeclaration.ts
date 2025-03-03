@@ -40,6 +40,11 @@ export interface IDeclaration {
     lastUpdated: Date;
 }
 
+export type TaxDeclarationCreate = {
+    employeeId: string;
+    financialYear: string;
+    regime: "old" | "new";
+}
 export type TaxDeclaration = {
     employeeId: string;
     financialYear: string;

@@ -76,20 +76,25 @@
   async function handleSubmitRegime() {
     console.log("Submitting regime:", selectedRegime);
     isLoading = true;
-    let obj = {
-      employeeId: user ? user._id : "",
-      regime: selectedRegime,
-      financialYear: currentFY,
-    };
-    try {
-      let result = await taxDeclarationApi.create(obj);
-      console.log(result, "result");
-    } catch (error) {
-      console.log(error, "error ");
-    } finally {
+    if (selectedRegime) {
+      let obj = {
+        employeeId: user ? user._id : "",
+        regime: selectedRegime,
+        financialYear: currentFY,
+      };
+      try {
+        let result = await taxDeclarationApi.create(obj);
+        console.log(result, "result");
+      } catch (error) {
+        console.log(error, "error ");
+      } finally {
+        isLoading = false;
+        selectedRegime = null;
+        await fetchUserTaxDeclaration();
+      }
+    } else {
+      console.error("Regime is not selected");
       isLoading = false;
-      selectedRegime = null;
-      await fetchUserTaxDeclaration();
     }
   }
 
@@ -104,6 +109,19 @@
   const handleUpdate = async (event: CustomEvent) => {
     let updatedValue = event.detail.updatedTaxDeclaration;
     console.log(updatedValue, "updatedValue+page");
+    const { updatedAt, createdAt, ...newObj } = updatedValue;
+
+    isLoading = true;
+    try {
+      let res = await taxDeclarationApi.update(updatedValue._id, newObj);
+      console.log(res, "result");
+    } catch (error) {
+      console.log(error, "error ");
+    } finally {
+      isLoading = false;
+      selectedRegime = null;
+      await fetchUserTaxDeclaration();
+    }
   };
 
   onMount(() => {

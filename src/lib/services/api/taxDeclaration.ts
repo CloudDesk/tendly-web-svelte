@@ -1,5 +1,5 @@
 import { fetchApi } from "./base"
-import type { TaxDeclaration } from "$lib/types";
+import type { TaxDeclaration, TaxDeclarationCreate } from "$lib/types";
 
 export const taxDeclarationApi = {
     // Get tax declaration for the current financial year (CFY) based on user
@@ -22,7 +22,7 @@ export const taxDeclarationApi = {
         return await fetchApi<TaxDeclaration>(`/tax-declaration/${recordId}`);
     },
 
-    create: async (data: Omit<TaxDeclaration, '_id'>) => {
+    create: async (data: TaxDeclarationCreate) => {
         const response = await fetchApi<TaxDeclaration>('/tax-declaration', {
             method: 'POST',
             body: JSON.stringify(data)

@@ -48,6 +48,20 @@
               >- {formatCurrency(taxDeclaration.standardDeduction)}</span
             >
           </div>
+          {#if taxDeclaration.regime === "old"}
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">Declared Deduction</span>
+              <span class="text-base font-medium text-red-600"
+                >- {formatCurrency(taxDeclaration.totalDeclaredAmount)}</span
+              >
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">Verified Deduction</span>
+              <span class="text-base font-medium text-gray-600"
+                >{formatCurrency(taxDeclaration.totalVerifiedAmount)}</span
+              >
+            </div>
+          {/if}
           <div
             class="pt-2 mt-2 border-t border-gray-200 flex justify-between items-center"
           >

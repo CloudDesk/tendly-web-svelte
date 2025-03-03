@@ -342,6 +342,7 @@
 
   // Save declaration changes
   const saveChanges = () => {
+    console.log(uploadedFiles, "uploadedFiles");
     // Validate all declarations
     const validationErrors = validateDeclarations();
 
@@ -413,12 +414,12 @@
       ...taxDeclaration,
       declarations: [...updatedDeclarations],
     };
-    dispatch("update", {
-      updatedTaxDeclaration: {
-        ...taxDeclaration,
-        declarations: updatedDeclarations,
-      },
-    });
+    // dispatch("update", {
+    //   updatedTaxDeclaration: {
+    //     ...taxDeclaration,
+    //     declarations: updatedDeclarations,
+    //   },
+    // });
     console.log(taxDeclaration, "taxDeclaration");
     editMode = false;
     uploadedFiles = {};
@@ -588,10 +589,12 @@
                     />
                     <input
                       type="file"
+                      accept="application/pdf"
                       on:change={(e) =>
                         handleFileUpload(section.id, subsection.id, e)}
                       disabled={editValues[`${section.id}_${subsection.id}`] ===
                         0}
+                      class="block text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
                     />
                     {#if editErrors[`${section.id}_${subsection.id}`]}
                       <span class="error"
