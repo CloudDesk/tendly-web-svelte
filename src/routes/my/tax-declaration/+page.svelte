@@ -126,6 +126,15 @@
 
   const handleFileUpload = async (event: CustomEvent) => {
     console.log(event.detail, "handleFileUpload page");
+    const files = event.detail;
+    const taxDeclarationId = taxDeclaration._id;
+
+    try {
+      let result = await taxDeclarationApi.fileUpload(taxDeclarationId, files);
+      console.log(result, "result in handleFileUpload");
+    } catch (error) {
+      console.log(error, "error in handleFileUpload");
+    }
   };
   onMount(() => {
     fetchUserTaxDeclaration();

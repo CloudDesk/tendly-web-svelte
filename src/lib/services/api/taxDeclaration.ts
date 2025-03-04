@@ -1,4 +1,4 @@
-import { fetchApi } from "./base"
+import { fetchApi, uploadFiles } from "./base"
 import type { TaxDeclaration, TaxDeclarationCreate } from "$lib/types";
 
 export const taxDeclarationApi = {
@@ -42,4 +42,16 @@ export const taxDeclarationApi = {
         });
         return response
     },
+    fileUpload: async (id: string, files: Record<string, File>) => {
+
+        const formData = new FormData();
+
+        // Add each file with its section key
+        Object.entries(files).forEach(([sectionKey, file]) => {
+            formData.append(sectionKey, file);
+        });
+
+        return await uploadFiles(`/tax-declaration/${id}/update-documents`, formData);
+
+    }
 }
