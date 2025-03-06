@@ -57,16 +57,6 @@
       component: ItDeclarationSection,
       props: { taxDeclaration },
       visible: showITDeclaration,
-      // events: {
-      //   update: (event: CustomEvent) => {
-      //     console.log("called", event);
-      //     dispatch("update", event.detail);
-      //   },
-      //   fileupload: (event: CustomEvent) => {
-      //     console.log("fileupload", event);
-      //     dispatch("fileupload", event.detail);
-      //   },
-      // },
     },
     {
       id: 5,

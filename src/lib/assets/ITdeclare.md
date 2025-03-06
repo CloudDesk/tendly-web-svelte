@@ -11,6 +11,7 @@ Section 80C: Deduction for Investment in Specified Savings Instruments
    * 80C (Senior Citizens Savings Scheme - SCSS)
    * 80C (National Pension Scheme - NPS)
 * Max Limit: ₹1.5 lakh
+
 Section 80D: Deduction for Premium Paid on Health Insurance
 * Subsections:
    * 80D (Health Insurance for self, spouse, children): Premium paid for health insurance for self, spouse, children
@@ -18,23 +19,28 @@ Section 80D: Deduction for Premium Paid on Health Insurance
 * Max Limit:
    * ₹25,000 (for self, spouse, children)
    * ₹50,000 (for senior citizens)
+
 Section 80E: Deduction for Interest on Education Loan
 * Subsections:
    * 80E (Education Loan): Interest on loans for higher education (for self, spouse, children, or a student for whom you are a legal guardian)
 * Max Limit: No limit on interest amount; available for up to 8 years
+
 Section 80G: Deduction for Donations to Charitable Institutions
 * Subsections:
    * 80G (Donation to Charitable Institutions): Donations made to approved charitable institutions or relief funds
 * Max Limit:
    * 50% or 100% of the donation (depending on the institution)
+
 Section 80TTA: Deduction for Interest on Savings Account
 * Subsections:
    * 80TTA (Interest on Savings Account): Interest earned from savings accounts with banks, post offices, or co-operative societies
 * Max Limit: ₹10,000
+
 Section 80GG: Deduction for Rent Paid
 * Subsections:
    * 80GG (Rent Paid): Deduction available when HRA is not received and rent is paid for accommodation
 * Max Limit: ₹5,000 per month or 25% of total income (whichever is lower)
+
 Section 80CCG: Deduction for Investment in Rajiv Gandhi Equity Savings Scheme
 * Subsections:
    * 80CCG (Investment in RGESS): Investment made under Rajiv Gandhi Equity Savings Scheme (for first-time retail investors)

@@ -69,6 +69,9 @@ export type TaxDeclaration = {
     }[];
     isLocked: boolean;
     initialTaxBreakdown: ITaxBreakdown;
+    isDeclared?: boolean;
+    isPOISubmitted?: boolean,
+    isResubmitted?: boolean,
     _id?: string;
     createdAt?: string;
     updatedAt?: string;

@@ -128,12 +128,16 @@
     console.log(event.detail, "handleFileUpload page");
     const files = event.detail;
     const taxDeclarationId = taxDeclaration._id;
-
+    isLoading = true;
     try {
       let result = await taxDeclarationApi.fileUpload(taxDeclarationId, files);
       console.log(result, "result in handleFileUpload");
     } catch (error) {
       console.log(error, "error in handleFileUpload");
+    } finally {
+      isLoading = false;
+      selectedRegime = null;
+      await fetchUserTaxDeclaration();
     }
   };
   onMount(() => {

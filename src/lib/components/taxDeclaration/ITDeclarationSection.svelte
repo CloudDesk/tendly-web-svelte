@@ -9,6 +9,7 @@
   // Extend TaxDeclaration type to include annualGross for dynamic limits
   export let taxDeclaration: TaxDeclaration & { annualGross?: number };
 
+  console.log(taxDeclaration, "taxDeclaration");
   // Error store for better UI feedback
   export const errors = writable<string[]>([]);
 
@@ -292,6 +293,7 @@
   const handleFileUpload = (event: CustomEvent) => {
     const { files } = event.detail;
     console.log("Files in ItDeclarationSection:", files);
+    isShowModal = false;
     dispatch("fileupload", files);
   };
 
@@ -413,12 +415,12 @@
       ...taxDeclaration,
       declarations: [...updatedDeclarations],
     };
-    // dispatch("update", {
-    //   updatedTaxDeclaration: {
-    //     ...taxDeclaration,
-    //     declarations: updatedDeclarations,
-    //   },
-    // });
+    dispatch("update", {
+      updatedTaxDeclaration: {
+        ...taxDeclaration,
+        declarations: updatedDeclarations,
+      },
+    });
     console.log(taxDeclaration, "taxDeclaration");
     editMode = false;
     uploadedFiles = {};
@@ -488,19 +490,21 @@
     </div>
 
     <div class="actions">
-      {#if !editMode && !taxDeclaration.isLocked}
-        <button class="btn-edit" on:click={toggleEditMode}>
+      {#if !editMode && !taxDeclaration.isLocked && !taxDeclaration.isPOISubmitted}
+        <button class="btn btn-edit" on:click={toggleEditMode}>
           Edit Declarations
         </button>
-        <button class="btn-upload" on:click={openModal}>
-          Upload Documents
-        </button>
+        {#if taxDeclaration.poiSubmissionStatus === "not_submitted" && taxDeclaration.isDeclared}
+          <button class="btn btn-upload" on:click={openModal}>
+            Upload Documents
+          </button>
+        {/if}
       {/if}
 
       {#if editMode}
-        <button class="btn-cancel" on:click={cancelEdit}>Cancel</button>
+        <button class="btn btn-cancel" on:click={cancelEdit}>Cancel</button>
         <button
-          class="btn-save"
+          class="btn btn-save"
           on:click={saveChanges}
           disabled={Object.keys(editErrors).length > 0}
         >
@@ -595,14 +599,6 @@
                           e.target.value
                         )}
                     />
-                    <!-- <input
-                      type="file"
-                      accept="application/pdf"
-                      on:change={(e) => handleFileUpload(e)}
-                      disabled={editValues[`${section.id}_${subsection.id}`] ===
-                        0}
-                      class="block text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
-                    /> -->
                     {#if editErrors[`${section.id}_${subsection.id}`]}
                       <span class="error"
                         >{editErrors[`${section.id}_${subsection.id}`]}</span
@@ -643,7 +639,31 @@
                   </div>
                   {#if declaration && declaration.documents.length > 0}
                     <div class="documents">
-                      <span>Documents: {declaration.documents.length}</span>
+                      <span>Documents:</span>
+                      <ul>
+                        {#each declaration.documents as doc}
+                          <li>
+                            <a
+                              href={doc.documentPath}
+                              target="_blank"
+                              class="underline {doc.isLatestVersion
+                                ? 'text-blue-500'
+                                : 'text-red-500'}"
+                            >
+                              {doc.documentName}
+                            </a>
+                            <span
+                              class={doc.isLatestVersion
+                                ? "text-blue-500"
+                                : "text-red-500"}
+                            >
+                              ({doc.isLatestVersion
+                                ? "Latest Version"
+                                : "Outdated Version - Upload new document if required"})
+                            </span>
+                          </li>
+                        {/each}
+                      </ul>
                     </div>
                   {/if}
                 {/if}
@@ -679,19 +699,59 @@
     gap: 20px;
   }
   .summary-item {
-    font-size: 1.1em;
+    display: flex;
+    gap: 8px;
   }
   .label {
     font-weight: bold;
   }
-  .actions button {
-    margin-left: 10px;
-    padding: 8px 16px;
+  .actions {
+    display: flex;
+    gap: 20px; /* Consistent spacing between buttons */
+  }
+  .btn {
+    padding: 0.5rem 0.75rem; /* px-3 py-2 */
+    border-radius: 0.25rem; /* rounded */
+    font-weight: 500; /* font-medium */
+    font-size: 0.875rem; /* text-sm */
+    display: flex;
+    align-items: center;
+    gap: 0.5rem; /* gap-2 */
     cursor: pointer;
+    transition: background-color 0.2s; /* transition-colors */
   }
   .btn-edit {
-    background-color: #007bff;
-    color: white;
+    background-color: #2563eb; /* blue-600 */
+    color: #ffffff;
+  }
+
+  .btn-edit:hover {
+    background-color: #1d4ed8; /* blue-700 */
+  }
+
+  .btn-edit:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #3b82f6; /* focus:ring-2 focus:ring-blue-500 */
+    box-shadow:
+      0 0 0 2px #3b82f6,
+      0 0 0 4px transparent; /* focus:ring-offset-2 */
+  }
+
+  .btn-upload {
+    background-color: #16a34a; /* green-600 */
+    color: #ffffff;
+  }
+
+  .btn-upload:hover {
+    background-color: #15803d; /* green-700 */
+  }
+
+  .btn-upload:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #22c55e; /* focus:ring-2 focus:ring-green-500 */
+    box-shadow:
+      0 0 0 2px #22c55e,
+      0 0 0 4px transparent; /* focus:ring-offset-2 */
   }
   .btn-save {
     background-color: #28a745;
@@ -704,11 +764,11 @@
   .locked-notice {
     background-color: #f8d7da;
     padding: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     border-radius: 5px;
   }
   .section {
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     border: 1px solid #ddd;
     padding: 15px;
     border-radius: 5px;
