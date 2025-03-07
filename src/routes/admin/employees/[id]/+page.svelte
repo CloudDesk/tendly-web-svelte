@@ -6,6 +6,7 @@
   import { page } from "$app/stores";
   import Tabs from "$lib/components/common/Tabs.svelte";
   import EmployeeSalary from "$lib/components/employee/EmployeeSalary.svelte";
+  import ITDeclarationApproval from "$lib/components/employee/ITDeclarationApproval.svelte";
 
   export let data;
   $: ({ employee } = data);
@@ -16,6 +17,7 @@
     { id: "attendance", label: "Attendance" },
     { id: "training", label: "Training" },
     { id: "salary", label: "Employee Salary" },
+    { id: "it-declaration", label: "IT Declaration" },
   ];
 
   $: activeTab = $page.url.searchParams.get("tab") || tabs[0]?.id;
@@ -116,6 +118,8 @@
           <EmployeeTrainingAttendance employeeId={employee._id} />
         {:else if activeTab === "salary"}
           <EmployeeSalary employeeId={employee._id} />
+        {:else if activeTab === "it-declaration"}
+          <ITDeclarationApproval employeeId={employee._id} />
         {/if}
       </Tabs>
     </div>

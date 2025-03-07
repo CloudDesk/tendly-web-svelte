@@ -115,6 +115,7 @@
   .container {
     padding: 24px;
     background: white;
-    min-height: 100vh;
+    overflow: auto;
+    /* min-height: 100vh; */
   }
 </style>

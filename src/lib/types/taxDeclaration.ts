@@ -24,7 +24,7 @@ export interface IDeclaration {
     sectionId: string;
     section: string;
     subSectionId: string;
-    subsection: string;
+    subSection: string;
     maxLimit: number;
     description: string;
     declaredAmount: number;

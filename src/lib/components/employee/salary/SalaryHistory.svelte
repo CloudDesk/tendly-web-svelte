@@ -26,7 +26,7 @@
   const fetchSalaryHistory = async () => {
     try {
       loading.set(true);
-      const response = await salaryAssignmentApi.getByUserId(employeeId);
+      const response: any = await salaryAssignmentApi.getByUserId(employeeId);
 
       if (response.success && Array.isArray(response.data))
         salaryAssignmentHistory.set(response.data as SalaryAssignment[]);

@@ -14,7 +14,6 @@
   let isLoading = false;
   let taxDeclaration: any = null;
   $: user = $auth.user;
-  let showModal = false;
   let taxSlabs: TaxSlab[] = [];
   let selectedRegime: "new" | "old" | null = null;
   let currentFY = getCurrentFinancialYear();
@@ -97,14 +96,6 @@
       isLoading = false;
     }
   }
-
-  const handleOpenTaxModal = async () => {
-    showModal = true;
-  };
-
-  const handleCloseTaxModal = () => {
-    showModal = false;
-  };
 
   const handleUpdate = async (event: CustomEvent) => {
     let updatedValue = event.detail.updatedTaxDeclaration;
@@ -355,24 +346,13 @@
       on:fileupload={handleFileUpload}
     />
   {/if}
-  {#if showModal}
-    <Modal
-      show={showModal}
-      title={taxDeclaration
-        ? "Tax Declaration Details"
-        : "Create Tax Declaration"}
-      onClose={handleCloseTaxModal}
-    >
-      <div>test</div>
-    </Modal>
-  {/if}
 </div>
 
 <style>
   .container {
     padding: 24px;
     background: #f6f7fb;
-    min-height: 100vh;
+    /* min-height: 100vh; */
   }
 
   .header {
