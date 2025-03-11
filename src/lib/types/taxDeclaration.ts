@@ -29,7 +29,7 @@ export interface IDeclaration {
     description: string;
     declaredAmount: number;
     varifiedAmount: number;
-    status: "pending" | "verified" | "rejected" | "resubmission_requested";
+    status: "pending" | "verified" | "rejected" | "resubmission_requested" | "document_submitted";
     documents: IDocument[];
     reviewHistory: {
         reviewedBy: string;

@@ -63,7 +63,10 @@
         </div>
       {:else if activeTab === "declaration"}
         <div class="card">
-          <ItDeclarationDetails {taxDeclaration} />
+          <ItDeclarationDetails
+            {taxDeclaration}
+            on:approvals={getTaxDeclarationCurrentFY}
+          />
         </div>
       {/if}
     </div>

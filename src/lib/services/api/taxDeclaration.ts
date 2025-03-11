@@ -43,5 +43,12 @@ export const taxDeclarationApi = {
 
         return await uploadFiles(`/tax-declaration/${id}/update-documents`, formData);
 
+    },
+    review: async (id: string, data: any) => {
+        const response = await fetchApi<TaxDeclaration>(`/tax-declaration/${id}/review`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        return response
     }
 }

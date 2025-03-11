@@ -511,6 +511,11 @@
           Save Changes
         </button>
       {/if}
+      {#if taxDeclaration.poiSubmissionStatus === "resubmission"}
+        <button class="btn btn-upload" on:click={openModal}>
+          Upload Documents
+        </button>
+      {/if}
     </div>
   </div>
 

@@ -1,17 +1,23 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
   import { writable, derived } from "svelte/store";
   import type { TaxDeclaration } from "$lib/types";
   import Loader from "$lib/components/common/Loader.svelte";
   import { formatCurrency } from "$lib/utils/currency";
+  import { auth } from "$lib/stores/auth";
+  import { taxDeclarationApi } from "$lib/services/api/taxDeclaration";
 
   export let taxDeclaration: TaxDeclaration | null = null;
+
+  let dispatch = createEventDispatcher();
 
   let loading = writable(true);
   let error = writable(null);
   let selections = writable<{ [key: string]: "approve" | "decline" | null }>(
     {}
   );
+  $: user = $auth.user;
+  console.log(taxDeclaration?.declarations, "taxDeclaration");
 
   // Derive counts of approved and declined items
   const approvedCount = derived(
@@ -26,12 +32,24 @@
       Object.values($selections).filter((val) => val === "decline").length
   );
 
-  // Ensure all rows have a selection before enabling submit
-  const allRowsSelected = derived(selections, ($selections) =>
-    Object.values($selections).every((val) => val !== null)
+  // Track which rows need action (document_submitted status)
+  const actionableRows = derived([selections], ([$selections]) => {
+    if (!taxDeclaration || !taxDeclaration.declarations) return [];
+    return taxDeclaration.declarations
+      .filter((d) => d.status === "document_submitted")
+      .map((d) => d.subSection);
+  });
+
+  // Check if all actionable rows have been selected
+  const allActionableRowsSelected = derived(
+    [selections, actionableRows],
+    ([$selections, $actionableRows]) => {
+      if ($actionableRows.length === 0) return false;
+      return $actionableRows.every((id) => $selections[id] !== null);
+    }
   );
 
-  function handleSubmitActions() {
+  async function handleSubmitActions() {
     const approvedItems = Object.entries($selections)
       .filter(([_, value]) => value === "approve")
       .map(([key]) => key);
@@ -43,6 +61,22 @@
     console.log("Submitting actions:");
     console.log("Approved:", approvedItems);
     console.log("Declined:", declinedItems);
+
+    // Call API to update tax declaration
+    try {
+      if (taxDeclaration && taxDeclaration._id) {
+        let response = await taxDeclarationApi.review(taxDeclaration._id, {
+          approvedList: approvedItems,
+          declinedList: declinedItems,
+        });
+        console.log(response, "response");
+        dispatch("approvals");
+      } else {
+        throw new Error("Tax declaration or ID is missing");
+      }
+    } catch (error) {
+      console.log(error, "error");
+    }
   }
 
   function updateSelection(id: string, type: "approve" | "decline") {
@@ -59,7 +93,10 @@
       const initialSelections: { [key: string]: "approve" | "decline" | null } =
         {};
       taxDeclaration.declarations.forEach((d) => {
-        initialSelections[d._id] = null;
+        // Only allow actions for document_submitted status
+        if (d.status === "document_submitted") {
+          initialSelections[d.subSection] = null;
+        }
       });
       selections.set(initialSelections);
     }
@@ -71,6 +108,49 @@
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ")}`;
   }
+
+  // Function to get status badge styles
+  function getStatusBadgeStyle(status: string): string {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "verified":
+        return "bg-green-100 text-green-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      case "resubmission_requested":
+        return "bg-orange-100 text-orange-800";
+      case "document_submitted":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  }
+
+  // Function to get the formatted status text
+  function getStatusText(status: string): string {
+    switch (status) {
+      case "pending":
+        return "Pending";
+      case "verified":
+        return "Approved";
+      case "rejected":
+        return "Rejected";
+      case "resubmission_requested":
+        return "Resubmission Requested";
+      case "document_submitted":
+        return "Document Submitted";
+      default:
+        return (
+          status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ")
+        );
+    }
+  }
+
+  // Check if a declaration can be actioned
+  function canAction(status: string): boolean {
+    return status === "document_submitted";
+  }
 </script>
 
 <div class="p-6">
@@ -79,22 +159,26 @@
   {:else if $error}
     <div class="text-red-500">Error: {$error}</div>
   {:else if taxDeclaration && taxDeclaration.declarations && taxDeclaration.declarations.length > 0}
-    <div class="flex justify-end flex-col mb-6">
-      <div class="self-end">
-        <button
-          class="btn-submit"
-          disabled={!$allRowsSelected}
-          on:click={handleSubmitActions}
-        >
-          Submit Actions ({$approvedCount} Approved, {$declinedCount} Rejected)
-        </button>
-        {#if !$allRowsSelected}
-          <p class="help-text text-right mt-2">
-            All rows must be either approved or declined before submitting.
-          </p>
-        {/if}
+    <!-- Only show submit button if there are actionable items -->
+    {#if taxDeclaration.declarations.some((d) => canAction(d.status))}
+      <div class="flex justify-end flex-col mb-6">
+        <div class="self-end">
+          <button
+            class="btn-submit"
+            disabled={!$allActionableRowsSelected}
+            on:click={handleSubmitActions}
+          >
+            Submit Actions ({$approvedCount} Approved, {$declinedCount} Rejected)
+          </button>
+          {#if !$allActionableRowsSelected}
+            <p class="help-text text-right mt-2">
+              All actionable rows must be either approved or declined before
+              submitting.
+            </p>
+          {/if}
+        </div>
       </div>
-    </div>
+    {/if}
 
     <table class="w-full table-auto">
       <thead>
@@ -121,7 +205,9 @@
                   <a
                     href={doc.documentPath}
                     target="_blank"
-                    class="document-link">{doc.documentName}</a
+                    class={doc.isLatestVersion
+                      ? "document-link"
+                      : "document-link-old"}>{doc.documentName}</a
                   ><br />
                 {/each}
               {:else}
@@ -129,32 +215,51 @@
               {/if}
             </td>
             <td class="table-cell text-center">
-              <span class="status-badge status-{record.status}"
-                >{record.status.charAt(0).toUpperCase() +
-                  record.status.slice(1)}</span
+              <span
+                class={`status-badge ${getStatusBadgeStyle(record.status)}`}
               >
+                {getStatusText(record.status)}
+              </span>
             </td>
             <td class="table-cell text-center">
+              <!-- {#if canAction(record.status)} -->
               <div class="action-container">
                 <button
-                  class="action-btn approve {$selections[record._id] ===
+                  class="action-btn approve {$selections[record.subSection] ===
                   'approve'
                     ? 'selected'
                     : ''}"
-                  on:click={() => updateSelection(record._id, "approve")}
+                  disabled={record.status === "verified" ||
+                    record.status === "rejected" ||
+                    record.status === "resubmission_requested"}
+                  on:click={() => updateSelection(record.subSection, "approve")}
                 >
                   Approve
                 </button>
                 <button
-                  class="action-btn decline {$selections[record._id] ===
+                  class="action-btn decline {$selections[record.subSection] ===
                   'decline'
                     ? 'selected'
                     : ''}"
-                  on:click={() => updateSelection(record._id, "decline")}
+                  disabled={record.status === "verified" ||
+                    record.status === "rejected" ||
+                    record.status === "resubmission_requested"}
+                  on:click={() => updateSelection(record.subSection, "decline")}
                 >
                   Decline
                 </button>
               </div>
+              <!-- {:else}
+                <div class="text-gray-500 text-sm">
+                  {record.status === "verified"
+                    ? "Already approved"
+                    : record.status === "rejected"
+                      ? "Already rejected"
+                      : record.status === "resubmission_requested"
+                        ? "Awaiting resubmission"
+                        : "Not actionable"}
+                </div>
+              {/if} -->
             </td>
           </tr>
         {/each}
@@ -262,12 +367,7 @@
     border-radius: 9999px;
     font-size: 12px;
     font-weight: 500;
-    background-color: #f3f4f6;
-  }
-
-  .status-badge.status-pending {
-    background-color: #fef3c7;
-    color: #92400e;
+    display: inline-block;
   }
 
   .document-link {
@@ -278,5 +378,15 @@
 
   .document-link:hover {
     color: #2563eb;
+  }
+
+  .document-link-old {
+    color: #ff0000;
+    text-decoration: underline;
+    font-size: 13px;
+  }
+
+  .document-link-old:hover {
+    color: #a70000;
   }
 </style>

@@ -1,4 +1,3 @@
-<!-- InvestmentProofUploader.svelte -->
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import { formatCurrency } from "$lib/utils/currency";
@@ -37,6 +36,25 @@
     uploadedFiles = {};
     uploadErrors = {};
   }
+
+  function getStatusBadge(status: string) {
+    switch (status) {
+      case "verified":
+        return '<span class="badge badge-success">Verified</span>';
+      case "rejected":
+        return '<span class="badge badge-danger">Rejected</span>';
+      case "document_submitted":
+        return '<span class="badge badge-info">Submitted</span>';
+      case "resubmission_requested":
+        return '<span class="badge badge-warning">Resubmission Requested</span>';
+      default:
+        return '<span class="badge badge-secondary">Pending</span>';
+    }
+  }
+
+  function shouldShowFileInput(status: string) {
+    return status === "pending" || status === "resubmission_requested";
+  }
 </script>
 
 <div class="uploader-content">
@@ -55,20 +73,45 @@
               <span class="amount"
                 >{formatCurrency(declaration.declaredAmount)}</span
               >
-            </div>
-            <div class="upload-control">
-              <input
-                type="file"
-                accept="application/pdf"
-                on:change={(e) =>
-                  handleFileSelect(section.id, subsection.id, e)}
-                class="file-input"
-              />
-              {#if uploadedFiles[key]}
-                <span class="file-name">{uploadedFiles[key].name}</span>
+              {#if declaration.verifiedAmount > 0}
+                <span class="verified-amount"
+                  >Verified: {formatCurrency(declaration.verifiedAmount)}</span
+                >
               {/if}
-              {#if uploadErrors[key]}
-                <span class="error">{uploadErrors[key]}</span>
+            </div>
+
+            <div class="action-area">
+              <!-- Status Badge -->
+              <div class="status-badge">
+                {@html getStatusBadge(declaration.status)}
+              </div>
+
+              <!-- Show deadline if applicable -->
+              {#if declaration.resubmissionDeadline}
+                <div class="deadline-notice">
+                  Resubmit by: {new Date(
+                    declaration.resubmissionDeadline
+                  ).toLocaleDateString()}
+                </div>
+              {/if}
+
+              <!-- File upload control - only for pending or resubmission_requested -->
+              {#if shouldShowFileInput(declaration.status)}
+                <div class="upload-control">
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    on:change={(e) =>
+                      handleFileSelect(section.id, subsection.id, e)}
+                    class="file-input"
+                  />
+                  {#if uploadedFiles[key]}
+                    <span class="file-name">{uploadedFiles[key].name}</span>
+                  {/if}
+                  {#if uploadErrors[key]}
+                    <span class="error">{uploadErrors[key]}</span>
+                  {/if}
+                </div>
               {/if}
             </div>
           </div>
@@ -77,15 +120,12 @@
     </div>
   {/each}
 
-  <div class="uploader-footer">
-    <button
-      class="submit-btn"
-      on:click={handleSubmit}
-      disabled={Object.keys(uploadedFiles).length === 0}
-    >
-      Upload Files
-    </button>
-  </div>
+  <!-- Only show the upload button if there are files to upload -->
+  {#if Object.keys(uploadedFiles).length > 0}
+    <div class="uploader-footer">
+      <button class="submit-btn" on:click={handleSubmit}> Upload Files </button>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -111,9 +151,25 @@
     gap: 0.25rem;
   }
 
+  .name {
+    font-weight: 500;
+  }
+
   .amount {
     color: #6b7280;
     font-size: 0.875rem;
+  }
+
+  .verified-amount {
+    color: #059669;
+    font-size: 0.875rem;
+  }
+
+  .action-area {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
   }
 
   .upload-control {
@@ -150,5 +206,43 @@
   .submit-btn:disabled {
     background-color: #d1d5db;
     cursor: not-allowed;
+  }
+
+  .deadline-notice {
+    color: #dc2626;
+    font-size: 0.75rem;
+  }
+
+  /* Badge styles */
+  .badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .badge-success {
+    background-color: #d1fae5;
+    color: #065f46;
+  }
+
+  .badge-danger {
+    background-color: #fee2e2;
+    color: #b91c1c;
+  }
+
+  .badge-warning {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
+
+  .badge-info {
+    background-color: #dbeafe;
+    color: #1e40af;
+  }
+
+  .badge-secondary {
+    background-color: #e5e7eb;
+    color: #4b5563;
   }
 </style>
