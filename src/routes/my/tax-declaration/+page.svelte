@@ -1,7 +1,6 @@
 <script lang="ts">
   import Card from "$lib/components/common/Card.svelte";
   import Loader from "$lib/components/common/Loader.svelte";
-  import Modal from "$lib/components/common/Modal.svelte";
   import TaxDeclarationViewer from "$lib/components/taxDeclaration/TaxDeclarationViewer.svelte";
   import { taxSlabApi } from "$lib/services/api";
   import { taxDeclarationApi } from "$lib/services/api/taxDeclaration";

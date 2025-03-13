@@ -65,6 +65,7 @@
         <div class="card">
           <ItDeclarationDetails
             {taxDeclaration}
+            adminOnly={true}
             on:approvals={getTaxDeclarationCurrentFY}
           />
         </div>

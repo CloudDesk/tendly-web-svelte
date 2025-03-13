@@ -5,16 +5,25 @@
   import type { TaxDeclaration } from "$lib/types";
   import Modal from "../common/Modal.svelte";
   import InvestmentProofUploader from "./InvestmentProofUploader.svelte";
+  import {
+    Info,
+    Upload,
+    Check,
+    X as IconX,
+    RefreshCw as IconRefresh,
+    Clock as IconClock,
+    Edit as IconEdit,
+    Save as IconSave,
+    X as IconCancel,
+  } from "lucide-svelte";
 
   // Extend TaxDeclaration type to include annualGross for dynamic limits
   export let taxDeclaration: TaxDeclaration & { annualGross?: number };
 
-  console.log(taxDeclaration, "taxDeclaration");
   // Error store for better UI feedback
   export const errors = writable<string[]>([]);
 
   let isShowModal = false;
-
   const dispatch = createEventDispatcher();
 
   $: {
@@ -34,8 +43,8 @@
       id: "80C",
       title: "Section 80C",
       description: "Deduction for Investment in Specified Savings Instruments",
-      maxLimit: 150000, // Overall section limit of ₹1.5 lakh
-      limitType: "section", // Indicates the limit applies to whole section
+      maxLimit: 150000,
+      limitType: "section",
       subsections: [
         { id: "life_insurance", name: "Life Insurance Premium" },
         { id: "epf", name: "Employee Provident Fund (EPF)" },
@@ -46,8 +55,8 @@
       id: "80D",
       title: "Section 80D",
       description: "Deduction for Premium Paid on Health Insurance",
-      maxLimit: null, // No overall section limit
-      limitType: "subsection", // Indicates limits are at subsection level
+      maxLimit: null,
+      limitType: "subsection",
       subsections: [
         {
           id: "self_family",
@@ -62,21 +71,20 @@
         },
       ],
     },
-    // Add other sections like 80GG, 80CCD2 etc. with appropriate limit types
     {
       id: "80GG",
       title: "Section 80GG",
       description: "Deduction for Rent Paid",
-      limitType: "dynamic", // Special case with dynamic limit
-      maxLimit: null, // Will be calculated dynamically
+      limitType: "dynamic",
+      maxLimit: null,
       subsections: [{ id: "rent_paid", name: "Rent Paid" }],
     },
     {
       id: "80CCD2",
       title: "Section 80CCD(2)",
       description: "Employer's contribution to NPS",
-      limitType: "dynamic", // Special case with dynamic limit
-      maxLimit: null, // Will be calculated dynamically
+      limitType: "dynamic",
+      maxLimit: null,
       subsections: [
         { id: "employer_nps", name: "Employer's NPS Contribution" },
       ],
@@ -163,7 +171,6 @@
         parseFloat(editValues["80GG_rent_paid"] as unknown as string) || 0;
 
       const incomeLimit = (taxDeclaration.annualGross || 0) * 0.25;
-      const excessRent = rentPaid - annualGross * 0.1;
       return Math.min(60000, incomeLimit);
     } else if (sectionId === "80CCD2") {
       return (taxDeclaration.annualGross || 0) * 0.1;
@@ -292,7 +299,6 @@
   // Handle file upload for POI
   const handleFileUpload = (event: CustomEvent) => {
     const { files } = event.detail;
-    console.log("Files in ItDeclarationSection:", files);
     isShowModal = false;
     dispatch("fileupload", files);
   };
@@ -343,7 +349,6 @@
 
   // Save declaration changes
   const saveChanges = () => {
-    console.log(uploadedFiles, "uploadedFiles");
     // Validate all declarations
     const validationErrors = validateDeclarations();
 
@@ -381,7 +386,6 @@
               ...existingDecl,
               declaredAmount: value,
               documents,
-              // lastUpdated: new Date(),
             });
           } else {
             // Determine the appropriate maxLimit for this declaration
@@ -403,14 +407,12 @@
               verifiedAmount: 0,
               status: "pending",
               documents,
-              // lastUpdated: new Date(),
             });
           }
         }
       });
     });
 
-    console.log(updatedDeclarations, "updatedDeclarations");
     taxDeclaration = {
       ...taxDeclaration,
       declarations: [...updatedDeclarations],
@@ -421,15 +423,10 @@
         declarations: updatedDeclarations,
       },
     });
-    console.log(taxDeclaration, "taxDeclaration");
+
     editMode = false;
     uploadedFiles = {};
     errors.set([]);
-  };
-
-  const updatedDeclaration = async (taxDeclaration: TaxDeclaration) => {
-    try {
-    } catch (error) {}
   };
 
   // Cancel edit
@@ -464,12 +461,141 @@
           0
         )
       : 0;
+
+  // Status renderer
+  const getStatusComponent = (status: string) => {
+    switch (status) {
+      case "pending":
+        return {
+          icon: IconClock,
+          text: "Pending",
+          bgColor: "bg-amber-100",
+          textColor: "text-amber-800",
+        };
+      case "verified":
+        return {
+          icon: Check,
+          text: "Verified",
+          bgColor: "bg-green-100",
+          textColor: "text-green-800",
+        };
+      case "rejected":
+        return {
+          icon: IconX,
+          text: "Rejected",
+          bgColor: "bg-red-100",
+          textColor: "text-red-800",
+        };
+      case "resubmission_requested":
+        return {
+          icon: IconRefresh,
+          text: "Resubmission",
+          bgColor: "bg-blue-100",
+          textColor: "text-blue-800",
+        };
+      default:
+        return {
+          icon: IconClock,
+          text: "Pending",
+          bgColor: "bg-amber-100",
+          textColor: "text-amber-800",
+        };
+    }
+  };
 </script>
 
-<div class="it-declaration">
+<div
+  class="tax-declaration bg-white rounded-lg shadow-sm p-6 mb-6 max-w-5xl mx-auto"
+>
+  <!-- Summary Header -->
+  <div
+    class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4"
+  >
+    <div class="summary-container">
+      <h2 class="text-xl font-bold text-gray-800 mb-4">
+        Tax Declaration Summary
+      </h2>
+      <div class="flex flex-wrap gap-4">
+        <div
+          class="summary-box bg-blue-50 p-3 rounded-lg border border-blue-100"
+        >
+          <span class="block text-sm text-blue-700 mb-1">Total Declared</span>
+          <span class="text-xl font-bold text-blue-800"
+            >{formatCurrency(totalDeclared)}</span
+          >
+        </div>
+        <div
+          class="summary-box bg-green-50 p-3 rounded-lg border border-green-100"
+        >
+          <span class="block text-sm text-green-700 mb-1">Total Verified</span>
+          <span class="text-xl font-bold text-green-800"
+            >{formatCurrency(totalVerified)}</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+      {#if !editMode && !taxDeclaration.isLocked && !taxDeclaration.isPOISubmitted}
+        <button
+          class="btn flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
+          on:click={toggleEditMode}
+        >
+          <IconEdit size={16} />
+          Edit Declarations
+        </button>
+        {#if taxDeclaration.poiSubmissionStatus === "not_submitted" && taxDeclaration.isDeclared}
+          <button
+            class="btn flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors"
+            on:click={openModal}
+          >
+            <Upload size={16} />
+            Upload Documents
+          </button>
+        {/if}
+      {/if}
+
+      {#if editMode}
+        <button
+          class="btn flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition-colors"
+          on:click={cancelEdit}
+        >
+          <IconCancel size={16} />
+          Cancel
+        </button>
+        <button
+          class="btn flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+          on:click={saveChanges}
+          disabled={Object.keys(editErrors).length > 0}
+        >
+          <IconSave size={16} />
+          Save Changes
+        </button>
+      {/if}
+
+      {#if taxDeclaration.poiSubmissionStatus === "resubmission"}
+        <button
+          class="btn flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
+          on:click={openModal}
+        >
+          <Upload size={16} />
+          Upload Documents
+        </button>
+      {/if}
+    </div>
+  </div>
+
+  <!-- Error display -->
   {#if $errors.length > 0}
-    <div class="error-box">
-      <ul>
+    <div
+      class="bg-red-50 border border-red-200 text-red-800 rounded-md p-4 mb-6"
+      role="alert"
+    >
+      <h3 class="font-semibold mb-2 flex items-center">
+        <IconX size={18} class="mr-2" />
+        Please resolve the following issues:
+      </h3>
+      <ul class="list-disc pl-5 space-y-1">
         {#each $errors as error}
           <li>{error}</li>
         {/each}
@@ -477,204 +603,222 @@
     </div>
   {/if}
 
-  <div class="header">
-    <div class="summary">
-      <div class="summary-item">
-        <span class="label">Total Declared:</span>
-        <span class="value">{formatCurrency(totalDeclared)}</span>
-      </div>
-      <div class="summary-item">
-        <span class="label">Total Verified:</span>
-        <span class="value">{formatCurrency(totalVerified)}</span>
-      </div>
-    </div>
-
-    <div class="actions">
-      {#if !editMode && !taxDeclaration.isLocked && !taxDeclaration.isPOISubmitted}
-        <button class="btn btn-edit" on:click={toggleEditMode}>
-          Edit Declarations
-        </button>
-        {#if taxDeclaration.poiSubmissionStatus === "not_submitted" && taxDeclaration.isDeclared}
-          <button class="btn btn-upload" on:click={openModal}>
-            Upload Documents
-          </button>
-        {/if}
-      {/if}
-
-      {#if editMode}
-        <button class="btn btn-cancel" on:click={cancelEdit}>Cancel</button>
-        <button
-          class="btn btn-save"
-          on:click={saveChanges}
-          disabled={Object.keys(editErrors).length > 0}
-        >
-          Save Changes
-        </button>
-      {/if}
-      {#if taxDeclaration.poiSubmissionStatus === "resubmission"}
-        <button class="btn btn-upload" on:click={openModal}>
-          Upload Documents
-        </button>
-      {/if}
-    </div>
-  </div>
-
+  <!-- Locked Notice -->
   {#if taxDeclaration.isLocked}
-    <div class="locked-notice">
+    <div
+      class="bg-amber-50 border border-amber-200 text-amber-800 rounded-md p-4 mb-6"
+      role="alert"
+    >
       {#if !taxDeclaration.declarations || taxDeclaration.declarations.length === 0}
-        <p>
-          IT declaration will open soon, please contact admin for further
-          information.
+        <p class="flex items-center">
+          <Info size={18} class="mr-2" />
+          IT declaration will open soon, please contact admin for further information.
         </p>
       {:else}
-        <p>
-          Declaration window is closed. You cannot make further changes to your
-          declaration and ALL declarations.
+        <p class="flex items-center">
+          <Info size={18} class="mr-2" />
+          Declaration window is closed. You cannot make further changes to your declaration.
         </p>
       {/if}
     </div>
   {/if}
 
-  <div class="sections">
+  <!-- Deduction Sections -->
+  <div class="space-y-6">
     {#each deductionSections as section}
-      <div class="section">
-        <div class="section-header">
-          <h3>{section.title}</h3>
-          <div class="section-info">
-            <p>{section.description}</p>
-            {#if section.limitType === "section" || section.limitType === "both" || section.limitType === "dynamic"}
-              {@const dynamicLimit = calculateDynamicLimit(section.id)}
-              <p class="limit">
-                Max Limit:
-                {dynamicLimit === Infinity
-                  ? section.limitType === "dynamic"
-                    ? section.id === "80CCD2"
-                      ? "10% of salary"
-                      : "Calculated based on income"
-                    : "No fixed limit"
-                  : formatCurrency(dynamicLimit)}
-                {#if isOverLimit(section.id)}
-                  <span class="over-limit">Limit Exceeded</span>
-                {/if}
-              </p>
-            {/if}
-          </div>
+      <div
+        class="section bg-gray-50 border border-gray-200 rounded-lg overflow-hidden"
+      >
+        <!-- Section Header -->
+        <div class="section-header bg-gray-100 p-4 border-b border-gray-200">
+          <div class="flex flex-col md:flex-row justify-between">
+            <div class="section-info mb-3 md:mb-0">
+              <h3 class="text-lg font-bold text-gray-800">{section.title}</h3>
+              <p class="text-gray-600 text-sm">{section.description}</p>
+              {#if section.limitType === "section" || section.limitType === "both" || section.limitType === "dynamic"}
+                {@const dynamicLimit = calculateDynamicLimit(section.id)}
+                <div class="limit flex items-center mt-1 text-sm">
+                  <span class="font-medium mr-1">Max Limit:</span>
+                  <span>
+                    {dynamicLimit === Infinity
+                      ? section.limitType === "dynamic"
+                        ? section.id === "80CCD2"
+                          ? "10% of salary"
+                          : "Calculated based on income"
+                        : "No fixed limit"
+                      : formatCurrency(dynamicLimit)}
+                  </span>
+                  {#if isOverLimit(section.id)}
+                    <span
+                      class="ml-2 text-red-600 text-xs font-medium bg-red-100 px-2 py-0.5 rounded"
+                      >Limit Exceeded</span
+                    >
+                  {/if}
+                </div>
+              {/if}
+            </div>
 
-          <div class="section-total">
-            <span>Total: {formatCurrency(getSectionTotal(section.id))}</span>
+            <div
+              class="section-total bg-blue-50 text-blue-800 font-bold px-4 py-2 rounded-md flex items-center self-start"
+            >
+              <span
+                >Section Total: {formatCurrency(
+                  getSectionTotal(section.id)
+                )}</span
+              >
+            </div>
           </div>
         </div>
 
-        <div class="subsections">
-          {#each section.subsections as subsection}
-            {@const declaration = getDeclaration(section.id, subsection.id)}
-            <div class="subsection">
-              <div class="subsection-details">
-                <div class="subsection-name">
-                  {subsection.name}
-                  {#if subsection.note}
-                    <span class="note">({subsection.note})</span>
-                  {/if}
-                  {#if subsection.maxLimit || section.limitType === "subsection" || section.limitType === "both"}
-                    {@const subsectionLimit = calculateDynamicLimit(
-                      section.id,
-                      subsection.id
-                    )}
-                    {#if subsectionLimit !== Infinity}
-                      <span class="sublimit"
-                        >Max: {formatCurrency(subsectionLimit)}</span
-                      >
-                      {#if isOverLimit(section.id, subsection.id)}
-                        <span class="over-limit">Limit Exceeded</span>
-                      {/if}
-                    {/if}
-                  {/if}
-                </div>
-
-                {#if editMode}
-                  <div class="input-container">
-                    <input
-                      type="number"
-                      min="0"
-                      value={editValues[`${section.id}_${subsection.id}`] || 0}
-                      on:input={(e) =>
-                        handleInputChange(
-                          section.id,
-                          subsection.id,
-                          e.target.value
-                        )}
-                    />
-                    {#if editErrors[`${section.id}_${subsection.id}`]}
-                      <span class="error"
-                        >{editErrors[`${section.id}_${subsection.id}`]}</span
-                      >
-                    {/if}
-                  </div>
-                {:else}
-                  <div class="amount-status">
-                    <div class="amounts">
-                      {#if declaration}
-                        <div class="declared">
-                          <span class="label">Declared:</span>
-                          <span class="value"
-                            >{formatCurrency(declaration.declaredAmount)}</span
+        <!-- Section Content -->
+        <div class="p-4">
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr class="text-left text-gray-500 text-sm">
+                  <th class="py-2 px-3 w-2/5">Subsection</th>
+                  <th class="py-2 px-3 w-1/5 text-right">Declared</th>
+                  <th class="py-2 px-3 w-1/5 text-right">Verified</th>
+                  <th class="py-2 px-3 w-1/5">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                {#each section.subsections as subsection}
+                  {@const declaration = getDeclaration(
+                    section.id,
+                    subsection.id
+                  )}
+                  <tr class="hover:bg-gray-50">
+                    <td class="py-3 px-3">
+                      <div class="flex flex-col">
+                        <span class="font-medium text-gray-800"
+                          >{subsection.name}</span
+                        >
+                        {#if subsection.note}
+                          <span class="text-xs text-gray-500 mt-0.5"
+                            >({subsection.note})</span
                           >
-                        </div>
-                        <div class="verified">
-                          <span class="label">Verified:</span>
-                          <span class="value"
-                            >{formatCurrency(declaration.verifiedAmount)}</span
-                          >
+                        {/if}
+                        {#if subsection.maxLimit || section.limitType === "subsection" || section.limitType === "both"}
+                          {@const subsectionLimit = calculateDynamicLimit(
+                            section.id,
+                            subsection.id
+                          )}
+                          {#if subsectionLimit !== Infinity}
+                            <span
+                              class="text-xs text-gray-600 mt-0.5 flex items-center"
+                            >
+                              <span class="mr-1">Max:</span>
+                              <span class="font-medium"
+                                >{formatCurrency(subsectionLimit)}</span
+                              >
+                              {#if isOverLimit(section.id, subsection.id)}
+                                <span
+                                  class="ml-2 text-red-600 text-xs bg-red-50 px-1.5 py-0.5 rounded"
+                                  >Limit Exceeded</span
+                                >
+                              {/if}
+                            </span>
+                          {/if}
+                        {/if}
+                      </div>
+                    </td>
+                    <td class="py-3 px-3">
+                      {#if editMode}
+                        <div class="flex flex-col items-end">
+                          <input
+                            type="number"
+                            min="0"
+                            class="w-full max-w-xs p-2 border border-gray-300 rounded text-right"
+                            value={editValues[
+                              `${section.id}_${subsection.id}`
+                            ] || 0}
+                            on:input={(e) =>
+                              handleInputChange(
+                                section.id,
+                                subsection.id,
+                                e.target.value
+                              )}
+                          />
+                          {#if editErrors[`${section.id}_${subsection.id}`]}
+                            <span class="text-red-600 text-xs mt-1"
+                              >{editErrors[
+                                `${section.id}_${subsection.id}`
+                              ]}</span
+                            >
+                          {/if}
                         </div>
                       {:else}
-                        <div class="no-declaration">No declaration</div>
+                        <div class="text-right font-medium">
+                          {declaration
+                            ? formatCurrency(declaration.declaredAmount)
+                            : "—"}
+                        </div>
                       {/if}
-                    </div>
-
-                    {#if declaration}
-                      <div class="status status-{declaration.status}">
-                        {declaration.status === "pending" ? "Pending" : ""}
-                        {declaration.status === "verified" ? "Verified" : ""}
-                        {declaration.status === "rejected" ? "Rejected" : ""}
-                        {declaration.status === "resubmission_requested"
-                          ? "Resubmission"
-                          : ""}
+                    </td>
+                    <td class="py-3 px-3">
+                      <div class="text-right font-medium text-green-700">
+                        {declaration
+                          ? formatCurrency(declaration.verifiedAmount)
+                          : "—"}
                       </div>
-                    {/if}
-                  </div>
-                  {#if declaration && declaration.documents.length > 0}
-                    <div class="documents">
-                      <span>Documents:</span>
-                      <ul>
-                        {#each declaration.documents as doc}
-                          <li>
-                            <a
-                              href={doc.documentPath}
-                              target="_blank"
-                              class="underline {doc.isLatestVersion
-                                ? 'text-blue-500'
-                                : 'text-red-500'}"
-                            >
-                              {doc.documentName}
-                            </a>
-                            <span
-                              class={doc.isLatestVersion
-                                ? "text-blue-500"
-                                : "text-red-500"}
-                            >
-                              ({doc.isLatestVersion
-                                ? "Latest Version"
-                                : "Outdated Version - Upload new document if required"})
-                            </span>
-                          </li>
-                        {/each}
-                      </ul>
-                    </div>
+                    </td>
+                    <td class="py-3 px-3">
+                      {#if declaration}
+                        {@const status = getStatusComponent(declaration.status)}
+                        <div class="flex items-center">
+                          <span
+                            class={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${status.bgColor} ${status.textColor}`}
+                          >
+                            <svelte:component
+                              this={status.icon}
+                              size={12}
+                              class="mr-1"
+                            />
+                            {status.text}
+                          </span>
+                        </div>
+                      {:else}
+                        <span class="text-gray-400 text-sm">Not declared</span>
+                      {/if}
+                    </td>
+                  </tr>
+
+                  {#if declaration && declaration.documents.length > 0 && !editMode}
+                    <tr class="bg-gray-50">
+                      <td colspan="4" class="py-3 px-6 text-sm">
+                        <div class="documents">
+                          <h4 class="text-sm text-gray-700 font-medium mb-2">
+                            Uploaded Documents:
+                          </h4>
+                          <ul class="space-y-1.5">
+                            {#each declaration.documents as doc}
+                              <li class="flex items-center">
+                                <a
+                                  href={doc.documentPath}
+                                  target="_blank"
+                                  class={`text-sm underline ${doc.isLatestVersion ? "text-blue-600" : "text-red-600"}`}
+                                >
+                                  {doc.documentName}
+                                </a>
+                                <span
+                                  class={`ml-2 text-xs ${doc.isLatestVersion ? "text-blue-600 bg-blue-50" : "text-red-600 bg-red-50"} px-2 py-0.5 rounded-full`}
+                                >
+                                  {doc.isLatestVersion
+                                    ? "Latest Version"
+                                    : "Outdated - Upload new document"}
+                                </span>
+                              </li>
+                            {/each}
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
                   {/if}
-                {/if}
-              </div>
-            </div>
-          {/each}
+                {/each}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     {/each}
@@ -688,195 +832,3 @@
     on:upload={handleFileUpload}
   />
 </Modal>
-
-<style>
-  .it-declaration {
-    padding: 20px;
-  }
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  .summary {
-    display: flex;
-    gap: 20px;
-  }
-  .summary-item {
-    display: flex;
-    gap: 8px;
-  }
-  .label {
-    font-weight: bold;
-  }
-  .actions {
-    display: flex;
-    gap: 20px; /* Consistent spacing between buttons */
-  }
-  .btn {
-    padding: 0.5rem 0.75rem; /* px-3 py-2 */
-    border-radius: 0.25rem; /* rounded */
-    font-weight: 500; /* font-medium */
-    font-size: 0.875rem; /* text-sm */
-    display: flex;
-    align-items: center;
-    gap: 0.5rem; /* gap-2 */
-    cursor: pointer;
-    transition: background-color 0.2s; /* transition-colors */
-  }
-  .btn-edit {
-    background-color: #2563eb; /* blue-600 */
-    color: #ffffff;
-  }
-
-  .btn-edit:hover {
-    background-color: #1d4ed8; /* blue-700 */
-  }
-
-  .btn-edit:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px #3b82f6; /* focus:ring-2 focus:ring-blue-500 */
-    box-shadow:
-      0 0 0 2px #3b82f6,
-      0 0 0 4px transparent; /* focus:ring-offset-2 */
-  }
-
-  .btn-upload {
-    background-color: #16a34a; /* green-600 */
-    color: #ffffff;
-  }
-
-  .btn-upload:hover {
-    background-color: #15803d; /* green-700 */
-  }
-
-  .btn-upload:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px #22c55e; /* focus:ring-2 focus:ring-green-500 */
-    box-shadow:
-      0 0 0 2px #22c55e,
-      0 0 0 4px transparent; /* focus:ring-offset-2 */
-  }
-  .btn-save {
-    background-color: #28a745;
-    color: white;
-  }
-  .btn-cancel {
-    background-color: #dc3545;
-    color: white;
-  }
-  .locked-notice {
-    background-color: #f8d7da;
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 5px;
-  }
-  .section {
-    margin-bottom: 10px;
-    border: 1px solid #ddd;
-    padding: 15px;
-    border-radius: 5px;
-  }
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  .section-info p {
-    margin: 5px 0;
-  }
-  .limit {
-    font-weight: bold;
-  }
-  .over-limit {
-    color: red;
-    margin-left: 10px;
-  }
-  .section-total {
-    font-weight: bold;
-  }
-  .subsection {
-    padding: 10px;
-    border-top: 1px solid #eee;
-  }
-  .subsection-name {
-    flex: 1;
-  }
-  .note {
-    font-size: 0.9em;
-    color: #666;
-  }
-  .sublimit {
-    margin-left: 10px;
-    font-weight: bold;
-  }
-  .input-container {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-  }
-  .input-container input[type="number"] {
-    width: 100px;
-    padding: 5px;
-    margin-bottom: 5px;
-  }
-  .input-container input[type="file"] {
-    font-size: 0.9em;
-  }
-  .error {
-    color: red;
-    font-size: 0.8em;
-  }
-  .amount-status {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-  }
-  .amounts {
-    text-align: right;
-  }
-  .declared,
-  .verified {
-    margin: 5px 0;
-  }
-  .no-declaration {
-    color: #666;
-  }
-  .status {
-    padding: 5px 10px;
-    border-radius: 5px;
-    text-transform: capitalize;
-  }
-  .status-pending {
-    background-color: #ffc107;
-  }
-  .status-verified {
-    background-color: #28a745;
-    color: white;
-  }
-  .status-rejected {
-    background-color: #dc3545;
-    color: white;
-  }
-  .status-resubmission_requested {
-    background-color: #17a2b8;
-    color: white;
-  }
-  .error-box {
-    background-color: #f8d7da;
-    padding: 10px;
-    margin-bottom: 20px;
-    border-radius: 5px;
-  }
-  .error-box ul {
-    margin: 0;
-    padding-left: 20px;
-  }
-  .documents {
-    margin-top: 5px;
-    font-size: 0.9em;
-    color: #666;
-  }
-</style>

@@ -6,6 +6,7 @@
   import TaxComputationSection from "./TaxComputationSection.svelte";
   import ItDeclarationSection from "./ITDeclarationSection.svelte";
   import { createEventDispatcher } from "svelte";
+  import ItDeclarationDetails from "../employee/ITDeclarationDetails.svelte";
 
   export let taxDeclaration;
   export let taxSlabs;
@@ -37,6 +38,7 @@
       isOpen: true,
       component: TaxRegimeSection,
       props: {
+        taxDeclaration,
         regime: taxDeclaration?.regime,
         financialYear: taxDeclaration?.financialYear,
         taxSlabs: taxSlabs,
@@ -63,8 +65,8 @@
       title: "Proof of Investment",
       isOpen: false,
       subtitle: "Upload and track proof documents",
-      content: "POI",
-      props: { taxDeclaration },
+      component: ItDeclarationDetails,
+      props: { taxDeclaration, adminOnly: false },
       visible: showITDeclaration,
     },
     {
@@ -104,8 +106,6 @@
           on:update={handleGrandchildUpdate}
           on:fileupload={handleFileUplaod}
         />
-      {:else}
-        {section.content}
       {/if}
     </Accordion>
   {/each}

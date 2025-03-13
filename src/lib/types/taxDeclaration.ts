@@ -28,7 +28,7 @@ export interface IDeclaration {
     maxLimit: number;
     description: string;
     declaredAmount: number;
-    varifiedAmount: number;
+    verifiedAmount: number;
     status: "pending" | "verified" | "rejected" | "resubmission_requested" | "document_submitted";
     documents: IDocument[];
     reviewHistory: {

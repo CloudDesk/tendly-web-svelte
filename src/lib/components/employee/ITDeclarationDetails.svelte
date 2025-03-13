@@ -8,6 +8,7 @@
   import { taxDeclarationApi } from "$lib/services/api/taxDeclaration";
 
   export let taxDeclaration: TaxDeclaration | null = null;
+  export let adminOnly: boolean = false;
 
   let dispatch = createEventDispatcher();
 
@@ -160,24 +161,26 @@
     <div class="text-red-500">Error: {$error}</div>
   {:else if taxDeclaration && taxDeclaration.declarations && taxDeclaration.declarations.length > 0}
     <!-- Only show submit button if there are actionable items -->
-    {#if taxDeclaration.declarations.some((d) => canAction(d.status))}
-      <div class="flex justify-end flex-col mb-6">
-        <div class="self-end">
-          <button
-            class="btn-submit"
-            disabled={!$allActionableRowsSelected}
-            on:click={handleSubmitActions}
-          >
-            Submit Actions ({$approvedCount} Approved, {$declinedCount} Rejected)
-          </button>
-          {#if !$allActionableRowsSelected}
-            <p class="help-text text-right mt-2">
-              All actionable rows must be either approved or declined before
-              submitting.
-            </p>
-          {/if}
+    {#if adminOnly}
+      {#if taxDeclaration.declarations.some((d) => canAction(d.status))}
+        <div class="flex justify-end flex-col mb-6">
+          <div class="self-end">
+            <button
+              class="btn-submit"
+              disabled={!$allActionableRowsSelected}
+              on:click={handleSubmitActions}
+            >
+              Submit Actions ({$approvedCount} Approved, {$declinedCount} Rejected)
+            </button>
+            {#if !$allActionableRowsSelected}
+              <p class="help-text text-right mt-2">
+                All actionable rows must be either approved or declined before
+                submitting.
+              </p>
+            {/if}
+          </div>
         </div>
-      </div>
+      {/if}
     {/if}
 
     <table class="w-full table-auto">
@@ -185,10 +188,11 @@
         <tr class="bg-gray-50">
           <th class="table-header">Section</th>
           <th class="table-header">Declared Amount</th>
-          <th class="table-header">Max Limit</th>
+          <th class="table-header">Verified Amount</th>
           <th class="table-header">Documents</th>
           <th class="table-header text-center">Status</th>
-          <th class="table-header text-center">Actions</th>
+          {#if adminOnly}
+            <th class="table-header text-center">Actions</th>{/if}
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
@@ -198,7 +202,7 @@
               >{formatSectionTitle(record.section, record.subSection)}</td
             >
             <td class="table-cell">{formatCurrency(record.declaredAmount)}</td>
-            <td class="table-cell">{formatCurrency(record.maxLimit)}</td>
+            <td class="table-cell">{formatCurrency(record.verifiedAmount)}</td>
             <td class="table-cell">
               {#if record.documents && record.documents.length > 0}
                 {#each record.documents as doc}
@@ -221,35 +225,42 @@
                 {getStatusText(record.status)}
               </span>
             </td>
-            <td class="table-cell text-center">
-              <!-- {#if canAction(record.status)} -->
-              <div class="action-container">
-                <button
-                  class="action-btn approve {$selections[record.subSection] ===
-                  'approve'
-                    ? 'selected'
-                    : ''}"
-                  disabled={record.status === "verified" ||
-                    record.status === "rejected" ||
-                    record.status === "resubmission_requested"}
-                  on:click={() => updateSelection(record.subSection, "approve")}
-                >
-                  Approve
-                </button>
-                <button
-                  class="action-btn decline {$selections[record.subSection] ===
-                  'decline'
-                    ? 'selected'
-                    : ''}"
-                  disabled={record.status === "verified" ||
-                    record.status === "rejected" ||
-                    record.status === "resubmission_requested"}
-                  on:click={() => updateSelection(record.subSection, "decline")}
-                >
-                  Decline
-                </button>
-              </div>
-              <!-- {:else}
+            {#if adminOnly}
+              <td class="table-cell text-center">
+                <!-- {#if canAction(record.status)} -->
+                <div class="action-container">
+                  <button
+                    class="action-btn approve {$selections[
+                      record.subSection
+                    ] === 'approve'
+                      ? 'selected'
+                      : ''}"
+                    disabled={record.status === "verified" ||
+                      record.status === "rejected" ||
+                      record.status === "resubmission_requested" ||
+                      record.status === "pending"}
+                    on:click={() =>
+                      updateSelection(record.subSection, "approve")}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    class="action-btn decline {$selections[
+                      record.subSection
+                    ] === 'decline'
+                      ? 'selected'
+                      : ''}"
+                    disabled={record.status === "verified" ||
+                      record.status === "rejected" ||
+                      record.status === "resubmission_requested" ||
+                      record.status === "pending"}
+                    on:click={() =>
+                      updateSelection(record.subSection, "decline")}
+                  >
+                    Decline
+                  </button>
+                </div>
+                <!-- {:else}
                 <div class="text-gray-500 text-sm">
                   {record.status === "verified"
                     ? "Already approved"
@@ -260,7 +271,8 @@
                         : "Not actionable"}
                 </div>
               {/if} -->
-            </td>
+              </td>
+            {/if}
           </tr>
         {/each}
       </tbody>
