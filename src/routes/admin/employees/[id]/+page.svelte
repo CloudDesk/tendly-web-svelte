@@ -7,12 +7,14 @@
   import Tabs from "$lib/components/common/Tabs.svelte";
   import EmployeeSalary from "$lib/components/employee/EmployeeSalary.svelte";
   import ITDeclarationApproval from "$lib/components/employee/ITDeclarationApproval.svelte";
+  import EmployeeShiftAssignment from "$lib/components/employee/EmployeeShiftAssignment.svelte";
 
   export let data;
   $: ({ employee } = data);
 
   const tabs = [
     { id: "overview", label: "Overview" },
+    { id: "shifts", label: "Shifts" },
     { id: "leaves", label: "Leaves Summary" },
     { id: "attendance", label: "Attendance" },
     { id: "training", label: "Training" },
@@ -109,9 +111,7 @@
             </div>
           </div>
         {:else if activeTab === "leaves"}
-          <div class="">
-            <EmployeeLeaves employeeId={employee._id} />
-          </div>
+          <EmployeeLeaves employeeId={employee._id} />
         {:else if activeTab === "attendance"}
           <EmployeeAttendance employeeId={employee._id} />
         {:else if activeTab === "training"}
@@ -120,6 +120,8 @@
           <EmployeeSalary employeeId={employee._id} />
         {:else if activeTab === "it-declaration"}
           <ITDeclarationApproval employeeId={employee._id} />
+        {:else if activeTab === "shifts"}
+          <EmployeeShiftAssignment employeeId={employee._id} />
         {/if}
       </Tabs>
     </div>

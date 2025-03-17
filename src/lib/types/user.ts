@@ -2,7 +2,9 @@ export type UserRole = 'ADMIN' | 'MANAGER' | 'STAFF';
 type ShiftAssignment = {
   startDate: { type: 'string', format: 'date-time' },
   endDate: { type: 'string', format: 'date-time' },
-  shiftCode: { type: 'string' }
+  shiftCode: { type: 'string' },
+  shiftId: { type: 'string' },
+  shiftAssignmentId: { type: 'string' },
 }
 export type User = {
   _id: string;

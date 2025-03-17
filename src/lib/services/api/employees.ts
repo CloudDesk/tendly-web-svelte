@@ -24,7 +24,7 @@ export type EmployeeListResponse = {
 
 export const employeesApi = {
   me: async (): Promise<ApiResponse<User>> => {
-    return await fetchApi<User>('/users/me');
+    return await fetchApi<ApiResponse<User>>('/users/me');
   },
 
   list: async (filters: EmployeeFilters): Promise<ApiResponse<Employee[]>> => {
@@ -37,31 +37,32 @@ export const employeesApi = {
   },
 
   getById: async (id: string): Promise<ApiResponse<User>> => {
-    return await fetchApi<User>(`/users/${id}`);
+    return await fetchApi<ApiResponse<User>>(`/users/${id}`);
   },
 
   create: async (employee: Omit<User, 'id'>): Promise<ApiResponse<User>> => {
-    return await fetchApi<User>('/users', {
+    return await fetchApi<ApiResponse<User>>('/users', {
       method: 'POST',
       body: JSON.stringify(employee)
     });
   },
 
   update: async (id: string, updates: Partial<User>): Promise<ApiResponse<User>> => {
-    return await fetchApi<User>(`/users/${id}`, {
+    return await fetchApi<ApiResponse<User>>(`/users/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(updates)
     });
   },
 
   delete: async (id: string): Promise<ApiResponse<void>> => {
-    return await fetchApi<void>(`/users/${id}`, {
+    return await fetchApi<ApiResponse<void>>(`/users/${id}`, {
       method: 'DELETE'
     });
   },
 
   getRoles: async (role: string): Promise<ApiResponse<User>> => {
-    return await fetchApi<User>(`/users/role/${role}`);
+    return await fetchApi<ApiResponse<User>>(`/users/role/${role}`);
   }
+
 
 }; 

@@ -105,5 +105,23 @@ export const shiftsApi = {
         endDate: utcValidTill
       })
     });
+  },
+  getbyEmployeeId: (
+    employeeId: string,
+  ) => {
+
+    console.log(employeeId, "employeeId")
+    let response: any = fetchApi<Shift[]>(`/shifts/employee/${employeeId}`);
+    console.log(response, "response")
+    return response.data;
+  },
+  getPastShifts: async (employeeId: string) => {
+    const response: any = await fetchApi<Shift[]>(`/shifts/past-shifts/${employeeId}`);
+    console.log(response, "response")
+    return {
+      ...response,
+      data: response.data.map((shift: any) => convertShiftTimesFromUTC(shift))
+    };
   }
-}; 
+
+};

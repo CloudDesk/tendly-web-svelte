@@ -46,8 +46,19 @@
       maxLimit: 150000,
       limitType: "section",
       subsections: [
-        { id: "life_insurance", name: "Life Insurance Premium" },
-        { id: "epf", name: "Employee Provident Fund (EPF)" },
+        {
+          id: "life_insurance",
+          name: "Life Insurance Premium",
+          maxLimit: 0 as number | null,
+          note: "",
+        },
+        {
+          id: "epf",
+          name: "Employee Provident Fund (EPF)",
+          maxLimit: 0,
+          note: "",
+        },
+        // Additional subsections can be added here
         // Additional subsections can be added here
       ],
     },
@@ -61,12 +72,12 @@
         {
           id: "self_family",
           name: "Health Insurance for self, spouse, children",
-          maxLimit: 25000,
+          maxLimit: 25000 as number | null,
         },
         {
           id: "parents",
           name: "Health Insurance for Parents",
-          maxLimit: 50000,
+          maxLimit: 50000 as number | null,
           note: "For senior citizen parents",
         },
       ],
@@ -86,7 +97,11 @@
       limitType: "dynamic",
       maxLimit: null,
       subsections: [
-        { id: "employer_nps", name: "Employer's NPS Contribution" },
+        {
+          id: "employer_nps",
+          name: "Employer's NPS Contribution",
+          maxLimit: 0,
+        },
       ],
     },
   ];
@@ -114,7 +129,7 @@
       Object.entries(editValues).forEach(([key, value]) => {
         const [section] = key.split("_");
         if (section === sectionId) {
-          total += parseFloat(value as string) || 0;
+          total += parseFloat(value as unknown as string) || 0;
         }
       });
       return total;
@@ -135,11 +150,16 @@
       const subsection = section.subsections.find(
         (ss) => ss.id === subsectionId
       );
-      if (!subsection || !subsection.maxLimit) return false;
+      if (
+        !subsection ||
+        !("maxLimit" in subsection) ||
+        typeof subsection.maxLimit !== "number"
+      )
+        return false;
 
       const key = `${sectionId}_${subsectionId}`;
       const value = editMode
-        ? parseFloat(editValues[key] as string) || 0
+        ? parseFloat(editValues[key] as unknown as string) || 0
         : getDeclaration(sectionId, subsectionId)?.declaredAmount || 0;
 
       return value > calculateDynamicLimit(sectionId, subsectionId);
@@ -329,7 +349,7 @@
       if (section.limitType === "subsection" || section.limitType === "both") {
         section.subsections.forEach((subsection) => {
           const key = `${section.id}_${subsection.id}`;
-          const value = parseFloat(editValues[key] as string) || 0;
+          const value = parseFloat(editValues[key] as unknown as string) || 0;
           const subsectionLimit = calculateDynamicLimit(
             section.id,
             subsection.id
@@ -362,10 +382,10 @@
     deductionSections.forEach((section) => {
       section.subsections.forEach((subsection) => {
         const key = `${section.id}_${subsection.id}`;
-        const value = parseFloat(editValues[key] as string) || 0;
+        const value = parseFloat(editValues[key] as unknown as string) || 0;
 
         if (value > 0) {
-          const existingDecl = taxDeclaration.declarations.find(
+          const existingDecl = taxDeclaration.declarations?.find(
             (d) => d.section === section.id && d.subSection === subsection.id
           );
 
@@ -694,12 +714,12 @@
                         <span class="font-medium text-gray-800"
                           >{subsection.name}</span
                         >
-                        {#if subsection.note}
+                        {#if "note" in subsection}
                           <span class="text-xs text-gray-500 mt-0.5"
                             >({subsection.note})</span
                           >
                         {/if}
-                        {#if subsection.maxLimit || section.limitType === "subsection" || section.limitType === "both"}
+                        {#if "maxLimit" in subsection || section.limitType === "subsection" || section.limitType === "both"}
                           {@const subsectionLimit = calculateDynamicLimit(
                             section.id,
                             subsection.id
@@ -737,7 +757,7 @@
                               handleInputChange(
                                 section.id,
                                 subsection.id,
-                                e.target.value
+                                e.target.value || ""
                               )}
                           />
                           {#if editErrors[`${section.id}_${subsection.id}`]}

@@ -1,30 +1,30 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  import type { User, Shift } from '$lib/types';
-  import { fromUTCDate } from '$lib/utils/date';
-  import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
+  import { createEventDispatcher } from "svelte";
+  import type { User, Shift } from "$lib/types";
+  import { fromUTCDate } from "$lib/utils/date";
+  import ConfirmDialog from "$lib/components/common/ConfirmDialog.svelte";
 
   export let shift: Shift | null = null;
   export let employees: User[] = [];
   export let selectedEmployees: Set<string>;
   export let assignmentStep = 1;
-  export let assignmentValidFrom = '';
-  export let assignmentValidTill = '';
+  export let assignmentValidFrom = "";
+  export let assignmentValidTill = "";
 
   const dispatch = createEventDispatcher();
 
   let showDialog = false;
   let dialogConfig = {
-    title: 'Confirm Shift Assignment',
-    message: '',
-    confirmText: 'Proceed with Valid Assignments',
-    cancelText: 'Cancel',
-    type: 'warning' as const
+    title: "Confirm Shift Assignment",
+    message: "",
+    confirmText: "Proceed with Valid Assignments",
+    cancelText: "Cancel",
+    type: "warning" as const,
   };
 
   let confirmationData = {
     validEmployees: [],
-    invalidEmployees: []
+    invalidEmployees: [],
   };
 
   $: dateError = validateDates();
@@ -34,29 +34,33 @@
     const tillDate = assignmentValidTill ? new Date(assignmentValidTill) : null;
 
     if (tillDate && tillDate <= fromDate) {
-      return 'End date must be after start date';
+      return "End date must be after start date";
     }
 
-    return '';
+    return "";
   }
 
   const employeeColumns = [
-    { key: 'name' as keyof User, label: 'Name' },
-    { key: 'employeeId' as keyof User, label: 'Employee ID' },
-    { 
-      key: 'currentShiftAssignment', 
-      label: 'Current Shift',
-      render: (row: User) => row.currentShiftAssignmentData && Object.keys(row.currentShiftAssignmentData).length > 0 
-        ? `${row.currentShiftAssignmentData?.shiftCode} (${fromUTCDate(row.currentShiftAssignmentData?.startDate?.toString())}-${fromUTCDate(row.currentShiftAssignmentData?.endDate?.toString())})`
-        : 'No shift assigned'
+    { key: "name" as keyof User, label: "Name" },
+    { key: "employeeId" as keyof User, label: "Employee ID" },
+    {
+      key: "currentShiftAssignment",
+      label: "Current Shift",
+      render: (row: User) =>
+        row.currentShiftAssignmentData &&
+        Object.keys(row.currentShiftAssignmentData).length > 0
+          ? `${row.currentShiftAssignmentData?.shiftCode} (${fromUTCDate(row.currentShiftAssignmentData?.startDate?.toString())}-${fromUTCDate(row.currentShiftAssignmentData?.endDate?.toString())})`
+          : "No shift assigned",
     },
-    { 
-      key: 'upcomingShiftAssignment', 
-      label: 'Upcoming Shift',
-      render: (row: User) => row.upcomingShiftAssignmentData && Object.keys(row.upcomingShiftAssignmentData).length > 0 
-        ? `${row.upcomingShiftAssignmentData?.shiftCode} (${fromUTCDate(row.upcomingShiftAssignmentData?.startDate?.toString())}-${fromUTCDate(row.upcomingShiftAssignmentData?.endDate?.toString())})`
-        : 'No upcoming shift'
-    }
+    {
+      key: "upcomingShiftAssignment",
+      label: "Upcoming Shift",
+      render: (row: User) =>
+        row.upcomingShiftAssignmentData &&
+        Object.keys(row.upcomingShiftAssignmentData).length > 0
+          ? `${row.upcomingShiftAssignmentData?.shiftCode} (${fromUTCDate(row.upcomingShiftAssignmentData?.startDate?.toString())}-${fromUTCDate(row.upcomingShiftAssignmentData?.endDate?.toString())})`
+          : "No upcoming shift",
+    },
   ];
 
   function handleEmployeeSelect(employee: User) {
@@ -69,28 +73,38 @@
   }
 
   function getValidationError(employee: User): string {
-    if (employee.upcomingShiftAssignmentData&& Object.keys(employee.upcomingShiftAssignmentData).length>0) {
-      return 'Cannot assign shift - Employee has an upcoming shift scheduled';
+    if (
+      employee.upcomingShiftAssignmentData &&
+      Object.keys(employee.upcomingShiftAssignmentData).length > 0
+    ) {
+      return "Cannot assign shift - Employee has an upcoming shift scheduled";
     }
 
-    if (!assignmentValidFrom) return '';
-    
-    const assignmentFromDate = new Date(assignmentValidFrom);
-    const assignmentTillDate = assignmentValidTill ? new Date(assignmentValidTill) : null;
+    if (!assignmentValidFrom) return "";
 
-    if (employee.currentShiftAssignmentData&& Object.keys(employee.currentShiftAssignmentData).length>0) {
-      const currentEndDate = employee.currentShiftAssignmentData?.endDate ? new Date(employee.currentShiftAssignmentData.endDate.toString()) : null;
-      
+    const assignmentFromDate = new Date(assignmentValidFrom);
+    const assignmentTillDate = assignmentValidTill
+      ? new Date(assignmentValidTill)
+      : null;
+
+    if (
+      employee.currentShiftAssignmentData &&
+      Object.keys(employee.currentShiftAssignmentData).length > 0
+    ) {
+      const currentEndDate = employee.currentShiftAssignmentData?.endDate
+        ? new Date(employee.currentShiftAssignmentData.endDate.toString())
+        : null;
+
       if (currentEndDate && assignmentFromDate < currentEndDate) {
         return `New assignment must start after current assignment ends (${fromUTCDate(currentEndDate.toString())})`;
       }
     }
 
     if (assignmentTillDate && assignmentTillDate <= assignmentFromDate) {
-      return 'End date must be after start date';
+      return "End date must be after start date";
     }
 
-    return '';
+    return "";
   }
 
   function validateAssignment(employee: User): boolean {
@@ -98,7 +112,9 @@
   }
 
   function isEmployeeSelectable(employee: User): boolean {
-    let isSelectable = employee.upcomingShiftAssignmentData && Object.keys(employee.upcomingShiftAssignmentData).length===0
+    let isSelectable =
+      employee.upcomingShiftAssignmentData &&
+      Object.keys(employee.upcomingShiftAssignmentData).length === 0;
     return isSelectable;
   }
 
@@ -109,9 +125,9 @@
   function prepareConfirmation() {
     const valid = [];
     const invalid = [];
-    
+
     for (const empId of selectedEmployees) {
-      const employee = employees.find(e => e._id === empId);
+      const employee = employees.find((e) => e._id === empId);
       if (employee) {
         if (validateAssignment(employee)) {
           valid.push(employee);
@@ -123,22 +139,25 @@
 
     confirmationData = {
       validEmployees: valid,
-      invalidEmployees: invalid
+      invalidEmployees: invalid,
     };
 
     let message = `You are about to assign shifts to ${valid.length} employee(s).\n\n`;
-    
+
     if (invalid.length > 0) {
-      message += 'The following employees will be excluded due to validation issues:\n';
-      message += invalid.map(emp => `- ${emp.name}: ${getValidationError(emp)}`).join('\n');
-      message += '\n\n';
+      message +=
+        "The following employees will be excluded due to validation issues:\n";
+      message += invalid
+        .map((emp) => `- ${emp.name}: ${getValidationError(emp)}`)
+        .join("\n");
+      message += "\n\n";
     }
-    
-    message += 'Do you want to proceed with the valid assignments?';
+
+    message += "Do you want to proceed with the valid assignments?";
 
     dialogConfig = {
       ...dialogConfig,
-      message
+      message,
     };
 
     showDialog = true;
@@ -155,21 +174,23 @@
 
   async function handleAssignmentSubmit() {
     if (!shift?._id || !assignmentValidFrom) return;
-    
-    const validEmployees = confirmationData.validEmployees.map(emp => emp._id);
-    
+
+    const validEmployees = confirmationData.validEmployees.map(
+      (emp) => emp._id
+    );
+
     if (validEmployees.length === 0) {
       return;
     }
-    
-    dispatch('submit', {
+
+    dispatch("submit", {
       shiftId: shift._id,
       shiftCode: shift.code,
       employees: validEmployees,
       dates: {
         validFrom: assignmentValidFrom,
-        validTill: assignmentValidTill || undefined
-      }
+        validTill: assignmentValidTill || undefined,
+      },
     });
   }
 </script>
@@ -187,13 +208,14 @@
         <thead>
           <tr>
             <th class="w-10">
-              <input 
+              <input
                 type="checkbox"
                 class="checkbox"
-                checked={selectedEmployees.size === employees.filter(isEmployeeSelectable).length}
+                checked={selectedEmployees.size ===
+                  employees.filter(isEmployeeSelectable).length}
                 on:change={(e) => {
                   if (e.currentTarget.checked) {
-                    employees.forEach(emp => {
+                    employees.forEach((emp) => {
                       if (isEmployeeSelectable(emp)) {
                         selectedEmployees.add(emp._id);
                       }
@@ -214,7 +236,7 @@
           {#each employees as employee}
             <tr class="hover">
               <td>
-                <input 
+                <input
                   type="checkbox"
                   class="checkbox"
                   checked={selectedEmployees.has(employee._id)}
@@ -239,17 +261,20 @@
 
     <div class="flex justify-between items-center">
       <p class="text-sm text-base-content/70">
-        {selectedEmployees.size} employee{selectedEmployees.size === 1 ? '' : 's'} selected
+        {selectedEmployees.size} employee{selectedEmployees.size === 1
+          ? ""
+          : "s"} selected
       </p>
-      {#if employees.some(emp => !isEmployeeSelectable(emp))}
+      {#if employees.some((emp) => !isEmployeeSelectable(emp))}
         <p class="text-sm text-red-500">
-          * Some employees have upcoming shifts and cannot be selected for this assignment.
+          * Some employees have upcoming shifts and cannot be selected for this
+          assignment.
         </p>
       {/if}
-      <button 
+      <button
         class="btn btn-primary"
         disabled={selectedEmployees.size === 0 || dateError}
-        on:click={() => dispatch('step', { step: 2 })}
+        on:click={() => dispatch("step", { step: 2 })}
       >
         Next
       </button>
@@ -274,11 +299,15 @@
         </div>
         <div>
           <span class="text-base-content/70">Window:</span>
-          <span class="ml-1">{shift?.shiftWindowStart} - {shift?.shiftWindowEnd}</span>
+          <span class="ml-1"
+            >{shift?.shiftWindowStart} - {shift?.shiftWindowEnd}</span
+          >
         </div>
         <div>
           <span class="text-base-content/70">Validity:</span>
-          <span class="ml-1">{shift?.validFrom} - {shift?.validTill || 'No end date'}</span>
+          <span class="ml-1"
+            >{shift?.validFrom} - {shift?.validTill || "No end date"}</span
+          >
         </div>
         <div>
           <span class="text-base-content/70">Grace Time:</span>
@@ -296,40 +325,49 @@
     <div class="grid grid-cols-2 gap-4">
       <div class="form-control">
         <label class="label">Assignment Start Date*</label>
-        <input 
-          type="date" 
-          class="input input-bordered" 
+        <input
+          type="date"
+          class="input input-bordered"
           bind:value={assignmentValidFrom}
-          min={new Date().toISOString().split('T')[0]}
+          min={new Date().toISOString().split("T")[0]}
           required
         />
       </div>
       <div class="form-control">
         <label class="label">Assignment End Date</label>
-        <input 
-          type="date" 
-          class="input input-bordered" 
+        <input
+          type="date"
+          class="input input-bordered"
           bind:value={assignmentValidTill}
-          min={assignmentValidFrom || new Date().toISOString().split('T')[0]}
+          min={assignmentValidFrom || new Date().toISOString().split("T")[0]}
         />
       </div>
     </div>
 
     <div>
-      <h3 class="font-medium mb-2">Selected Employees ({selectedEmployees.size})</h3>
-      <div class="max-h-60 overflow-y-auto border border-base-200 rounded-lg divide-y">
-        {#each employees.filter(emp => selectedEmployees.has(emp._id)) as employee}
+      <h3 class="font-medium mb-2">
+        Selected Employees ({selectedEmployees.size})
+      </h3>
+      <div
+        class="max-h-60 overflow-y-auto border border-base-200 rounded-lg divide-y"
+      >
+        {#each employees.filter( (emp) => selectedEmployees.has(emp._id) ) as employee}
           <div class="p-3">
             <p class="font-medium">{employee.name}</p>
             <p class="text-sm text-base-content/70">
               {employee.employeeId}
-              {#if employee.currentShiftAssignmentData&& Object.keys(employee.currentShiftAssignmentData).length>0}
+              {#if employee.currentShiftAssignmentData && Object.keys(employee.currentShiftAssignmentData).length > 0}
                 <span class="text-sm text-base-content/70">
-                  Current Shift: {employee.currentShiftAssignmentData?.shiftCode} ({fromUTCDate(employee.currentShiftAssignmentData?.startDate?.toString())} - {fromUTCDate(employee.currentShiftAssignmentData?.endDate?.toString())})
+                  Current Shift: {employee.currentShiftAssignmentData
+                    ?.shiftCode} ({fromUTCDate(
+                    employee.currentShiftAssignmentData?.startDate?.toString()
+                  )} - {fromUTCDate(
+                    employee.currentShiftAssignmentData?.endDate?.toString()
+                  )})
                 </span>
               {/if}
               {#if getValidationError(employee)}
-                <span class="text-error  ml-2">
+                <span class="text-error ml-2">
                   {getValidationError(employee)}
                 </span>
               {/if}
@@ -340,18 +378,20 @@
     </div>
 
     <div class="flex justify-between items-center">
-      <button 
+      <button
         class="btn btn-ghost"
-        on:click={() => dispatch('step', { step: 1 })}
+        on:click={() => dispatch("step", { step: 1 })}
       >
         Back
       </button>
-      <button 
+      <button
         class="btn btn-primary"
-        disabled={dateError || !assignmentValidFrom || Array.from(selectedEmployees).every(id => {
-          const employee = employees.find(e => e._id === id);
-          return !employee || !validateAssignment(employee);
-        })}
+        disabled={dateError ||
+          !assignmentValidFrom ||
+          Array.from(selectedEmployees).every((id) => {
+            const employee = employees.find((e) => e._id === id);
+            return !employee || !validateAssignment(employee);
+          })}
         on:click={prepareConfirmation}
       >
         Confirm Assignment
