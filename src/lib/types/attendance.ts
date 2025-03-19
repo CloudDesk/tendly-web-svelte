@@ -22,7 +22,13 @@ export type AttendanceRecord = {
     breakHours?: string;
     actualWorkHours?: string;
     shiftHours?: string;
-    outOfWindowSwipes?: string[];
+    outOfWindowSwipes?: {
+        timestamp: string;
+        direction: string;
+        deviceId?: string;
+        location?: string;
+        reason?: string;
+    }[];
 }
 
 export type AttendanceSummary = {

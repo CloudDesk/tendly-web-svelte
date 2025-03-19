@@ -67,13 +67,13 @@ export const attendanceApi = {
   },
 
   regularize: async (AttendanceRegularization: Omit<AttendanceRegularization, '_id'>): Promise<ApiResponse<AttendanceRegularization>> => {
-    return await fetchApi<AttendanceRegularization>('/attendance/regularize', {
+    return await fetchApi<ApiResponse<AttendanceRegularization>>('/attendance/regularize', {
       method: 'POST',
       body: JSON.stringify(AttendanceRegularization)
     });
   },
   updateRegularizationStatus: async (id: string, status: string): Promise<ApiResponse<AttendanceRegularization>> => {
-    return await fetchApi<AttendanceRegularization>(`/attendance/regularize/${id}/status`, {
+    return await fetchApi<ApiResponse<AttendanceRegularization>>(`/attendance/regularize/${id}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status })
     });

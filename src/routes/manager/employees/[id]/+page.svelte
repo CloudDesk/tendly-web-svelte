@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { page } from '$app/stores';
-  import { onMount } from 'svelte';
-  import { employeesApi } from '$lib/services/api';
-  import Tabs from '$lib/components/common/Tabs.svelte';
-  import EmployeeAttendance from '$lib/components/attendance/EmployeeAttendance.svelte';
-  import EmployeeDetails from '$lib/components/employee/EmployeeDetails.svelte';
-  import EmployeeLeaves from '$lib/components/employee/EmployeeLeaves.svelte';
-  import type { User } from '$lib/types_old';
+  import { page } from "$app/stores";
+  import { onMount } from "svelte";
+  import { employeesApi } from "$lib/services/api";
+  import Tabs from "$lib/components/common/Tabs.svelte";
+  import EmployeeAttendance from "$lib/components/attendance/EmployeeAttendance.svelte";
+  import EmployeeDetails from "$lib/components/employee/EmployeeDetails.svelte";
+  import EmployeeLeaves from "$lib/components/employee/EmployeeLeaves.svelte";
+  import type { User } from "$lib/types_old";
 
   const employeeId = $page.params.id;
   let user: User | null = null;
@@ -14,16 +14,16 @@
   let error: string | null = null;
 
   const tabs = [
-    { id: 'details', label: 'Employee Details' },
-    { id: 'leaves', label: 'Leaves' },
-    { id: 'attendance', label: 'Attendance' }
+    { id: "details", label: "Employee Details" },
+    { id: "leaves", label: "Leaves" },
+    { id: "attendance", label: "Attendance" },
   ];
 
-  $: activeTab = $page.url.searchParams.get('tab') || tabs[0]?.id;
+  $: activeTab = $page.url.searchParams.get("tab") || tabs[0]?.id;
 
   onMount(async () => {
     try {
-      const response = await employeesApi.getById(employeeId);
+      const response: any = await employeesApi.getById(employeeId);
       user = response.data;
     } catch (e: any) {
       error = e.message;
@@ -47,11 +47,11 @@
     <div class="card">
       <div class="card-body">
         <Tabs {tabs}>
-          {#if activeTab === 'details'}
+          {#if activeTab === "details"}
             <EmployeeDetails {employeeId} />
-          {:else if activeTab === 'attendance'}
+          {:else if activeTab === "attendance"}
             <EmployeeAttendance {employeeId} />
-          {:else if activeTab === 'leaves'}
+          {:else if activeTab === "leaves"}
             <EmployeeLeaves {employeeId} />
           {/if}
         </Tabs>
@@ -91,4 +91,4 @@
     background: #fee2e2;
     border-radius: 0.5rem;
   }
-</style> 
+</style>

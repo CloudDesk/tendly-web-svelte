@@ -30,7 +30,7 @@
   const selectedSalaryStructure = writable<SalaryStructure | null>(null);
   console.log(data);
   onMount(async () => {
-    let result = await salaryStructureApi.list();
+    let result: any = await salaryStructureApi.list();
     console.log(result, "result");
     if (result.success && Array.isArray(result.data)) {
       salaryStructures.set(result.data);

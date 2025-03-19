@@ -101,7 +101,7 @@
     let search = $page.url.searchParams.get("search") || undefined;
     try {
       loading = true;
-      const response = await salaryStructureApi.list({
+      const response: any = await salaryStructureApi.list({
         page: pagination.page,
         limit: pagination.limit,
         search: search,

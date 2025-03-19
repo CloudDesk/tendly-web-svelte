@@ -22,7 +22,10 @@
     type: "warning" as const,
   };
 
-  let confirmationData = {
+  let confirmationData: {
+    validEmployees: User[];
+    invalidEmployees: User[];
+  } = {
     validEmployees: [],
     invalidEmployees: [],
   };
@@ -115,7 +118,7 @@
     let isSelectable =
       employee.upcomingShiftAssignmentData &&
       Object.keys(employee.upcomingShiftAssignmentData).length === 0;
-    return isSelectable;
+    return isSelectable ?? false;
   }
 
   $: if (assignmentValidFrom || assignmentValidTill) {
@@ -273,7 +276,7 @@
       {/if}
       <button
         class="btn btn-primary"
-        disabled={selectedEmployees.size === 0 || dateError}
+        disabled={selectedEmployees.size === 0 || !!dateError}
         on:click={() => dispatch("step", { step: 2 })}
       >
         Next
@@ -324,7 +327,9 @@
 
     <div class="grid grid-cols-2 gap-4">
       <div class="form-control">
-        <label class="label">Assignment Start Date*</label>
+        <label class="label" for="assignment-start"
+          >Assignment Start Date*</label
+        >
         <input
           type="date"
           class="input input-bordered"
@@ -334,7 +339,7 @@
         />
       </div>
       <div class="form-control">
-        <label class="label">Assignment End Date</label>
+        <label class="label" for="assignment-end">Assignment End Date</label>
         <input
           type="date"
           class="input input-bordered"
@@ -355,7 +360,6 @@
           <div class="p-3">
             <p class="font-medium">{employee.name}</p>
             <p class="text-sm text-base-content/70">
-              {employee.employeeId}
               {#if employee.currentShiftAssignmentData && Object.keys(employee.currentShiftAssignmentData).length > 0}
                 <span class="text-sm text-base-content/70">
                   Current Shift: {employee.currentShiftAssignmentData
@@ -386,7 +390,7 @@
       </button>
       <button
         class="btn btn-primary"
-        disabled={dateError ||
+        disabled={!!dateError ||
           !assignmentValidFrom ||
           Array.from(selectedEmployees).every((id) => {
             const employee = employees.find((e) => e._id === id);

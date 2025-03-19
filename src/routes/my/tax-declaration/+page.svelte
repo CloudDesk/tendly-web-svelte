@@ -361,11 +361,6 @@
     margin-bottom: 24px;
   }
 
-  .actions {
-    display: flex;
-    gap: 12px;
-  }
-
   h1 {
     font-size: 24px;
     font-weight: 600;
@@ -387,7 +382,10 @@
     transition: all 0.2s ease;
     position: relative;
   }
-
+  /* .actions {
+    display: flex;
+    gap: 12px;
+  } 
   .btn-primary {
     background: #0073ea;
     color: white;
@@ -417,7 +415,7 @@
   button i {
     font-size: 16px;
   }
-
+*/
   button:disabled {
     opacity: 0.6;
     cursor: not-allowed;

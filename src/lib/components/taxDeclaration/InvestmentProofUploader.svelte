@@ -213,7 +213,6 @@
     font-size: 0.75rem;
   }
 
-  /* Badge styles */
   .badge {
     padding: 0.25rem 0.5rem;
     border-radius: 9999px;

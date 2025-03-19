@@ -34,21 +34,21 @@ export const trainingsApi = {
     if (params.limit) queryParams.append('limit', params.limit.toString());
     if (params.search) queryParams.append('search', params.search);
     console.log(queryParams.toString(), "queryparams")
-    const response = await fetchApi<Training[]>(`/trainings?${queryParams.toString()}`);
+    const response: any = await fetchApi<Training[]>(`/trainings?${queryParams.toString()}`);
     return {
       ...response,
-      data: response.data.map(training => convertTrainingTimesFromUTC(training))
+      data: response.data.map((training: any) => convertTrainingTimesFromUTC(training))
     };
   },
   getById: async (id: string) => {
-    const response = await fetchApi<Training>(`/trainings/${id}`);
+    const response: any = await fetchApi<Training>(`/trainings/${id}`);
     return {
       ...response,
       data: convertTrainingTimesFromUTC(response.data)
     };
   },
   create: async (data: Omit<Training, '_id'>) => {
-    const response = await fetchApi<Training>('/trainings', {
+    const response: any = await fetchApi<Training>('/trainings', {
       method: 'POST',
       body: JSON.stringify(convertTrainingTimesToUTC(data))
     });
@@ -58,7 +58,7 @@ export const trainingsApi = {
     };
   },
   update: async (id: string, data: Partial<Training>) => {
-    const response = await fetchApi<Training>(`/trainings/${id}`, {
+    const response: any = await fetchApi<Training>(`/trainings/${id}`, {
       method: 'PUT',
       body: JSON.stringify(convertTrainingTimesToUTC(data))
     });

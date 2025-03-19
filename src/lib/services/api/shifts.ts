@@ -34,15 +34,15 @@ export const shiftsApi = {
     if (params.limit) queryParams.append('limit', params.limit.toString());
     if (params.search) queryParams.append('search', params.search);
 
-    const response = await fetchApi<Shift[]>(`/shifts?${queryParams.toString()}`);
+    const response: any = await fetchApi<Shift[]>(`/shifts?${queryParams.toString()}`);
     return {
       ...response,
-      data: response.data.map(shift => convertShiftTimesFromUTC(shift))
+      data: response.data.map((shift: Shift) => convertShiftTimesFromUTC(shift))
     };
   },
 
   create: async (data: Omit<Shift, '_id'>) => {
-    const response = await fetchApi<Shift>('/shifts', {
+    const response: any = await fetchApi<Shift>('/shifts', {
       method: 'POST',
       body: JSON.stringify(convertShiftTimesToUTC(data))
     });
@@ -52,7 +52,7 @@ export const shiftsApi = {
     };
   },
   update: async (id: string, data: Partial<Shift>) => {
-    const response = await fetchApi<Shift>(`/shifts/${id}`, {
+    const response: any = await fetchApi<Shift>(`/shifts/${id}`, {
       method: 'PUT',
       body: JSON.stringify(convertShiftTimesToUTC(data))
     });

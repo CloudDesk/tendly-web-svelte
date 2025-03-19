@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { page } from '$app/stores';
-  import LeaveDetails from '$lib/components/leave/LeaveDetails.svelte';
+  import { onMount } from "svelte";
+  import { page } from "$app/stores";
+  import LeaveDetails from "$lib/components/leave/LeaveDetails.svelte";
 
   interface LeaveDetails {
     id: string;
@@ -29,7 +29,7 @@
       const response = await fetch(`/api/leaves/${id}`);
       leave = await response.json();
     } catch (err) {
-      error = 'Failed to load leave details';
+      error = "Failed to load leave details";
       console.error(err);
     } finally {
       isLoading = false;
@@ -37,10 +37,10 @@
   });
 
   function formatDate(date: string): string {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   }
 
@@ -58,9 +58,9 @@
   {:else if error}
     <div class="error">{error}</div>
   {:else if leave}
-   <div class="card-body">
-   <LeaveDetails {leaveId}/>
-   </div>
+    <div class="card-body">
+      <LeaveDetails {leaveId} />
+    </div>
   {/if}
 </div>
 
@@ -71,7 +71,7 @@
     padding: 2rem;
   }
 
-  .header {
+  /* .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -186,5 +186,5 @@
     color: #dc2626;
     text-align: center;
     padding: 2rem;
-  }
+  }*/
 </style>

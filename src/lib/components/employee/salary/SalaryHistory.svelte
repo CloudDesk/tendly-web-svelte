@@ -201,7 +201,7 @@
 </div>
 
 <style>
-  .btn {
+  /* .btn {
     width: 28px;
     height: 28px;
     padding: 0;
@@ -211,14 +211,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    /* display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem 1rem;
-    border-radius: 0.375rem;
-    font-weight: 500;
-    transition: background-color 0.2s; */
-  }
+  } */
 
   .table-auto {
     width: 100%;

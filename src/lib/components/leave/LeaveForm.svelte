@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  import '../../styles/form.css'
-  import { leaveTypeOptions } from '$lib/constants/leaveTypes';
-  import type {LeaveSummary} from '$lib/services/api/leaves'
-  import { auth } from '$lib/stores/auth';
-import { get } from "svelte/store";
+  import { createEventDispatcher } from "svelte";
+  import "../../styles/form.css";
+  import { leaveTypeOptions } from "$lib/constants/leaveTypes";
+  import type { LeaveSummary } from "$lib/services/api/leaves";
+  import { auth } from "$lib/stores/auth";
+  import { get } from "svelte/store";
 
   interface LeaveFormData {
     leaveType: string;
@@ -15,90 +15,100 @@ import { get } from "svelte/store";
     leaveTypeId: string;
   }
 
-  
-
   export let loading = false;
   export let initialValues: LeaveFormData;
   export let summary: LeaveSummary;
   const authState = get(auth);
-  console.log(authState,"authState");
+  console.log(authState, "authState");
 
-console.log(summary,"summary");
+  console.log(summary, "summary");
   const dispatch = createEventDispatcher<{
     submit: LeaveFormData;
     cancel: void;
   }>();
-  
+
   // Create a writable store for form data
   let formData = initialValues;
-  
- // Get remaining leave days based on leave type
-const getRemainingDays = (leaveType: string): number => {
-  console.log(leaveType, "leaveType");
-  
-  // Special case for lossOfPay - return a large number since there's no limit
-  if (leaveType.toLowerCase() === 'lossofpay') {
-    return Number.MAX_SAFE_INTEGER; // Effectively unlimited days
-  }
 
-  const typeMapping: { [key: string]: keyof typeof summary } = {
-    'annual': 'annual',
-    'sick': 'sick',
-    'compoff': 'compOff',
-    'otherpaid': 'otherPaid',
-    'otherunpaid': 'otherUnpaid'
+  // Get remaining leave days based on leave type
+  const getRemainingDays = (leaveType: string): number => {
+    console.log(leaveType, "leaveType");
+
+    // Special case for lossOfPay - return a large number since there's no limit
+    if (leaveType.toLowerCase() === "lossofpay") {
+      return Number.MAX_SAFE_INTEGER; // Effectively unlimited days
+    }
+
+    const typeMapping: { [key: string]: keyof typeof summary } = {
+      annual: "annual",
+      sick: "sick",
+      compoff: "compOff",
+      otherpaid: "otherPaid",
+      otherunpaid: "otherUnpaid",
+    };
+
+    const summaryKey = typeMapping[leaveType.toLowerCase()];
+    return summaryKey && typeof summary[summaryKey] === "object"
+      ? summary[summaryKey].remaining
+      : 0;
   };
-
-  const summaryKey = typeMapping[leaveType.toLowerCase()];
-  return summaryKey && typeof summary[summaryKey] === 'object' ? summary[summaryKey].remaining : 0;
-};
 
   // Form handlers
   const handleSubmit = () => {
     if (!isLeaveBalanceValid) {
       return;
     }
-    console.log('Submitting form with data:', formData);
-    let newObj = {...formData,noOfDays:numberOfDays,
+    console.log("Submitting form with data:", formData);
+    let newObj = {
+      ...formData,
+      noOfDays: numberOfDays,
       appliedTo: {
-      _id:authState.user?.managerId ||'676a65b0b06ccef51b302d3d',
-      name: authState.user?.managerName || 'John Doe',
-    },
-    }
-    dispatch('submit', newObj);
+        _id: authState.user?.managerId || "676a65b0b06ccef51b302d3d",
+        name: authState.user?.managerName || "John Doe",
+      },
+    };
+    dispatch("submit", newObj);
   };
 
   const handleCancel = () => {
-    dispatch('cancel');
+    dispatch("cancel");
   };
 
   const handleChange = () => {
-    console.log('Form changed:', formData);
+    console.log("Form changed:", formData);
   };
 
   // Validation
-  $: isEndDateValid = !formData.startDate || !formData.endDate || 
+  $: isEndDateValid =
+    !formData.startDate ||
+    !formData.endDate ||
     new Date(formData.endDate) >= new Date(formData.startDate);
 
-  $: numberOfDays = formData.startDate && formData.endDate ? 
-    Math.ceil((new Date(formData.endDate).getTime() - new Date(formData.startDate).getTime()) 
-    / (1000 * 60 * 60 * 24)) + 1 : 0;
+  $: numberOfDays =
+    formData.startDate && formData.endDate
+      ? Math.ceil(
+          (new Date(formData.endDate).getTime() -
+            new Date(formData.startDate).getTime()) /
+            (1000 * 60 * 60 * 24)
+        ) + 1
+      : 0;
 
-  $: remainingDays = formData.leaveType ? getRemainingDays(formData.leaveType) : 0;
-  
+  $: remainingDays = formData.leaveType
+    ? getRemainingDays(formData.leaveType)
+    : 0;
+
   // Update the isLeaveBalanceValid reactive statement to match
-$: isLeaveBalanceValid = 
-  formData.leaveType?.toLowerCase() === 'lossofpay' || 
-  numberOfDays <= remainingDays;
+  $: isLeaveBalanceValid =
+    formData.leaveType?.toLowerCase() === "lossofpay" ||
+    numberOfDays <= remainingDays;
 
-// Update the leaveBalanceMessage reactive statement
-$: leaveBalanceMessage = formData.leaveType ? 
-  formData.leaveType.toLowerCase() === 'lossofpay' 
-    ? '' 
-    : `Available balance: ${remainingDays} days${!isLeaveBalanceValid ? ' (Insufficient balance)' : ''}`
-  : '';
-  
-  </script>
+  // Update the leaveBalanceMessage reactive statement
+  $: leaveBalanceMessage = formData.leaveType
+    ? formData.leaveType.toLowerCase() === "lossofpay"
+      ? ""
+      : `Available balance: ${remainingDays} days${!isLeaveBalanceValid ? " (Insufficient balance)" : ""}`
+    : "";
+</script>
 
 <form on:submit|preventDefault={handleSubmit} class="space-y-6">
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -122,7 +132,11 @@ $: leaveBalanceMessage = formData.leaveType ?
       </select>
       {#if formData.leaveType && leaveBalanceMessage}
         <div class="label">
-          <span class="label-text-alt {!isLeaveBalanceValid ? 'text-error' : 'text-success'}">
+          <span
+            class="label-text-alt {!isLeaveBalanceValid
+              ? 'text-error'
+              : 'text-success'}"
+          >
             {leaveBalanceMessage}
           </span>
         </div>
@@ -161,7 +175,9 @@ $: leaveBalanceMessage = formData.leaveType ?
       />
       {#if !isEndDateValid}
         <div class="label">
-          <span class="label-text-alt text-error">End date must be after start date</span>
+          <span class="label-text-alt text-error"
+            >End date must be after start date</span
+          >
         </div>
       {/if}
     </div>
@@ -188,45 +204,45 @@ $: leaveBalanceMessage = formData.leaveType ?
           <span class="label-text">Number of Days</span>
         </label>
         <div id="numberOfDays" class="text-sm font-medium">
-          {numberOfDays} day{numberOfDays !== 1 ? 's' : ''}
+          {numberOfDays} day{numberOfDays !== 1 ? "s" : ""}
         </div>
       </div>
     {/if}
   </div>
 
   <div class="flex justify-end gap-2">
-    <button 
-      type="button" 
-      class="btn btn-ghost" 
+    <button
+      type="button"
+      class="btn btn-ghost"
       on:click={handleCancel}
       disabled={loading}
     >
       Cancel
     </button>
-    <button 
-      type="submit" 
+    <button
+      type="submit"
       class="btn btn-primary"
       disabled={loading || !isEndDateValid || !isLeaveBalanceValid}
     >
-      {loading ? 'Applying...' : 'Apply'}
+      {loading ? "Applying..." : "Apply"}
     </button>
   </div>
 </form>
 
-  <style>
-    :global(.form-control) {
-      display: flex;
-      flex-direction: column;
-    }
-  
-    :global(.label) {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.5rem 0;
-    }
-  
-    :global(.text-error) {
-      color: #dc2626;
-    }
-  </style>
+<style>
+  :global(.form-control) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  :global(.label) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+  }
+
+  :global(.text-error) {
+    color: #dc2626;
+  }
+</style>

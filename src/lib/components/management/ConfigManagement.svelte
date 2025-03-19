@@ -196,7 +196,7 @@
 >
   <form on:submit|preventDefault={handleSubmit} class="space-y-4">
     <div class="form-control">
-      <label class="label">Name</label>
+      <label class="label" for="name">Name</label>
       <input
         type="text"
         class="input input-bordered"
@@ -206,7 +206,7 @@
     </div>
 
     <div class="form-control">
-      <label class="label">Type</label>
+      <label class="label" for="type">Type</label>
       <input
         type="text"
         class="input input-bordered"
@@ -217,7 +217,7 @@
 
     <div class="space-y-2">
       <div class="flex justify-between items-center">
-        <label class="label">Values</label>
+        <label class="label" for="values">Values</label>
         <button type="button" class="btn btn-sm btn-ghost" on:click={addValue}>
           Add Value
         </button>
@@ -286,12 +286,12 @@
   {#if selectedLOV}
     <div class="space-y-4">
       <div>
-        <label class="font-semibold">Type:</label>
+        <label class="font-semibold" for="type">Type:</label>
         <p>{selectedLOV.type}</p>
       </div>
 
       <div>
-        <label class="font-semibold">Values:</label>
+        <label class="font-semibold" for="values">Values:</label>
         <div class="mt-2">
           <table class="table w-full">
             <thead>

@@ -33,17 +33,19 @@
   let showRejectModal = false;
   let remarks = "";
 
+  type FieldKey = keyof LeaveRequest | "user" | "approvedBy" | "leaveType";
+
   // Field configuration with Lucide icons
   const fields = [
-    { key: "leaveType", label: "Leave Type", icon: Calendar },
-    { key: "status", label: "Status", icon: CheckCircle2 },
-    { key: "startDate", label: "Start Date", icon: Calendar },
-    { key: "endDate", label: "End Date", icon: Calendar },
-    { key: "noOfDays", label: "Number of Days", icon: Clock },
-    { key: "reason", label: "Reason", icon: MessageSquare },
-    { key: "user", label: "Applied By", icon: MessageSquare },
+    { key: "leaveType" as FieldKey, label: "Leave Type", icon: Calendar },
+    { key: "status" as FieldKey, label: "Status", icon: CheckCircle2 },
+    { key: "startDate" as FieldKey, label: "Start Date", icon: Calendar },
+    { key: "endDate" as FieldKey, label: "End Date", icon: Calendar },
+    { key: "noOfDays" as FieldKey, label: "Number of Days", icon: Clock },
+    { key: "reason" as FieldKey, label: "Reason", icon: MessageSquare },
+    { key: "user" as FieldKey, label: "Applied By", icon: MessageSquare },
     {
-      key: "approvedBy",
+      key: "approvedBy" as FieldKey,
       label: "Approved By",
       icon: UserCheck,
       condition: () => ["Approved", "Rejected"].includes(leave?.status || ""),
@@ -124,6 +126,16 @@
 
   function getStatusColor(status: string): string {
     return statusColors[status] || "text-gray-600 bg-gray-100";
+  }
+
+  function getLeaveValue(key: FieldKey): any {
+    if (!leave) return null;
+
+    if (key === "user" || key === "approvedBy") {
+      return leave[key]?.name || null;
+    }
+
+    return leave[key as keyof LeaveRequest];
   }
 </script>
 

@@ -416,8 +416,7 @@
     min-width: 90px;
   }
 
-  .btn-filter.active,
-  .btn-view.active {
+  .btn-filter.active {
     background: white;
     color: #0073ea;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);

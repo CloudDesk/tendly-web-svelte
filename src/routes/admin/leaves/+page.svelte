@@ -188,7 +188,7 @@
     </div>
   </header>
 
-  {#if showApplyForm}
+  <!-- {#if showApplyForm}
     <Modal
       show={showApplyForm}
       title="Leave Details"
@@ -203,7 +203,7 @@
         on:cancel={() => (showApplyForm = false)}
       />
     </Modal>
-  {/if}
+  {/if} -->
 
   <div class="table-container">
     <Table

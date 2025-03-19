@@ -5,6 +5,7 @@ import type { User } from '$lib/types/user';
 export type EmployeeFilters = {
   role?: string;
   isActive?: boolean;
+  reportingTo?: string;
   search?: string;
   page?: number;
   limit?: number;
@@ -62,6 +63,10 @@ export const employeesApi = {
 
   getRoles: async (role: string): Promise<ApiResponse<User>> => {
     return await fetchApi<ApiResponse<User>>(`/users/role/${role}`);
+  }
+  ,
+  search: async (query: string): Promise<ApiResponse<User[]>> => {
+    return await fetchApi<ApiResponse<User[]>>(`/users/search?q=${query}`);
   }
 
 

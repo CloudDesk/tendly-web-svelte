@@ -210,6 +210,7 @@
     <!-- Current Shift Column -->
     <div
       class="flex flex-col border-2 border-gray-200 rounded-md bg-white overflow-auto"
+      role="region"
       on:dragover={(e) => handleDragOver(e, "current")}
       on:dragenter={handleDragEnter}
       on:dragleave={handleDragLeave}
@@ -225,6 +226,7 @@
           <div
             class="bg-white p-4 rounded-lg shadow-md border border-gray-300 cursor-move"
             draggable="true"
+            role="region"
             on:dragstart={(e) =>
               handleDragStart(
                 e,
@@ -278,6 +280,7 @@
     <!-- Upcoming shift Column -->
     <div
       class="flex flex-col border-2 border-gray-200 rounded-md bg-white overflow-auto"
+      role="region"
       on:dragover={(e) => handleDragOver(e, "upcoming")}
       on:dragenter={handleDragEnter}
       on:dragleave={handleDragLeave}
@@ -292,6 +295,7 @@
         {#if employee && employee.upcomingShiftAssignmentData}
           <div
             class="bg-white p-4 rounded-lg shadow-md border border-gray-300 cursor-move"
+            role="region"
             draggable="true"
             on:dragstart={(e) =>
               handleDragStart(
@@ -346,6 +350,7 @@
     <!-- Past Shifts Column -->
     <div
       class="flex flex-col border-2 border-gray-200 rounded-md bg-white overflow-auto"
+      role="region"
       on:dragover={(e) => handleDragOver(e, "past")}
       on:dragenter={handleDragEnter}
       on:dragleave={handleDragLeave}
@@ -405,14 +410,8 @@
 </div>
 
 <style>
-  .space-y-6 > * + * {
+  .space-y-6 {
     margin-top: 1.5rem;
-  }
-
-  /* Styling for drag and drop interactions */
-  .drag-over {
-    border: 2px dashed #4299e1;
-    background-color: rgba(66, 153, 225, 0.1);
   }
 
   .cursor-move {

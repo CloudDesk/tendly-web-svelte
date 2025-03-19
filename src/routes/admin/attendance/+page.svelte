@@ -23,7 +23,7 @@
   async function loadEmployees() {
     try {
       loading = true;
-      const response = await employeesApi.list({
+      const response: any = await employeesApi.list({
         page: 1,
         limit: 100, // Load more employees for better filtering
       });

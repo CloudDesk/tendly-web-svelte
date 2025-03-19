@@ -1,13 +1,13 @@
 <script lang="ts">
-  import '../app.css';
-  import Sidebar from '$lib/components/common/Sidebar.svelte';
-  import { page } from '$app/stores';
-  import Toast from '$lib/components/common/Toast.svelte';
+  import "../app.css";
+  import Sidebar from "$lib/components/common/Sidebar.svelte";
+  import { page } from "$app/stores";
+  import Toast from "$lib/components/common/Toast.svelte";
   export let data;
   $: ({ isAuthenticated } = data);
-  $: isPublicPage = ['/login'].includes($page.url.pathname);
+  $: isPublicPage = ["/login"].includes($page.url.pathname);
 
-  export const ssr = false;
+  // export const ssr = false;
 </script>
 
 <div class="min-h-screen bg-base-200" data-theme="tendlyPro">
@@ -19,11 +19,11 @@
       <div class="flex-1 {isAuthenticated ? 'ml-64' : ''}">
         <div class="p-6">
           <slot />
-          <Toast/>
+          <Toast />
         </div>
       </div>
     </div>
   {:else}
     <slot />
   {/if}
-</div> 
+</div>

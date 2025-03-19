@@ -71,7 +71,7 @@
   async function loadShifts() {
     try {
       loading = true;
-      const response = await shiftsApi.list({
+      const response: any = await shiftsApi.list({
         page: pagination.page,
         limit: pagination.limit,
         search: searchQuery,

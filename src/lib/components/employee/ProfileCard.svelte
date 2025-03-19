@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { User } from '$lib/types';
+  import type { User } from "$lib/types";
 
   interface OrgNode extends User {
     children: OrgNode[];
@@ -10,24 +10,24 @@
 
   function getInitials(name: string): string {
     return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
       .toUpperCase();
   }
 
   function getRoleColor(role: string): string {
     switch (role) {
-      case 'ceo':
-        return 'from-blue-800 to-blue-900';
-      case 'admin':
-        return 'from-blue-700 to-blue-800';
-      case 'manager':
-        return 'from-blue-500 to-blue-600';
-      case 'staff':
-        return 'from-blue-400 to-blue-500';
+      case "ceo":
+        return "from-blue-800 to-blue-900";
+      case "admin":
+        return "from-blue-700 to-blue-800";
+      case "manager":
+        return "from-blue-500 to-blue-600";
+      case "staff":
+        return "from-blue-400 to-blue-500";
       default:
-        return 'from-blue-500 to-blue-600';
+        return "from-blue-500 to-blue-600";
     }
   }
 
@@ -37,7 +37,14 @@
 </script>
 
 <div class="node-wrapper">
-  <div class="node-container" on:click={() => toggleNode(node)}>
+  <button
+    type="button"
+    class="node-container"
+    on:click={() => toggleNode(node)}
+    aria-expanded={node.isExpanded}
+    role="treeitem"
+    aria-selected={node.isExpanded}
+  >
     <div class="card-wrapper">
       <!-- Hexagon frame with image/initials -->
       <div class="hexagon-frame">
@@ -51,7 +58,7 @@
           {/if}
         </div>
       </div>
-      
+
       <!-- Cloud-shaped card -->
       <div class="profile-card bg-gradient-to-b {getRoleColor(node.role)}">
         <div class="card-content">
@@ -60,7 +67,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </button>
 
   {#if node.children && node.children.length > 0 && node.isExpanded}
     <div class="children-container">
@@ -140,14 +147,15 @@
     position: relative;
     padding: 3rem 1.5rem 1.5rem;
     border-radius: 28px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-                0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
     min-height: 120px;
   }
 
   .profile-card::before,
   .profile-card::after {
-    content: '';
+    content: "";
     position: absolute;
     background: inherit;
     border-radius: 50%;
@@ -201,7 +209,7 @@
   }
 
   .children-container::before {
-    content: '';
+    content: "";
     position: absolute;
     top: -2.5rem;
     left: 50%;

@@ -175,7 +175,8 @@
   async function getActiveAssignment() {
     loading.set(true);
     try {
-      const result = await salaryAssignmentApi.getActiveByUserId(employeeId);
+      const result: any =
+        await salaryAssignmentApi.getActiveByUserId(employeeId);
       console.log(result.data);
       if (result.success && result.data) {
         assignedSalary.set(result.data);
@@ -190,7 +191,7 @@
 
   async function getSalaryStructure(id: string) {
     try {
-      const result = await salaryStructureApi.getById(id);
+      const result: any = await salaryStructureApi.getById(id);
       if (result.success) {
         console.log(result.data);
         salaryStructure.set(result.data);
@@ -217,7 +218,7 @@
     try {
       let API = event.detail._id ? true : false;
       const data = event.detail;
-      const result = data._id
+      const result: any = data._id
         ? await salaryAssignmentApi.update(data._id.toString(), data)
         : await salaryAssignmentApi.create(data);
 

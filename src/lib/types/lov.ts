@@ -5,6 +5,8 @@ export type LOVValue = {
 };
 
 export type LOV = {
+  _id?: string;
+  name: string;
   type: string;
   values: LOVValue[];
 }; 

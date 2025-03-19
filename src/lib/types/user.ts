@@ -1,4 +1,6 @@
-export type UserRole = 'ADMIN' | 'MANAGER' | 'STAFF';
+export type UserRole =
+  'admin' | 'manager' | 'staff' | 'ceo' |
+  'ADMIN' | 'MANAGER' | 'STAFF' | "CEO";
 type ShiftAssignment = {
   startDate: { type: 'string', format: 'date-time' },
   endDate: { type: 'string', format: 'date-time' },
@@ -25,7 +27,8 @@ export type User = {
   currentShiftAssignmentData?: ShiftAssignment;
   upcomingShiftAssignment?: string;
   upcomingShiftAssignmentData?: ShiftAssignment;
-  biometricId?: string
+  biometricId?: string;
+  image?: string | null;
 };
 
 export type UserProfile = Omit<User, 'role' | 'isActive' | 'createdAt' | 'updatedAt'> & {

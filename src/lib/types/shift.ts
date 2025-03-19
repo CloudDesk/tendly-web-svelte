@@ -1,5 +1,16 @@
 export type Shift = {
-  id: string;
+  _id: string;
+  name: string;
+  code: "NOON" | "MORN";
+  startTime: string;
+  endTime: string;
+  shiftWindowStart: string;
+  shiftWindowEnd: string;
+  validFrom: string;
+  validTill?: string;
+  graceTimeInMinutes: number;
+
+
   userId: string;
   shiftId: string;
   shiftCode: "NOON" | "MORN";

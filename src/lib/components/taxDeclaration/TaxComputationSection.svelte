@@ -36,7 +36,7 @@
 </table>
 
 <style>
-  .tax-computation {
+  /* .tax-computation {
     padding: 1rem;
   }
 
@@ -86,7 +86,7 @@
   .deduction-table {
     overflow-x: auto;
     margin-bottom: 1.5rem;
-  }
+  }*/
 
   table {
     width: 100%;
@@ -111,7 +111,7 @@
     font-weight: 600;
     color: #555;
   }
-
+  /*
   tr.past-month {
     color: #999;
     background-color: #fafafa;
@@ -133,5 +133,5 @@
 
   .notes li {
     margin: 0.25rem 0;
-  }
+  }*/
 </style>

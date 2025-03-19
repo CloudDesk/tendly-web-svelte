@@ -32,14 +32,17 @@ export type Metrics = {
 
 export const dashboardApi = {
   getStats: async (): Promise<ApiResponse<DashboardStats>> => {
-    return await fetchApi<DashboardStats>('/admin/dashboard/stats');
+    const response = await fetchApi<DashboardStats>('/admin/dashboard/stats');
+    return { success: true, data: response };
   },
 
   getRecentActivities: async (): Promise<ApiResponse<Activity[]>> => {
-    return await fetchApi<Activity[]>('/admin/dashboard/activities');
+    const response = await fetchApi<Activity[]>('/admin/dashboard/activities');
+    return { success: true, data: response };
   },
 
   getMetrics: async (): Promise<ApiResponse<Metrics>> => {
-    return await fetchApi<Metrics>('/admin/dashboard/metrics');
+    const response = await fetchApi<Metrics>('/admin/dashboard/metrics');
+    return { success: true, data: response };
   }
 }; 

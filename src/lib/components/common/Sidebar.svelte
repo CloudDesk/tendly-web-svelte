@@ -1,7 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { auth } from "$lib/stores/auth";
-  import { navigationContext } from "$lib/stores/navigation";
   import type { ComponentType } from "svelte";
   import logo from "$lib/assets/Tendly_logo_Full.png";
   import logoSmall from "$lib/assets/Tendly_T_logo.png";
@@ -25,6 +24,7 @@
     GraduationCap,
     CalendarRange,
   } from "lucide-svelte";
+  import PayrollIcon from "./icon/PayrollIcon.svelte";
   import { fly } from "svelte/transition";
   import { writable } from "svelte/store";
   export const ssr = false;
@@ -91,6 +91,11 @@
       label: "Leaves",
       href: "/admin/leaves",
       icon: CalendarRange,
+    },
+    {
+      label: "Payroll",
+      href: "/admin/payroll",
+      icon: PayrollIcon,
     },
     {
       label: "Configurations",
@@ -448,14 +453,5 @@
   button:disabled {
     cursor: not-allowed;
     opacity: 0.7;
-  }
-  .logout-btn:hover .logout-text {
-    opacity: 1;
-    transition: opacity 0.3s ease-in-out;
-  }
-
-  .logout-btn:hover .lucide-log-out {
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
   }
 </style>

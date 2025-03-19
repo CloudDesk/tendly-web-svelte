@@ -36,9 +36,22 @@
       }
     }
   }
+  interface ISubsection {
+    id: string;
+    name: string;
+    maxLimit?: number | null; // Make maxLimit optional
+    note?: string;
+  }
 
   // Define deduction sections with improved structure for limits
-  const deductionSections = [
+  const deductionSections: {
+    id: string;
+    title: string;
+    description: string;
+    maxLimit: number | null;
+    limitType: "section" | "subsection" | "dynamic" | "both";
+    subsections: ISubsection[];
+  }[] = [
     {
       id: "80C",
       title: "Section 80C",
@@ -254,8 +267,10 @@
   const handleInputChange = (
     section: string,
     subSection: string,
-    value: string
+    event: Event
   ) => {
+    const target = event.target as HTMLInputElement;
+    const value = target.value || "";
     const key = `${section}_${subSection}`;
     const parsedValue = parseFloat(value) || 0;
     const sectionObj = deductionSections.find((s) => s.id === section);
@@ -753,12 +768,9 @@
                             value={editValues[
                               `${section.id}_${subsection.id}`
                             ] || 0}
-                            on:input={(e) =>
-                              handleInputChange(
-                                section.id,
-                                subsection.id,
-                                e.target.value || ""
-                              )}
+                            on:input={(e) => {
+                              handleInputChange(section.id, subsection.id, e);
+                            }}
                           />
                           {#if editErrors[`${section.id}_${subsection.id}`]}
                             <span class="text-red-600 text-xs mt-1"

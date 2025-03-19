@@ -1,193 +1,214 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
-    import { leavesApi } from '$lib/services/api';
-    import Tabs from '$lib/components/common/Tabs.svelte';
-    import Modal from '$lib/components/common/Modal.svelte';
-    import type { LeaveRequest, LeaveCategory, LeaveSummary } from '$lib/services/api/leaves';
+  import { onMount } from "svelte";
+  import { leavesApi } from "$lib/services/api";
+  import Modal from "$lib/components/common/Modal.svelte";
+  import type {
+    LeaveRequest,
+    LeaveCategory,
+    LeaveSummary,
+  } from "$lib/services/api/leaves";
 
-    export let employeeId: string;
-    export let showEditAllotments = true;
-    
-    let loading = false;
-    let error: string | null = null;
-    let showEditModal = false;
-    let editingAllotments: Record<LeaveType, number> = {} as Record<LeaveType, number>;
+  export let employeeId: string;
+  export let showEditAllotments = true;
 
-    // Current year for filtering
-    const currentYear = new Date().getFullYear();
+  let loading = false;
+  let error: string | null = null;
+  let showEditModal = false;
+  let editingAllotments: Record<LeaveType, number> = {} as Record<
+    LeaveType,
+    number
+  >;
 
-    const leaveTypes = {
-        annual: { label: 'Annual Leave', isEditable: true },
-        sick: { label: 'Sick Leave', isEditable: true },
-        lossOfPay: { label: 'Loss of Pay', isEditable: false },
-        otherPaid: { label: 'Other Paid', isEditable: true },
-        otherUnpaid: { label: 'Other Unpaid', isEditable: true },
-        compOff :{label:"Comp Off",isEditable:true}
-    } as const;
+  // Current year for filtering
+  const currentYear = new Date().getFullYear();
 
-    type LeaveType = keyof typeof leaveTypes;
-    
-    let leaveSummary: Array<{
-        type: LeaveType;
-        alloted: number;
-        availed: number;
-        remaining: number;
-        leaveRequests: LeaveRequest[];
-    }> = [];
+  const leaveTypes = {
+    annual: { label: "Annual Leave", isEditable: true },
+    sick: { label: "Sick Leave", isEditable: true },
+    lossOfPay: { label: "Loss of Pay", isEditable: false },
+    otherPaid: { label: "Other Paid", isEditable: true },
+    otherUnpaid: { label: "Other Unpaid", isEditable: true },
+    compOff: { label: "Comp Off", isEditable: true },
+  } as const;
 
-    let compOffRequests: Array<{
-        _id: string;
-        date: string;
-        hours: number;
-        status: 'approved' | 'pending' | 'rejected';
-        reason: string;
-        appliedOn: string;
-    }> = [];
+  type LeaveType = keyof typeof leaveTypes;
 
-    const tabs = [
-        { id: 'leaves', label: 'Leave Requests' },
-        { id: 'compoff', label: 'Comp Off Requests' }
-    ];
+  let leaveSummary: Array<{
+    type: LeaveType;
+    alloted: number;
+    availed: number;
+    remaining: number;
+    leaveRequests: LeaveRequest[];
+  }> = [];
 
-    function processLeaveSummary(summary: LeaveSummary): Array<{
-        type: LeaveType;
-        alloted: number;
-        availed: number;
-        remaining: number;
-        leaveRequests: LeaveRequest[];
-    }> {
-        console.log(summary,"summary");
-        return (Object.entries(summary) as Array<[LeaveType, LeaveCategory]>)
-            .filter(([key]) => key in leaveTypes)
-            .map(([key, value]) => ({
-                type: key,
-                alloted: value.alloted,
-                availed: value.availed,
-                remaining: value.remaining,
-                leaveRequests: value.leaveRequests
-            }));
+  let compOffRequests: Array<{
+    _id: string;
+    date: string;
+    hours: number;
+    status: "approved" | "pending" | "rejected";
+    reason: string;
+    appliedOn: string;
+  }> = [];
+
+  const tabs = [
+    { id: "leaves", label: "Leave Requests" },
+    { id: "compoff", label: "Comp Off Requests" },
+  ];
+
+  function processLeaveSummary(summary: LeaveSummary): Array<{
+    type: LeaveType;
+    alloted: number;
+    availed: number;
+    remaining: number;
+    leaveRequests: LeaveRequest[];
+  }> {
+    console.log(summary, "summary");
+    return (Object.entries(summary) as Array<[LeaveType, LeaveCategory]>)
+      .filter(([key]) => key in leaveTypes)
+      .map(([key, value]) => ({
+        type: key,
+        alloted: value.alloted,
+        availed: value.availed,
+        remaining: value.remaining,
+        leaveRequests: value.leaveRequests,
+      }));
+  }
+
+  async function loadLeaveSummary() {
+    try {
+      loading = true;
+      const response = await leavesApi.getSummary(employeeId);
+      leaveSummary = processLeaveSummary(response.data);
+    } catch (err) {
+      error = "Failed to load leave summary";
+      console.error(err);
+    } finally {
+      loading = false;
     }
+  }
 
-    async function loadLeaveSummary() {
-        try {
-            loading = true;
-            const response = await leavesApi.getSummary(employeeId);
-            leaveSummary = processLeaveSummary(response.data);
-        } catch (err) {
-            error = 'Failed to load leave summary';
-            console.error(err);
-        } finally {
-            loading = false;
-        }
+  async function loadLeaves() {
+    try {
+      loading = true;
+      const response = await leavesApi.getByEmployeeId(employeeId);
+      console.log(response.data, "response");
+    } catch (err) {
+      error = "Failed to load leaves";
+      console.error(err);
+    } finally {
+      loading = false;
     }
+  }
 
-    async function loadLeaves (){
-        try {
-            loading = true;
-            const response = await leavesApi.getByEmployeeId(employeeId);
-            console.log(response.data,"response");
-        } catch (err) {
-            error = 'Failed to load leaves';
-            console.error(err);
-        } finally {
-            loading = false;
-        }
+  async function loadCompOffRequests() {
+    try {
+      loading = true;
+      const response = await leavesApi.getCompOffRequests(employeeId);
+      compOffRequests = response.data;
+    } catch (err) {
+      error = "Failed to load comp off requests";
+      console.error(err);
+    } finally {
+      loading = false;
     }
+  }
 
-    async function loadCompOffRequests() {
-        try {
-            loading = true;
-            const response = await leavesApi.getCompOffRequests(employeeId);
-            compOffRequests = response.data;
-        } catch (err) {
-            error = 'Failed to load comp off requests';
-            console.error(err);
-        } finally {
-            loading = false;
-        }
+  function handleEditAllotments() {
+    editingAllotments = Object.fromEntries(
+      leaveSummary.map((leave) => [leave.type, leave.alloted])
+    ) as Record<LeaveType, number>;
+    showEditModal = true;
+  }
+
+  async function handleAllotmentUpdate() {
+    console.log(
+      employeeId,
+      currentYear,
+      editingAllotments,
+      "handleAllotmentUpdate"
+    );
+    try {
+      loading = true;
+      await leavesApi.updateAllotments(
+        employeeId,
+        currentYear,
+        editingAllotments
+      );
+      showEditModal = false;
+      editingAllotments = {} as Record<LeaveType, number>;
+      await loadLeaveSummary();
+      console.log(leaveSummary);
+    } catch (err) {
+      error = "Failed to update leave allotments";
+      console.error(err);
+    } finally {
+      loading = false;
     }
+  }
 
-    function handleEditAllotments() {
-        editingAllotments = Object.fromEntries(
-            leaveSummary.map(leave => [leave.type, leave.alloted])
-        ) as Record<LeaveType, number>;
-        showEditModal = true;
-    }
+  function handleApplyLeave(type: LeaveType) {
+    // TODO: Implement apply leave functionality
+    console.log("Apply leave for type:", type);
+  }
 
-    async function handleAllotmentUpdate() {
-        console.log(employeeId, currentYear, editingAllotments ,"handleAllotmentUpdate");
-        try {
-            loading = true;
-            await leavesApi.updateAllotments(employeeId, currentYear, editingAllotments);
-            showEditModal = false;  
-            editingAllotments = {} as Record<LeaveType, number>;
-            await loadLeaveSummary();
-            console.log(leaveSummary);
-        } catch (err) {
-            error = 'Failed to update leave allotments';
-            console.error(err);
-        } finally {
-            loading = false;
-        }
-    }
-
-    function handleApplyLeave(type: LeaveType) {
-        // TODO: Implement apply leave functionality
-        console.log('Apply leave for type:', type);
-    }
-
-    onMount(() => {
-        loadLeaveSummary();
-        // loadLeaves();
-        //loadCompOffRequests();
-    });
+  onMount(() => {
+    loadLeaveSummary();
+    // loadLeaves();
+    //loadCompOffRequests();
+  });
 </script>
 
 <div class="space-y-6">
-    <!-- Leave Summary Section -->
-    <div class="card">
-        <div class="card-body">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold text-text">Leave Summary ({currentYear})</h3>
-                {#if showEditAllotments}
-                    <button 
-                        class="btn btn-primary btn-sm"
-                        on:click={handleEditAllotments}
+  <!-- Leave Summary Section -->
+  <div class="card">
+    <div class="card-body">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-text">
+          Leave Summary ({currentYear})
+        </h3>
+        {#if showEditAllotments}
+          <button
+            class="btn btn-primary btn-sm"
+            on:click={handleEditAllotments}
+          >
+            Edit Allotments
+          </button>
+        {/if}
+      </div>
+
+      {#if loading}
+        <div class="loading">Loading...</div>
+      {:else if error}
+        <div class="alert alert-error">{error}</div>
+      {:else}
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Alloted</th>
+                <th>Availed</th>
+                <th>Remaining</th>
+                <!-- <th>Actions</th> -->
+              </tr>
+            </thead>
+            <tbody>
+              {#each leaveSummary as leave}
+                {@const leaveType = leaveTypes[leave.type]}
+                <tr>
+                  <td class="font-medium">{leaveType.label}</td>
+                  <td>{leave.alloted}</td>
+                  <td>{leave.availed}</td>
+                  <td>
+                    <span
+                      class="font-medium {leave.remaining > 0
+                        ? 'text-success'
+                        : 'text-danger'}"
                     >
-                        Edit Allotments
-                    </button>
-                {/if}
-            </div>
-            
-            {#if loading}
-                <div class="loading">Loading...</div>
-            {:else if error}
-                <div class="alert alert-error">{error}</div>
-            {:else}
-                <div class="overflow-x-auto">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Type</th>
-                                <th>Alloted</th>
-                                <th>Availed</th>
-                                <th>Remaining</th>
-                                <!-- <th>Actions</th> -->
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {#each leaveSummary as leave}
-                                {@const leaveType = leaveTypes[leave.type]}
-                                <tr>
-                                    <td class="font-medium">{leaveType.label}</td>
-                                    <td>{leave.alloted}</td>
-                                    <td>{leave.availed}</td>
-                                    <td>
-                                        <span class="font-medium {leave.remaining > 0 ? 'text-success' : 'text-danger'}">
-                                            {leave.remaining}
-                                        </span>
-                                    </td>
-                                    <!-- <td>
+                      {leave.remaining}
+                    </span>
+                  </td>
+                  <!-- <td>
                                         {#if leave.remaining > 0}
                                             <button 
                                                 class="btn btn-primary btn-sm"
@@ -197,17 +218,17 @@
                                             </button>
                                         {/if}
                                     </td> -->
-                                </tr>
-                            {/each}
-                        </tbody>
-                    </table>
-                </div>
-            {/if}
+                </tr>
+              {/each}
+            </tbody>
+          </table>
         </div>
+      {/if}
     </div>
+  </div>
 
-    <!-- Requests Section -->
-    <!--  <div class="card">
+  <!-- Requests Section -->
+  <!--  <div class="card">
         <div class="card-body">
             <Tabs tabs={tabs} urlParam="request-type" let:activeTab>
                 {#if activeTab === 'leaves'}
@@ -285,88 +306,90 @@
 </div>
 
 <Modal
-    show={showEditModal}
-    title="Edit Leave Allotments"
-    onClose={() => {
-        showEditModal = false;
-    }}
+  show={showEditModal}
+  title="Edit Leave Allotments"
+  onClose={() => {
+    showEditModal = false;
+  }}
 >
-    <form on:submit|preventDefault={handleAllotmentUpdate} class="space-y-4">
-        {#each leaveSummary as leave}
-            {@const leaveType = leaveTypes[leave.type]}
-            {#if leaveType.isEditable}
-                <div class="form-group">
-                    <label class="form-label" for="allotment-{leave.type}">{leaveType.label}</label>
-                    <input 
-                        type="number" 
-                        class="form-input" 
-                        id="allotment-{leave.type}"
-                        bind:value={editingAllotments[leave.type]}
-                        min="0"
-                        required
-                    />
-                </div>
-            {/if}
-        {/each}
-
-        <div class="flex justify-end gap-2">
-            <button 
-                type="button" 
-                class="btn btn-secondary"
-                on:click={() => {
-                    showEditModal = false;
-                }}
-            >
-                Cancel
-            </button>
-            <button type="submit" class="btn btn-primary" disabled={loading}>
-                {loading ? 'Saving...' : 'Save'}
-            </button>
+  <form on:submit|preventDefault={handleAllotmentUpdate} class="space-y-4">
+    {#each leaveSummary as leave}
+      {@const leaveType = leaveTypes[leave.type]}
+      {#if leaveType.isEditable}
+        <div class="form-group">
+          <label class="form-label" for="allotment-{leave.type}"
+            >{leaveType.label}</label
+          >
+          <input
+            type="number"
+            class="form-input"
+            id="allotment-{leave.type}"
+            bind:value={editingAllotments[leave.type]}
+            min="0"
+            required
+          />
         </div>
-    </form>
-</Modal> 
+      {/if}
+    {/each}
 
+    <div class="flex justify-end gap-2">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        on:click={() => {
+          showEditModal = false;
+        }}
+      >
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-primary" disabled={loading}>
+        {loading ? "Saving..." : "Save"}
+      </button>
+    </div>
+  </form>
+</Modal>
 
 <style>
-    .overflow-x-auto {
-        display: flex;
-        justify-content: center;
-        width: 100%;
-    }
+  .overflow-x-auto {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
 
-    .table {
-        width: 100%;
-        max-width: 48rem; /* equivalent to max-w-3xl */
-        border-collapse: collapse;
-    }
+  .table {
+    width: 100%;
+    max-width: 48rem; /* equivalent to max-w-3xl */
+    border-collapse: collapse;
+  }
 
-    th, td {
-        text-align: center;
-        padding: 0.75rem;
-    }
+  th,
+  td {
+    text-align: center;
+    padding: 0.75rem;
+  }
 
-    th {
-        background-color: #f8f9fa;
-        font-weight: 500;
-    }
+  th {
+    background-color: #f8f9fa;
+    font-weight: 500;
+  }
 
-    td {
-        border-bottom: 1px solid #e9ecef;
-    }
+  td {
+    border-bottom: 1px solid #e9ecef;
+  }
 
-    tr:hover {
-        background-color: #f8f9fa;
-    }
+  tr:hover {
+    background-color: #f8f9fa;
+  }
 
-    .font-medium {
-        font-weight: 500;
-    }
+  .font-medium {
+    font-weight: 500;
+  }
 
-    .text-success {
-        color: #28a745;
-    }
+  .text-success {
+    color: #28a745;
+  }
 
-    .text-danger {
-        color: #dc3545;
-    }
+  .text-danger {
+    color: #dc3545;
+  }
 </style>

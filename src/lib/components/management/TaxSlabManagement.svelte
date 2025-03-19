@@ -222,15 +222,34 @@
     margin: 0 auto;
   }
   .input {
-    @apply border border-gray-300 rounded px-4 py-2;
+    /* @apply border border-gray-300 rounded px-4 py-2; */
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
   }
   .btn {
-    @apply bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded;
+    /*   @apply bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded; */
+    background-color: #3b82f6;
+    color: #ffffff;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-radius: 0.25rem;
   }
-  .alert {
-    @apply bg-red-100 text-red-700 p-4 rounded;
+
+  .btn:hover {
+    background-color: #2563eb;
   }
   .loading {
-    @apply flex justify-center items-center py-8;
+    /* @apply flex justify-center items-center py-8; */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
   }
 </style>

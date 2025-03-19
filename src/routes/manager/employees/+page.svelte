@@ -1,33 +1,33 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { employeesApi } from '$lib/services/api';
-  import Table from '$lib/components/common/Table.svelte';
-  import type { User, PaginationMeta } from '$lib/types_old';
-  import { goto } from '$app/navigation';
+  import { onMount } from "svelte";
+  import { employeesApi } from "$lib/services/api";
+  import Table from "$lib/components/common/Table.svelte";
+  import type { User, PaginationMeta } from "$lib/types_old";
+  import { goto } from "$app/navigation";
 
   let employees: User[] = [];
   let loading = true;
   let error: string | null = null;
   let meta: PaginationMeta | null = null;
-  let currentQuery = '';
-  let currentSort: { key: string; direction: 'asc' | 'desc' } | null = null;
+  let currentQuery = "";
+  let currentSort: { key: string; direction: "asc" | "desc" } | null = null;
 
   const columns = [
-    { key: 'name', label: 'Name', sortable: true },
-    { key: 'email', label: 'Email', sortable: true },
-    { 
-      key: 'active', 
-      label: 'Status', 
+    { key: "name", label: "Name", sortable: true },
+    { key: "email", label: "Email", sortable: true },
+    {
+      key: "active",
+      label: "Status",
       sortable: true,
       render: (user: User) => `
-        <span class="status ${user.active ? 'active' : 'inactive'}">
-          ${user.active ? 'Active' : 'Inactive'}
+        <span class="status ${user.active ? "active" : "inactive"}">
+          ${user.active ? "Active" : "Inactive"}
         </span>
-      `
+      `,
     },
     {
-      key: '_id',
-      label: 'Actions',
+      key: "_id",
+      label: "Actions",
       render: (user: User) => `
         <a href="/manager/employees/${user._id}" class="btn-action" data-sveltekit-preload>
           View
@@ -35,16 +35,16 @@
         <button class="btn-action">
           Edit
         </button>
-      `
-    }
+      `,
+    },
   ];
 
   async function fetchEmployees(params = {}) {
     loading = true;
     error = null;
-    
+
     try {
-      const response = await employeesApi.list(params);
+      const response: any = await employeesApi.list(params);
       employees = response.data;
       meta = response.meta;
     } catch (e: any) {
@@ -61,14 +61,14 @@
   function handleSearch(event: CustomEvent) {
     const { query } = event.detail;
     currentQuery = query;
-    fetchEmployees({ 
-      page: 1, 
+    fetchEmployees({
+      page: 1,
       limit: meta?.limit || 10,
       search: query,
-      ...(currentSort && { 
+      ...(currentSort && {
         sortBy: currentSort.key,
-        sortOrder: currentSort.direction 
-      })
+        sortOrder: currentSort.direction,
+      }),
     });
   }
 
@@ -80,7 +80,7 @@
       limit: meta?.limit || 10,
       ...(currentQuery && { search: currentQuery }),
       sortBy: key,
-      sortOrder: direction
+      sortOrder: direction,
     });
   }
 
@@ -90,10 +90,10 @@
       page,
       limit: meta?.limit || 10,
       ...(currentQuery && { search: currentQuery }),
-      ...(currentSort && { 
+      ...(currentSort && {
         sortBy: currentSort.key,
-        sortOrder: currentSort.direction 
-      })
+        sortOrder: currentSort.direction,
+      }),
     });
   }
 
@@ -171,4 +171,4 @@
   :global(.btn-action:hover) {
     background: #e5e7eb;
   }
-</style> 
+</style>

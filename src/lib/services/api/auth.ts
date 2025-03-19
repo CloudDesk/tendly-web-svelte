@@ -9,19 +9,27 @@ export const authApi = {
       body: JSON.stringify({ email, password }),
       credentials: 'include'
     });
-    return response;
+    return {
+      success: true,
+      data: response
+    };
   },
 
   logout: async (): Promise<ApiResponse<void>> => {
-    return await fetchApi<void>('/auth/logout', {
+    await fetchApi<void>('/auth/logout', {
       method: 'POST',
       credentials: 'include'
     });
+    return { success: true, data: undefined };
   },
 
   refreshUser: async (): Promise<ApiResponse<LoginResponseData>> => {
-    return await fetchApi<LoginResponseData>('/auth/me', {
+    const response = await fetchApi<LoginResponseData>('/auth/me', {
       credentials: 'include'
     });
+    return {
+      success: true,
+      data: response
+    };
   }
 }; 
