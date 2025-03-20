@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { payrollApi } from "$lib/services/api/payroll";
+
   // Mock data for the payroll records
   const employees = [
     {
@@ -99,7 +101,7 @@
   ).length;
 
   // Action handlers
-  const generatePayslips = () => {
+  const generatePayslips = async () => {
     console.log("generatePayslips", selectedMonth, selectedYear);
     const indexId = months.indexOf(selectedMonth);
 
@@ -113,6 +115,9 @@
 
     const formattedDate = `${selectedYear}-${month}`;
     console.log("Formatted Date:", formattedDate);
+
+    let result = await payrollApi.payrollInitiate({ monthYear: formattedDate });
+    console.log(result);
   };
 
   const releasePayslips = (target: any) => {

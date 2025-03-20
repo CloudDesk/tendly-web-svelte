@@ -1,12 +1,11 @@
 import { fetchApi } from './base';
 
 interface IPayroll {
-    month: string;
-    year: string;
+    monthYear: string;
 }
 export const payrollApi = {
 
-    generatePayslip: async (data: IPayroll) => {
+    payrollInitiate: async (data: IPayroll) => {
 
         return fetchApi('/payroll/generate', {
             method: 'POST',
