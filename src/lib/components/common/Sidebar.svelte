@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { auth } from "$lib/stores/auth";
+  import { navigationContext } from "$lib/stores/navigation";
   import type { ComponentType } from "svelte";
   import logo from "$lib/assets/Tendly_logo_Full.png";
   import logoSmall from "$lib/assets/Tendly_T_logo.png";

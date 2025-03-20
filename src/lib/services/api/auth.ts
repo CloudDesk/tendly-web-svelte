@@ -4,15 +4,12 @@ import { fetchApi } from './base';
 
 export const authApi = {
   login: async (email: string, password: string): Promise<ApiResponse<LoginResponseData>> => {
-    const response = await fetchApi<LoginResponseData>('/auth/login', {
+    const response: any = await fetchApi<LoginResponseData>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
       credentials: 'include'
     });
-    return {
-      success: true,
-      data: response
-    };
+    return response
   },
 
   logout: async (): Promise<ApiResponse<void>> => {

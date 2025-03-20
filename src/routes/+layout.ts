@@ -9,7 +9,6 @@ import { setUserPermissions } from "$lib/stores/authPermissions";
 import type { UserRole } from "$lib/types";
 
 export const ssr = false;
-export const prerender = false;
 export const load = async ({ fetch, url }) => {
   if (!browser) {
     // Set the custom fetch function

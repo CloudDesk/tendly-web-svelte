@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 import type { UserRole } from '../types';
-import { page } from '$app/state';
+import { page } from '$app/stores';
 // Define permission structure
 export interface UserPermissions {
     role: UserRole;

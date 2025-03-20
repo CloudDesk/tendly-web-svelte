@@ -17,8 +17,15 @@ export const loginController = {
         handleApiError(response);
       }
       console.log(response.data, "login response");
-      const { user, token } = response.data;
-      // Update store
+
+      // const { success, data } = response.data;
+      // if (success) {
+      //   const { token, user } = data;
+      //   auth.setAuth(user);
+      // }
+
+      // // Update store
+      const { token, user } = response.data
       auth.setAuth(user);
 
 
