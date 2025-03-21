@@ -1,10 +1,16 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import "../../styles/form.css";
-  import { leaveTypeOptions } from "$lib/constants/leaveTypes";
-  import type { LeaveSummary } from "$lib/services/api/leaves";
+  import { leaveTypeOptions as allLeaveTypeOptions } from "$lib/constants/leaveTypes";
   import { auth } from "$lib/stores/auth";
   import { get } from "svelte/store";
+
+  interface LeaveCategory {
+    alloted: number;
+    availed: number;
+    remaining: number;
+    leaveRequests: string[];
+  }
 
   interface LeaveFormData {
     leaveType: string;
@@ -15,13 +21,23 @@
     leaveTypeId: string;
   }
 
+  interface LeaveSummary {
+    annual: LeaveCategory;
+    sick: LeaveCategory;
+    compOff: LeaveCategory;
+    lossOfPay: LeaveCategory;
+    otherPaid: LeaveCategory;
+    otherUnpaid: LeaveCategory;
+    [key: string]: LeaveCategory;
+  }
+
   export let loading = false;
   export let initialValues: LeaveFormData;
   export let summary: LeaveSummary;
   const authState = get(auth);
+  console.log(summary, "summary");
   console.log(authState, "authState");
 
-  console.log(summary, "summary");
   const dispatch = createEventDispatcher<{
     submit: LeaveFormData;
     cancel: void;
@@ -108,7 +124,26 @@
       ? ""
       : `Available balance: ${remainingDays} days${!isLeaveBalanceValid ? " (Insufficient balance)" : ""}`
     : "";
+
+  // Update the leaveTypeOptions reactive statement
+  $: leaveTypeOptions =
+    summary && Object.values(summary).some((leave) => leave.alloted > 0)
+      ? allLeaveTypeOptions
+      : [{ value: "lossOfPay", label: "Loss of Pay" }];
+
+  // Check if any leave type is allocated
+  $: isLeaveAllocated =
+    summary && Object.values(summary).some((leave) => leave.alloted > 0);
 </script>
+
+{#if !isLeaveAllocated}
+  <div class="alert alert-error">
+    <span>
+      Leave has not been allocated to you. Please inform your admin. You are
+      only eligible to apply for Loss of Pay.
+    </span>
+  </div>
+{/if}
 
 <form on:submit|preventDefault={handleSubmit} class="space-y-6">
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
