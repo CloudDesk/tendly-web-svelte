@@ -6,10 +6,14 @@ interface IPayroll {
 export const payrollApi = {
 
     payrollInitiate: async (data: IPayroll) => {
-
         return fetchApi('/payroll/generate', {
             method: 'POST',
             body: JSON.stringify(data)
+        });
+    },
+    payrollApprovalSummary: async (month: number, year: number) => {
+        return fetchApi(`/payroll/approval-summary?month=${month}&year=${year}`, {
+            method: 'GET'
         });
     }
 

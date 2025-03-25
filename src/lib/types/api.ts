@@ -2,9 +2,14 @@ import type { User } from '$lib/types/user';
 
 export type ApiResponse<T> = {
   success: boolean;
-  data: T;
+  data?: T;
   meta?: {
     [key: string]: any;
+  };
+  error?: {
+    code: string;
+    message: string;
+    details?: any;
   };
 };
 

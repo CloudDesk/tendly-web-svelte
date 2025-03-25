@@ -23,7 +23,7 @@ export const load: PageLoad = async ({ url, params }) => {
         ...filters,
         ...(sortBy && sortOrder && { sortBy, sortOrder })
       }),
-      lovsApi.getByType('leaveType')
+      lovsApi.getByType('leavetype')
     ]);
 
     console.log(summaryResponse, "summaryResponse");
