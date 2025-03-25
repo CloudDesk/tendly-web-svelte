@@ -50,7 +50,7 @@ export const employeesApi = {
 
   update: async (id: string, updates: Partial<User>): Promise<ApiResponse<User>> => {
     return await fetchApi<ApiResponse<User>>(`/users/${id}`, {
-      method: 'PATCH',
+      method: 'PUT',
       body: JSON.stringify(updates)
     });
   },

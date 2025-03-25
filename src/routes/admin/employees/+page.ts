@@ -8,7 +8,7 @@ export const load: PageLoad = async ({ url }) => {
   try {
     const filters: EmployeeFilters = {
       page: Number(url.searchParams.get('page')) || 1,
-      limit: Number(url.searchParams.get('limit')) || 20,
+      limit: Number(url.searchParams.get('limit')) || 8,
       search: url.searchParams.get('search') || undefined,
       role: url.searchParams.get('role') || undefined,
     };
@@ -26,7 +26,7 @@ export const load: PageLoad = async ({ url }) => {
       pagination: {
         total: response.meta?.total || 0,
         page: response.meta?.page || 1,
-        limit: response.meta?.limit || 20,
+        limit: response.meta?.limit || 8,
         totalPages: response.meta?.totalPages || 1
       },
       filters,

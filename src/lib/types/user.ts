@@ -8,6 +8,22 @@ type ShiftAssignment = {
   shiftId: { type: 'string' },
   shiftAssignmentId: { type: 'string' },
 }
+interface IBankDetails {
+  accountHolderName: string;
+  accountNumber: string;
+  bankName: string;
+  ifscCode: string;
+  isActive: boolean; // Main salary account
+}
+ 
+interface IGovernmentIds {
+  panNumber?: string;
+  aadhaarNumber?: string;
+  passportNumber?: string;
+  voterId?: string;
+  drivingLicense?: string;
+}
+
 export type User = {
   _id: string;
   email: string;
@@ -29,6 +45,8 @@ export type User = {
   upcomingShiftAssignmentData?: ShiftAssignment;
   biometricId?: string;
   image?: string | null;
+  bankDetails?: IBankDetails[]; // Array for multiple bank accounts
+  governmentIds?: IGovernmentIds; // Separate section for identity documents
 };
 
 export type UserProfile = Omit<User, 'role' | 'isActive' | 'createdAt' | 'updatedAt'> & {
