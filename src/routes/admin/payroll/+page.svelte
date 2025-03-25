@@ -1,123 +1,45 @@
 <script lang="ts">
   import { payrollApi } from "$lib/services/api/payroll";
+  import { getMonthFormats } from "$lib/utils/monthFormats";
+  import { onMount } from "svelte";
 
-  // Mock data for the payroll records
-  const employees = [
-    {
-      id: "EMP001",
-      name: "Emma Johnson",
-      department: "Engineering",
-      salary: 75000,
-      status: "Processed",
-      date: "2025-03-01",
-    },
-    {
-      id: "EMP002",
-      name: "Michael Chen",
-      department: "Marketing",
-      salary: 68000,
-      status: "Processed",
-      date: "2025-03-01",
-    },
-    {
-      id: "EMP003",
-      name: "Sarah Williams",
-      department: "HR",
-      salary: 62000,
-      status: "Pending",
-      date: "2025-03-01",
-    },
-    {
-      id: "EMP004",
-      name: "David Rodriguez",
-      department: "Engineering",
-      salary: 78000,
-      status: "Processed",
-      date: "2025-03-01",
-    },
-    {
-      id: "EMP005",
-      name: "Lisa Thompson",
-      department: "Finance",
-      salary: 82000,
-      status: "Pending",
-      date: "2025-03-01",
-    },
-    {
-      id: "EMP006",
-      name: "Robert Garcia",
-      department: "Product",
-      salary: 73000,
-      status: "Processed",
-      date: "2025-03-01",
-    },
-    {
-      id: "EMP007",
-      name: "Jennifer Lee",
-      department: "Sales",
-      salary: 69000,
-      status: "Processed",
-      date: "2025-03-01",
-    },
-    {
-      id: "EMP008",
-      name: "Thomas Wilson",
-      department: "Engineering",
-      salary: 76000,
-      status: "Pending",
-      date: "2025-03-01",
-    },
-  ];
+  let today = new Date();
+  let currentYear = today.getFullYear();
+  let month = getMonthFormats(today.getMonth());
 
-  // Filters and search state
-  let searchQuery = "";
-  let selectedMonth = "March";
-  let selectedYear = "2025";
-  let selectedDepartment = "All";
-
-  // Derived data based on filters
-  $: filteredEmployees = employees.filter((emp) => {
-    // Filter by search query
-    const matchesSearch =
-      emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      emp.id.toLowerCase().includes(searchQuery.toLowerCase());
-
-    // Filter by department
-    const matchesDepartment =
-      selectedDepartment === "All" || emp.department === selectedDepartment;
-
-    return matchesSearch && matchesDepartment;
-  });
-
-  // Payroll summary calculations
-  $: totalEmployeesPaid = filteredEmployees.filter(
-    (emp) => emp.status === "Processed"
-  ).length;
-  $: totalPayrollExpense = filteredEmployees
-    .filter((emp) => emp.status === "Processed")
-    .reduce((sum, emp) => sum + emp.salary, 0);
-  $: pendingApprovals = filteredEmployees.filter(
-    (emp) => emp.status === "Pending"
-  ).length;
-
-  // Action handlers
-  const generatePayslips = async () => {
-    console.log("generatePayslips", selectedMonth, selectedYear);
-    const indexId = months.indexOf(selectedMonth);
-
-    if (indexId === -1) {
-      console.error("Invalid month selection:", selectedMonth);
-      return null; // Return null if the month is not found
+  const getPayrolls = async () => {
+    try {
+      let result = await payrollApi.payrollApprovalSummary(
+        today.getMonth(),
+        currentYear
+      );
+      console.log(result, "result getpayrolls");
+    } catch (error) {
+      console.log(error, "error getPayrolls");
     }
+  };
+  onMount(() => {
+    getPayrolls();
+  });
+  // Action handlers
+  const processPayroll = async () => {
+    console.log("processPayroll", today);
 
-    // Convert index to 1-based month (January = 01)
-    const month = (indexId + 1).toString().padStart(2, "0");
-
-    const formattedDate = `${selectedYear}-${month}`;
+    const formattedDate = `${currentYear}-${month.numeric}`;
     console.log("Formatted Date:", formattedDate);
 
-    let result = await payrollApi.payrollInitiate({ monthYear: formattedDate });
-    console.log(result);
+    try {
+      let result = await payrollApi.payrollInitiate({
+        monthYear: formattedDate,
+      });
+      console.log(result);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const reviewPayroll = async () => {
+    console.log("reviewPayroll");
   };
 
   const releasePayslips = (target: any) => {
@@ -139,36 +61,6 @@
   const downloadPayslip = (employee: any) => {
     alert(`Downloading payslip for ${employee.name}...`);
   };
-
-  // Available departments for filter
-  const departments = [
-    "All",
-    "Engineering",
-    "Marketing",
-    "HR",
-    "Finance",
-    "Product",
-    "Sales",
-  ];
-
-  // Months for filter
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
-  // Years for filter
-  const years = ["2025", "2024", "2023"];
 </script>
 
 <div class="page">
@@ -182,7 +74,7 @@
     </div>
 
     <div class="search-filter-section">
-      <div class="search-box">
+      <!-- <div class="search-box">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="18"
@@ -231,24 +123,41 @@
             {/each}
           </select>
         </div>
-      </div>
+      </div> -->
     </div>
   </div>
 
   <!-- Quick Actions Section -->
   <div class="quick-actions">
-    <button type="button" class="action-card" on:click={generatePayslips}>
-      <div class="action-icon">🖨️</div>
+    <!-- Process Payroll -->
+    <button type="button" class="action-card" on:click={processPayroll}>
+      <div class="action-icon">💰</div>
       <div class="action-text">
-        <h3>Generate Payslips</h3>
-        <p>Create payslips for all employees</p>
+        <h3>
+          Process Payroll for {month.numeric}
+          {currentYear}
+        </h3>
+        <p>Calculate payroll for all employees</p>
       </div>
     </button>
 
+    <!-- Payroll Approvals -->
+    <button class="action-card" on:click={reviewPayroll} type="button">
+      <div class="action-icon">✅</div>
+      <div class="action-text">
+        <h3>
+          Review Payroll {month.numeric}
+          {currentYear}
+        </h3>
+        <p>Approve or reject payroll</p>
+      </div>
+    </button>
+
+    <!-- Release Payslips -->
     <div class="action-card dropdown-parent">
       <div class="action-icon">📤</div>
       <div class="action-text">
-        <h3>Release Payslips</h3>
+        <h3>Distribute Payslips</h3>
         <p>Send payslips to employees</p>
       </div>
       <div class="dropdown-menu">
@@ -269,19 +178,21 @@
       </div>
     </div>
 
+    <!-- View Payslip History -->
     <button class="action-card" on:click={viewPayslipHistory} type="button">
       <div class="action-icon">📜</div>
       <div class="action-text">
-        <h3>View Payslip History</h3>
+        <h3>Payroll History</h3>
         <p>Access past payroll records</p>
       </div>
     </button>
 
+    <!-- Create Payroll Template -->
     <button type="button" class="action-card" on:click={createPayrollTemplate}>
       <div class="action-icon">⚙️</div>
       <div class="action-text">
-        <h3>Create Payroll Template</h3>
-        <p>Configure payroll format</p>
+        <h3>Payroll Template</h3>
+        <p>Configure payroll structure</p>
       </div>
     </button>
   </div>
@@ -290,17 +201,17 @@
   <div class="summary-section">
     <div class="summary-card">
       <h3>Total Employees Paid</h3>
-      <div class="summary-value">{totalEmployeesPaid}</div>
+      <div class="summary-value"></div>
     </div>
 
     <div class="summary-card">
       <h3>Total Payroll Expense</h3>
-      <div class="summary-value">${totalPayrollExpense.toLocaleString()}</div>
+      <div class="summary-value"></div>
     </div>
 
     <div class="summary-card">
       <h3>Pending Approvals</h3>
-      <div class="summary-value">{pendingApprovals}</div>
+      <div class="summary-value"></div>
     </div>
   </div>
 
@@ -321,7 +232,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each filteredEmployees as employee}
+          <!-- {#each filteredEmployees as employee}
             <tr>
               <td>{employee.id}</td>
               <td>{employee.name}</td>
@@ -375,7 +286,7 @@
                 </button>
               </td>
             </tr>
-          {/each}
+          {/each} -->
         </tbody>
       </table>
     </div>
