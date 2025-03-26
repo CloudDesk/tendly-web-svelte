@@ -1,19 +1,33 @@
 <script lang="ts">
+  import LoaderNew from "$lib/components/common/LoaderNew.svelte";
+  import Modal from "$lib/components/common/Modal.svelte";
+  import { toast } from "$lib/components/common/stores/toast.store";
+  import Tabs from "$lib/components/common/Tabs.svelte";
+  import PayrollProcess from "$lib/components/payroll/payrollProcess.svelte";
   import { payrollApi } from "$lib/services/api/payroll";
   import { getMonthFormats } from "$lib/utils/monthFormats";
   import { onMount } from "svelte";
 
   let today = new Date();
-  let currentYear = today.getFullYear();
+  let year = today.getFullYear();
   let month = getMonthFormats(today.getMonth());
+  let reviewPayrollData: any;
+  let showReviewPayroll: boolean = false;
+  let disableAction: boolean = false;
+
+  let isLoading = false;
 
   const getPayrolls = async () => {
     try {
-      let result = await payrollApi.payrollApprovalSummary(
+      let result: any = await payrollApi.payrollApprovalSummary(
         today.getMonth(),
-        currentYear
+        year
       );
       console.log(result, "result getpayrolls");
+      if (result.success) {
+        reviewPayrollData = result.data;
+        showReviewPayroll = true;
+      }
     } catch (error) {
       console.log(error, "error getPayrolls");
     }
@@ -25,9 +39,9 @@
   const processPayroll = async () => {
     console.log("processPayroll", today);
 
-    const formattedDate = `${currentYear}-${month.numeric}`;
+    const formattedDate = `${year}-${month.numeric}`;
     console.log("Formatted Date:", formattedDate);
-
+    isLoading = true;
     try {
       let result = await payrollApi.payrollInitiate({
         monthYear: formattedDate,
@@ -35,36 +49,43 @@
       console.log(result);
     } catch (error) {
       console.log(error);
+    } finally {
+      await getPayrolls();
+      isLoading = false;
     }
   };
 
-  const reviewPayroll = async () => {
-    console.log("reviewPayroll");
+  const approvalPayroll = async () => {
+    console.log("approvalPayroll");
+    isLoading = true;
+    try {
+      let result: any = await payrollApi.updateStatus(
+        Number(month.numeric),
+        year,
+        "Approve"
+      );
+      console.log(result, "Result approvalPayroll");
+      if (result.success) {
+        disableAction = true;
+      }
+      toast.success(result.data?.message);
+    } catch (error) {
+      console.log(error, "error approvalPayroll");
+    } finally {
+      isLoading = false;
+    }
   };
 
-  const releasePayslips = (target: any) => {
-    alert(`Releasing payslips for ${target}...`);
-  };
-
-  const viewPayslipHistory = () => {
-    alert("Opening payslip history view...");
-  };
-
-  const createPayrollTemplate = () => {
-    alert("Opening payroll template editor...");
-  };
-
-  const viewPayslip = (employee: any) => {
-    alert(`Viewing payslip for ${employee.name}...`);
-  };
-
-  const downloadPayslip = (employee: any) => {
-    alert(`Downloading payslip for ${employee.name}...`);
-  };
+  const tabs = [
+    { id: "processing", label: "Payroll Processing" },
+    { id: "payslips", label: "Payslips" },
+    { id: "history", label: "History" },
+    { id: "templates", label: "Templates" },
+    { id: "trends", label: "Trends" },
+  ];
 </script>
 
 <div class="page">
-  <!-- Header Section -->
   <div class="header">
     <div class="title-section">
       <h1>Payroll Management</h1>
@@ -72,280 +93,27 @@
         Manage employee payroll, generate payslips, and track payroll history.
       </p>
     </div>
-
-    <div class="search-filter-section">
-      <!-- <div class="search-box">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-        <input
-          type="text"
-          placeholder="Search by name or ID"
-          bind:value={searchQuery}
-        />
-      </div>
-
-      <div class="filters">
-        <div class="filter">
-          <label for="month">Month</label>
-          <select id="month" bind:value={selectedMonth}>
-            {#each months as month}
-              <option value={month}>{month}</option>
-            {/each}
-          </select>
-        </div>
-
-        <div class="filter">
-          <label for="year">Year</label>
-          <select id="year" bind:value={selectedYear}>
-            {#each years as year}
-              <option value={year}>{year}</option>
-            {/each}
-          </select>
-        </div>
-
-        <div class="filter">
-          <label for="department">Department</label>
-          <select id="department" bind:value={selectedDepartment}>
-            {#each departments as department}
-              <option value={department}>{department}</option>
-            {/each}
-          </select>
-        </div>
-      </div> -->
-    </div>
   </div>
-
-  <!-- Quick Actions Section -->
-  <div class="quick-actions">
-    <!-- Process Payroll -->
-    <button type="button" class="action-card" on:click={processPayroll}>
-      <div class="action-icon">💰</div>
-      <div class="action-text">
-        <h3>
-          Process Payroll for {month.numeric}
-          {currentYear}
-        </h3>
-        <p>Calculate payroll for all employees</p>
-      </div>
-    </button>
-
-    <!-- Payroll Approvals -->
-    <button class="action-card" on:click={reviewPayroll} type="button">
-      <div class="action-icon">✅</div>
-      <div class="action-text">
-        <h3>
-          Review Payroll {month.numeric}
-          {currentYear}
-        </h3>
-        <p>Approve or reject payroll</p>
-      </div>
-    </button>
-
-    <!-- Release Payslips -->
-    <div class="action-card dropdown-parent">
-      <div class="action-icon">📤</div>
-      <div class="action-text">
-        <h3>Distribute Payslips</h3>
-        <p>Send payslips to employees</p>
-      </div>
-      <div class="dropdown-menu">
-        <button
-          class="dropdown-item"
-          on:click={() => releasePayslips("All Employees")}
-          type="button"
-        >
-          All Employees
-        </button>
-        <button
-          class="dropdown-item"
-          on:click={() => releasePayslips("Selected Employees")}
-          type="button"
-        >
-          Selected Employees
-        </button>
-      </div>
-    </div>
-
-    <!-- View Payslip History -->
-    <button class="action-card" on:click={viewPayslipHistory} type="button">
-      <div class="action-icon">📜</div>
-      <div class="action-text">
-        <h3>Payroll History</h3>
-        <p>Access past payroll records</p>
-      </div>
-    </button>
-
-    <!-- Create Payroll Template -->
-    <button type="button" class="action-card" on:click={createPayrollTemplate}>
-      <div class="action-icon">⚙️</div>
-      <div class="action-text">
-        <h3>Payroll Template</h3>
-        <p>Configure payroll structure</p>
-      </div>
-    </button>
-  </div>
-
-  <!-- Payroll Summary Section -->
-  <div class="summary-section">
-    <div class="summary-card">
-      <h3>Total Employees Paid</h3>
-      <div class="summary-value"></div>
-    </div>
-
-    <div class="summary-card">
-      <h3>Total Payroll Expense</h3>
-      <div class="summary-value"></div>
-    </div>
-
-    <div class="summary-card">
-      <h3>Pending Approvals</h3>
-      <div class="summary-value"></div>
-    </div>
-  </div>
-
-  <!-- Payslip Table Section -->
-  <div class="payslip-table-section">
-    <h2>Employee Payslips</h2>
-
-    <div class="table-container">
-      <table class="payslip-table">
-        <thead>
-          <tr>
-            <th>Employee ID</th>
-            <th>Name</th>
-            <th>Department</th>
-            <th>Salary</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- {#each filteredEmployees as employee}
-            <tr>
-              <td>{employee.id}</td>
-              <td>{employee.name}</td>
-              <td>{employee.department}</td>
-              <td>${employee.salary.toLocaleString()}</td>
-              <td>
-                <span class="status-badge {employee.status.toLowerCase()}">
-                  {employee.status}
-                </span>
-              </td>
-              <td class="actions">
-                <button
-                  class="action-btn view"
-                  on:click={() => viewPayslip(employee)}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
-                    ></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                </button>
-                <button
-                  class="action-btn download"
-                  on:click={() => downloadPayslip(employee)}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                  </svg>
-                </button>
-              </td>
-            </tr>
-          {/each} -->
-        </tbody>
-      </table>
-    </div>
-  </div>
+  <Tabs {tabs} let:activeTab>
+    {#if activeTab === "processing"}
+      <PayrollProcess
+        {month}
+        {year}
+        payrollData={reviewPayrollData}
+        {showReviewPayroll}
+        {isLoading}
+        {disableAction}
+        on:initiate={processPayroll}
+        on:approval={approvalPayroll}
+      />
+    {/if}
+  </Tabs>
+  {#if isLoading}
+    <LoaderNew />
+  {/if}
 </div>
 
-<style>
-  /* Base Styles */
-  :global(body) {
-    font-family:
-      "Inter",
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      Roboto,
-      Oxygen,
-      Ubuntu,
-      Cantarell,
-      "Open Sans",
-      "Helvetica Neue",
-      sans-serif;
-    margin: 0;
-    padding: 0;
-    color: #333;
-    background: #f6f7fb;
-  }
-
-  .page {
-    padding: 24px;
-    background: #f6f7fb;
-    min-height: 100vh;
-  }
-
-  /* Header Section Styles */
-  .header {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    margin-bottom: 24px;
-    background: white;
-    padding: 24px;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-  }
-
-  .title-section h1 {
-    margin: 0;
-    font-size: 28px;
-    font-weight: 600;
-    color: #2d3748;
-  }
-
-  .subtitle {
-    margin: 8px 0 0;
-    color: #718096;
-    font-size: 15px;
-  }
-
-  .search-filter-section {
+<!--   /* .search-filter-section {
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -412,56 +180,46 @@
     outline: none;
     cursor: pointer;
     min-width: 100px;
+  } */
+ -->
+
+<style>
+  :global(body) {
+    margin: 0;
+    padding: 0;
+    color: #333;
+    background: #f6f7fb;
   }
 
-  /* Quick Actions Section */
-  .quick-actions {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  .page {
+    padding: 24px;
+    background: #f6f7fb;
+    min-height: 100vh;
+  }
+
+  /* Header Section Styles */
+  .header {
+    display: flex;
+    flex-direction: column;
     gap: 20px;
     margin-bottom: 24px;
-  }
-
-  .action-card {
-    display: flex;
-    align-items: center;
     background: white;
-    padding: 20px;
+    padding: 24px;
     border-radius: 12px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
   }
 
-  .action-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  }
-
-  .action-icon {
-    font-size: 24px;
-    margin-right: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    background: #f0f9ff;
-    border-radius: 10px;
-  }
-
-  .action-text h3 {
+  .title-section h1 {
     margin: 0;
-    font-size: 16px;
+    font-size: 28px;
     font-weight: 600;
     color: #2d3748;
   }
 
-  .action-text p {
-    margin: 4px 0 0;
-    font-size: 13px;
+  .subtitle {
+    margin: 8px 0 0;
     color: #718096;
+    font-size: 15px;
   }
 
   /* Dropdown styles */
@@ -495,128 +253,5 @@
 
   .dropdown-item:hover {
     background: #f7fafc;
-  }
-
-  /* Summary Section */
-  .summary-section {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 20px;
-    margin-bottom: 24px;
-  }
-
-  .summary-card {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-  }
-
-  .summary-card h3 {
-    margin: 0;
-    font-size: 14px;
-    font-weight: 500;
-    color: #718096;
-  }
-
-  .summary-value {
-    font-size: 28px;
-    font-weight: 600;
-    color: #2d3748;
-    margin-top: 8px;
-  }
-
-  /* Table Section */
-  .payslip-table-section {
-    background: white;
-    padding: 24px;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-    overflow: hidden;
-  }
-
-  .payslip-table-section h2 {
-    margin: 0 0 16px;
-    font-size: 18px;
-    font-weight: 600;
-    color: #2d3748;
-  }
-
-  .table-container {
-    overflow-x: auto;
-  }
-
-  .payslip-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .payslip-table th {
-    text-align: left;
-    padding: 12px 16px;
-    font-size: 13px;
-    font-weight: 500;
-    color: #718096;
-    border-bottom: 1px solid #e2e8f0;
-  }
-
-  .payslip-table td {
-    padding: 14px 16px;
-    font-size: 14px;
-    color: #4a5568;
-    border-bottom: 1px solid #f0f2f5;
-  }
-
-  .payslip-table tr:hover {
-    background: #f7fafc;
-  }
-
-  .status-badge {
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 500;
-  }
-
-  .status-badge.processed {
-    background: #e6fffa;
-    color: #2c7a7b;
-  }
-
-  .status-badge.pending {
-    background: #fff5f5;
-    color: #c53030;
-  }
-
-  .actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .action-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .action-btn.view {
-    background: #ebf8ff;
-    color: #3182ce;
-  }
-
-  .action-btn.download {
-    background: #e6fffa;
-    color: #2c7a7b;
-  }
-
-  .action-btn:hover {
-    transform: translateY(-2px);
   }
 </style>
