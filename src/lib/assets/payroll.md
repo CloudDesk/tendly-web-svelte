@@ -36,7 +36,17 @@ Status: Implemented in Backend ✅
 
 Frontend: Implemented ✅
 
-2. Finance Team Approves and Processes Payments
+2. Admin view summary and update status "Pending Approval", "Cancelled"
+
+after make api Initiate Payroll resturn summary - Admin view and "Pending Approval", "Cancelled" for payroll.
+
+if Pending Approval finance team can review ,
+
+if cancelled - need to Re-initiate again
+
+
+
+3. Finance Team Approves and Processes Payments =Pending Approval
 
 CEO/Finance team reviews payroll summary:
 
@@ -68,7 +78,7 @@ Approve action updates all payroll records for the selected month to Approved.
 
 Status: Implemented in Backend ✅
 
-3. Payslip Generation
+4. Payslip Generation
 
 Executes between 6th-8th of the month.
 

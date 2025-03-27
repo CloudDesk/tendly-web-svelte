@@ -8,12 +8,13 @@
   import Table from "../common/Table.svelte";
 
   const dispatch = createEventDispatcher();
-  export let showReviewPayroll = false;
-  export let payrollData: any;
+
   export let year: number;
   export let month: { full: string; short: string; numeric: string };
+  export let payrollData: any;
   export let isLoading = false;
-  export let disableAction;
+  export let canInitiate;
+  export let canApprove;
 
   let isDownloaded = false;
   let showModal = writable(false);
@@ -118,7 +119,7 @@
       type="button"
       class="action-card"
       on:click={processPayroll}
-      disabled={disableAction || showReviewPayroll || isLoading}
+      disabled={!canInitiate || isLoading || canApprove}
     >
       <div class="action-icon">💰</div>
       <div class="action-text">
@@ -130,7 +131,7 @@
     <button
       class="action-card"
       on:click={reviewPayroll}
-      disabled={disableAction || !showReviewPayroll || isLoading}
+      disabled={!canApprove || isLoading}
     >
       <div class="action-icon">
         <CircleCheck />
@@ -229,93 +230,91 @@
 </div>
 
 <style>
-  .table-container {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  }
-
   .payroll-container {
     @apply relative;
   }
 
   .quick-actions {
-    @apply grid grid-cols-1 md:grid-cols-2 gap-4 mb-6;
+    @apply grid grid-cols-1 md:grid-cols-2 gap-6 mb-8;
   }
 
   .action-card {
-    @apply flex items-center p-4 bg-white rounded-lg shadow-md transition-all 
-             hover:shadow-lg hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply flex items-center p-5 bg-white rounded-xl shadow-md hover:shadow-xl 
+           transform hover:-translate-y-1 transition-all duration-300 
+           disabled:opacity-50 disabled:cursor-not-allowed 
+           disabled:hover:shadow-md disabled:hover:translate-y-0;
   }
 
   .action-icon {
-    @apply mr-4 w-12 h-12 flex items-center justify-center bg-blue-50 rounded-lg;
+    @apply mr-5 w-14 h-14 flex items-center justify-center 
+           bg-gradient-to-br from-blue-100 to-blue-200 
+           rounded-xl text-3xl;
   }
 
   .action-text h3 {
-    @apply text-lg font-semibold text-gray-800;
+    @apply text-xl font-bold text-gray-800 mb-1;
   }
 
   .action-text p {
-    @apply text-sm text-gray-500;
+    @apply text-sm text-gray-600;
   }
 
   .summary-grid {
-    @apply grid grid-cols-2 gap-4 mb-6;
+    @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8;
   }
 
   .summary-card {
-    @apply bg-white p-4 rounded-lg shadow-md;
+    @apply bg-white p-5 rounded-xl shadow-md 
+           hover:shadow-lg transition-shadow 
+           border-l-4 border-blue-500;
   }
 
   .summary-card h3 {
-    @apply text-sm text-gray-500 mb-2;
+    @apply text-sm text-gray-500 mb-2 uppercase tracking-wider;
   }
 
   .summary-value {
-    @apply text-2xl font-bold text-gray-800;
+    @apply text-3xl font-extrabold text-gray-800;
   }
 
   .action-buttons {
-    @apply flex space-x-4 mb-4;
+    @apply flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-6;
   }
 
   .download-btn,
   .approve-btn {
-    @apply flex items-center px-4 py-2 rounded-lg transition-all
-             disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply flex items-center justify-center px-6 py-3 rounded-lg 
+           transition-all duration-300 space-x-2 
+           disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .download-btn {
-    @apply bg-green-50 text-green-600 hover:bg-green-100;
+    @apply bg-green-100 text-green-700 hover:bg-green-200;
   }
 
   .approve-btn {
-    @apply bg-blue-50 text-blue-600 hover:bg-blue-100;
-  }
-
-  .employee-details table {
-    @apply w-full border-collapse;
-  }
-
-  .employee-details th,
-  .employee-details td {
-    @apply border border-gray-200 p-2 text-left;
+    @apply bg-blue-100 text-blue-700 hover:bg-blue-200;
   }
 
   .confirmation-content {
-    @apply p-4 text-center;
+    @apply p-6 text-center;
   }
 
   .modal-actions {
-    @apply flex justify-center space-x-4 mt-4;
+    @apply flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4 mt-6;
   }
 
   .cancel-btn {
-    @apply px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200;
+    @apply px-6 py-3 bg-gray-200 text-gray-700 rounded-lg 
+           hover:bg-gray-300 transition-colors;
   }
 
   .confirm-btn {
-    @apply px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600;
+    @apply px-6 py-3 bg-blue-600 text-white rounded-lg 
+           hover:bg-blue-700 transition-colors;
+  }
+
+  .table-container {
+    @apply bg-white rounded-xl shadow-md overflow-hidden;
   }
 </style>
