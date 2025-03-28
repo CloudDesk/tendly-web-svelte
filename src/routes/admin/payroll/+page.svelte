@@ -16,6 +16,7 @@
     AlertTriangle,
     DollarSign,
   } from "lucide-svelte";
+  import PayslipProcess from "$lib/components/payroll/payslipProcess.svelte";
 
   let today = new Date();
   let year = today.getFullYear();
@@ -332,6 +333,8 @@
           </div>
         </div>
       {/if}
+    {:else if activeTab === "payslips"}
+      <PayslipProcess {month} {year} />
     {/if}
   </Tabs>
   <!-- Modal to display payroll initiation data -->
@@ -466,109 +469,6 @@
     <LoaderNew />
   {/if}
 </div>
-
-<!--   /* .search-filter-section {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  @media (min-width: 768px) {
-    .search-filter-section {
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-    }
-  }
-
-  .search-box {
-    display: flex;
-    align-items: center;
-    background: #f7fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 10px 16px;
-    width: 100%;
-    max-width: 320px;
-  }
-
-  .search-box svg {
-    color: #718096;
-    margin-right: 10px;
-  }
-
-  .search-box input {
-    border: none;
-    outline: none;
-    background: transparent;
-    width: 100%;
-    font-size: 14px;
-    color: #4a5568;
-  }
-
-  .filters {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .filter {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .filter label {
-    font-size: 12px;
-    color: #718096;
-    font-weight: 500;
-  }
-
-  .filter select {
-    padding: 8px 12px;
-    border-radius: 6px;
-    border: 1px solid #e2e8f0;
-    background: white;
-    font-size: 14px;
-    color: #4a5568;
-    outline: none;
-    cursor: pointer;
-    min-width: 100px;
-  }
-    
-   /* Dropdown styles */
-  .dropdown-parent {
-    position: relative;
-  }
-
-  .dropdown-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    z-index: 10;
-    display: none;
-    overflow: hidden;
-  }
-
-  .dropdown-parent:hover .dropdown-menu {
-    display: block;
-  }
-
-  .dropdown-item {
-    padding: 12px 16px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background 0.15s ease;
-  }
-
-  .dropdown-item:hover {
-    background: #f7fafc;
-  }*/
- -->
 
 <style>
   :global(body) {
