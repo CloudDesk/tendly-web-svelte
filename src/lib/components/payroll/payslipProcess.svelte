@@ -9,34 +9,32 @@
 
   export let year: number;
   export let month: { full: string; short: string; numeric: string };
-
+  export let isPayslipGenerated: boolean;
+  export let payslips: {
+    employeeId: string;
+    employeeName: string;
+    payslipId: string;
+    payslipUrl: string;
+  }[] = [];
   // State management
   let isGenerating = writable(false);
   let isSending = writable(false);
-  let isPayslipGenerated = writable(false);
+  // let isPayslipGenerated = writable(false);
   let showSendOptionsModal = writable(false);
   let selectedEmployees = writable<string[]>([]);
 
   // Simulated employee list (in real app, this would come from an API)
-  const employeeList = [
-    { id: "1", name: "John Doe", email: "john@company.com" },
-    { id: "2", name: "Jane Smith", email: "jane@company.com" },
-    { id: "3", name: "Mike Johnson", email: "mike@company.com" },
-  ];
-
+  $: employeeList = payslips.map((i) => ({
+    id: i.employeeId,
+    name: i.employeeName,
+  }));
+  console.log(employeeList);
+  console.log(payslips, "payslips");
+  console.log(employeeList, "*****");
   // Generate Payslips
   const generatePayslips = async () => {
     isGenerating.set(true);
     try {
-      // Simulated API call for payslip generation
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Calls to backend services
-      // 1. Fetch payroll data
-      // 2. Generate PDFs using LibreOffice
-      // 3. Store payslip records in database
-
-      isPayslipGenerated.set(true);
       dispatch("payslip-generated");
     } catch (error) {
       console.error("Payslip generation failed", error);
@@ -52,11 +50,13 @@
 
   const sendToAllEmployees = async () => {
     isSending.set(true);
+    const payload = {
+      month,
+      year,
+      recipients: payslips.map((p) => p.employeeId),
+    };
     try {
-      // Simulated API call to send payslips to all employees
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      dispatch("payslips-sent", { recipients: "all" });
+      dispatch("payslip-sent", payload);
       showSendOptionsModal.set(false);
     } catch (error) {
       console.error("Sending payslips failed", error);
@@ -66,20 +66,21 @@
   };
 
   const sendToSelectedEmployees = async () => {
+    console.log("selectedEmployees", selectedEmployees);
     if ($selectedEmployees.length === 0) {
       alert("Please select employees to send payslips");
       return;
     }
-
     isSending.set(true);
-    try {
-      // Simulated API call to send payslips to selected employees
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+    const payload = {
+      month,
+      year,
+      recipients: $selectedEmployees,
+    };
 
-      dispatch("payslips-sent", {
-        recipients: "selected",
-        employeeIds: $selectedEmployees,
-      });
+    try {
+      dispatch("payslip-sent", payload);
+      selectedEmployees.set([]);
       showSendOptionsModal.set(false);
     } catch (error) {
       console.error("Sending selected payslips failed", error);
@@ -102,7 +103,7 @@
     <button
       class="action-card generate-card"
       on:click={generatePayslips}
-      disabled={$isGenerating || $isPayslipGenerated}
+      disabled={$isGenerating || isPayslipGenerated}
     >
       {#if $isGenerating}
         <LoaderNew />
@@ -121,7 +122,7 @@
     <button
       class="action-card send-card"
       on:click={openSendOptionsModal}
-      disabled={!$isPayslipGenerated || $isSending}
+      disabled={!isPayslipGenerated || $isSending}
     >
       <div class="action-icon">
         <Send />

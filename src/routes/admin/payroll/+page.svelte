@@ -17,6 +17,7 @@
     DollarSign,
   } from "lucide-svelte";
   import PayslipProcess from "$lib/components/payroll/payslipProcess.svelte";
+  import { payslipApi } from "$lib/services/payslip";
 
   let today = new Date();
   let year = today.getFullYear();
@@ -30,6 +31,13 @@
   let canApprove: boolean = false;
   let canInitiate: boolean = false;
   let isLoading = false;
+  let isPayslipGenerated: boolean = false;
+  let payslips: {
+    employeeId: string;
+    employeeName: string;
+    payslipId: string;
+    payslipUrl: string;
+  }[] = [];
 
   const getPayrolls = async () => {
     try {
@@ -118,10 +126,25 @@
       }
     } catch (error) {}
   };
-  onMount(() => {
-    getPayrolls();
-    checkPayrollStatus();
-  });
+  const checkPayslipGeneration = async () => {
+    isLoading = true;
+    try {
+      const result: any = await payslipApi.checkPayslipStatus(
+        Number(month.numeric),
+        year
+      );
+      console.log(result, "Payslip Generation Status");
+      if (result.success) {
+        isPayslipGenerated = result.data.generated;
+        payslips = [...result.data.payslips];
+      }
+      console.log(payslips);
+    } catch (error) {
+      console.error("Error checking payslip generation status:", error);
+    } finally {
+      isLoading = false;
+    }
+  };
 
   // Action handlers
   const processPayroll = async () => {
@@ -265,6 +288,35 @@
     }
   };
 
+  const generatePayslip = async () => {
+    try {
+      let result = await payslipApi.bulkGenerate({
+        month: Number(month.numeric),
+        year,
+      });
+      console.log(result, "result generatePayslip");
+      isPayslipGenerated = true;
+    } catch (error) {
+      console.log(error, "error generatePayslip");
+    }
+  };
+
+  const sendPayslip = async (event: CustomEvent) => {
+    console.log("sendPayslip", event.detail);
+    const { month, year, recipients } = event.detail;
+
+    try {
+      let result = await payslipApi.sendPayslips({
+        year,
+        month: Number(month.numeric),
+        recipients,
+      });
+      console.log(result, "sendPayslip");
+    } catch (error) {
+      console.log("error", error);
+    }
+  };
+
   const tabs = [
     { id: "processing", label: "Payroll Processing" },
     { id: "payslips", label: "Payslips" },
@@ -272,6 +324,15 @@
     { id: "templates", label: "Templates" },
     { id: "trends", label: "Trends" },
   ];
+
+  $: payslips;
+  console.log(payslips, "payslip");
+
+  onMount(() => {
+    getPayrolls();
+    checkPayrollStatus();
+    checkPayslipGeneration();
+  });
 </script>
 
 <div class="page">
@@ -334,7 +395,14 @@
         </div>
       {/if}
     {:else if activeTab === "payslips"}
-      <PayslipProcess {month} {year} />
+      <PayslipProcess
+        {month}
+        {year}
+        {isPayslipGenerated}
+        {payslips}
+        on:payslip-generated={generatePayslip}
+        on:payslip-sent={sendPayslip}
+      />
     {/if}
   </Tabs>
   <!-- Modal to display payroll initiation data -->
@@ -489,22 +557,6 @@
 
   .subtitle {
     @apply text-gray-600 text-base;
-  }
-
-  .admin-action-section {
-    @apply mt-4 p-4 border border-gray-300 rounded-lg bg-white shadow-sm;
-  }
-
-  .admin-action-section button {
-    @apply mr-4 px-4 py-2 rounded-md text-white transition-colors;
-  }
-
-  .admin-action-section button:first-of-type {
-    @apply bg-blue-600 hover:bg-blue-700;
-  }
-
-  .admin-action-section button:last-of-type {
-    @apply bg-red-500 hover:bg-red-600;
   }
 
   .actions {
