@@ -17,11 +17,12 @@
     DollarSign,
   } from "lucide-svelte";
   import PayslipProcess from "$lib/components/payroll/payslipProcess.svelte";
-  import { payslipApi } from "$lib/services/payslip";
+  import { payslipApi } from "$lib/services/api/payslip";
+  import PayslipHistory from "$lib/components/payroll/payslipHistory.svelte";
 
   let today = new Date();
   let year = today.getFullYear();
-  let month = getMonthFormats(today.getMonth());
+  let month = getMonthFormats(today.getMonth() - 1);
   let reviewPayrollData: any;
 
   let payrollInitiateResponse: any = null; // New variable for initiation response
@@ -37,12 +38,31 @@
     employeeName: string;
     payslipId: string;
     payslipUrl: string;
+    status: string;
+    emailSent: boolean;
+    lastEmailSentAt: string;
   }[] = [];
+  let startDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    .toISOString()
+    .split("T")[0]; // Default to the first day of the current month
+  let endDate = new Date().toISOString().split("T")[0]; // Default to today
+  let page = 1;
+  let limit = 10;
 
+  const handleFilterChange = (event: CustomEvent) => {
+    const {
+      startDate: newStartDate,
+      endDate: newEndDate,
+      page: newPage,
+    } = event.detail;
+    startDate = newStartDate || startDate;
+    endDate = newEndDate || endDate;
+    page = newPage || page;
+  };
   const getPayrolls = async () => {
     try {
       let result: any = await payrollApi.payrollApprovalSummary(
-        today.getMonth(),
+        today.getMonth() - 1,
         year
       );
       console.log(result, "result getpayrolls");
@@ -303,17 +323,24 @@
 
   const sendPayslip = async (event: CustomEvent) => {
     console.log("sendPayslip", event.detail);
+    isLoading = true;
     const { month, year, recipients } = event.detail;
-
+    let obj = {
+      year,
+      month: Number(month.numeric),
+      recipients,
+    };
     try {
-      let result = await payslipApi.sendPayslips({
-        year,
-        month: Number(month.numeric),
-        recipients,
-      });
+      let result: any = await payslipApi.sendPayslips(obj);
       console.log(result, "sendPayslip");
+      if (result.success) {
+        await checkPayslipGeneration();
+        toast.success("Payslip send");
+      }
     } catch (error) {
       console.log("error", error);
+    } finally {
+      isLoading = false;
     }
   };
 
@@ -402,6 +429,14 @@
         {payslips}
         on:payslip-generated={generatePayslip}
         on:payslip-sent={sendPayslip}
+      />
+    {:else if activeTab === "history"}
+      <PayslipHistory
+        {startDate}
+        {endDate}
+        {page}
+        {limit}
+        on:filterChange={handleFilterChange}
       />
     {/if}
   </Tabs>

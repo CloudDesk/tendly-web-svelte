@@ -1,4 +1,4 @@
-import { fetchApi } from "./api/base";
+import { fetchApi } from "./base";
 
 interface PayslipGen {
     month: number;
@@ -10,7 +10,12 @@ interface payslipSend {
     year: number;
     recipients: string[]
 }
-
+interface PayslipHistoryParams {
+    startDate: string;
+    endDate: string;
+    page: number;
+    limit: number;
+}
 export const payslipApi = {
     bulkGenerate: async (data: PayslipGen) => {
         return fetchApi('/payslip/bulk-generate', {
@@ -26,10 +31,19 @@ export const payslipApi = {
     },
     sendPayslips: async (data: payslipSend) => {
         console.log(data, "sendPayslips")
-        return fetchApi(`/payslip/send`), {
+        return fetchApi(`/payslip/send`, {
             method: "POST",
             body: JSON.stringify(data)
-        }
-    }
+        })
+    },
+    getPayslipHistory: async (params: PayslipHistoryParams) => {
+        const { startDate, endDate, page, limit } = params;
+        return fetchApi(
+            `/payslip/history?startDate=${startDate}&endDate=${endDate}&page=${page}&limit=${limit}`,
+            {
+                method: "GET",
+            }
+        );
+    },
 
 }

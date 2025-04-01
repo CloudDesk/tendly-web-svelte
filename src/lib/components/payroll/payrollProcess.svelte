@@ -19,7 +19,7 @@
   let isDownloaded = false;
   let showModal = writable(false);
   let showConfirmationModal = writable(false);
-
+  console.log(payrollData, "payrollData");
   const columns = [
     {
       key: "employeeName",

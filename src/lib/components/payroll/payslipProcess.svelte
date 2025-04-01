@@ -4,6 +4,7 @@
   import Modal from "../common/Modal.svelte";
   import LoaderNew from "../common/LoaderNew.svelte";
   import { FileText, Send, Users, UserCheck } from "lucide-svelte";
+  import Table from "../common/Table.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -15,7 +16,11 @@
     employeeName: string;
     payslipId: string;
     payslipUrl: string;
+    status: string;
+    emailSent: boolean;
+    lastEmailSentAt: string;
   }[] = [];
+
   // State management
   let isGenerating = writable(false);
   let isSending = writable(false);
@@ -23,6 +28,84 @@
   let showSendOptionsModal = writable(false);
   let selectedEmployees = writable<string[]>([]);
 
+  // Format the payslip URL for display
+  const formatPayslipUrl = (url: string) => {
+    const parts = url.split("/");
+    return parts[parts.length - 1]; // Extract the file name
+  };
+
+  const columns = [
+    {
+      key: "employeeName",
+      label: "Employee Name",
+      sortable: false,
+      render: (payslips: any) => payslips.employeeName || "",
+    },
+    {
+      key: "month",
+      label: "Month Year",
+      sortable: false,
+      render: (payslips: any) =>
+        `${payslips.month.short} - ${payslips.year}` || "",
+    },
+    {
+      key: "payslipUrl",
+      label: "Payslip",
+      sortable: false,
+      render: (payslips: any) => `
+    <a target="_blank" href=${payslips.payslipUrl} class="text-blue-500 hover:underline">
+      ${formatPayslipUrl(payslips.payslipUrl)}
+    </a>
+  `,
+    },
+    {
+      key: "status",
+      label: "Status",
+      sortable: false,
+      render: (payslips: any) => {
+        const statusClasses = {
+          Pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
+          Completed: "bg-green-100 text-green-800 border-green-300",
+          Failed: "bg-red-100 text-red-800 border-red-300",
+        };
+
+        return `
+      <span class="px-4 py-3 text-xs font-semibold border rounded-full ${statusClasses[payslips.status as keyof typeof statusClasses] || "bg-gray-100 text-gray-800 border-gray-300"}">
+        ${payslips.status}
+      </span>
+    `;
+      },
+    },
+    {
+      key: "emailSent",
+      label: "Email Sent",
+      sortable: false,
+      render: (payslips: any) => {
+        const emailStatus = payslips.emailSent ? "Sent" : "Not Sent";
+        const emailClasses = payslips.emailSent
+          ? "bg-green-100 text-green-800 border-green-300"
+          : "bg-gray-100 text-gray-800 border-gray-300";
+
+        return `
+        <span class="px-3 py-1 text-xs font-semibold border rounded-full ${emailClasses}">
+          ${emailStatus}
+        </span>
+      `;
+      },
+    },
+    {
+      key: "sentDate",
+      label: "Sent Date",
+      sortable: false,
+      render: (payslips: any) =>
+        payslips.sentDate
+          ? new Date(payslips.sentDate).toLocaleDateString()
+          : "—",
+    },
+  ];
+  let newData = payslips.map((i) => ({ ...i, year: year, month: month }));
+  console.log(month, year);
+  console.log(newData, "newData");
   // Simulated employee list (in real app, this would come from an API)
   $: employeeList = payslips.map((i) => ({
     id: i.employeeId,
@@ -134,7 +217,16 @@
       </div>
     </button>
   </div>
-
+  {#if payslips.length > 0}
+    <Table {columns} data={newData} searchable={false} />
+  {:else}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+      <p class="text-yellow-700">
+        No payslips available for {month.full}
+        {year}.
+      </p>
+    </div>
+  {/if}
   {#if $showSendOptionsModal}
     <Modal
       title="Send Payslips"
