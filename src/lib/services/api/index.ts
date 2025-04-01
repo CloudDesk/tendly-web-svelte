@@ -10,3 +10,4 @@ export * from './shifts';
 export * from './salaryAssignments';
 export * from './salaryStructure';
 export * from './taxSlab';
+export * from './dataunit'; 

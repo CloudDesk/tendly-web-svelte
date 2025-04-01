@@ -1,5 +1,6 @@
 import adapter from "@sveltejs/adapter-static";
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
+import sveltePreprocess from "svelte-preprocess"; // Changed from require to import
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -15,7 +16,12 @@ const config = {
       $lib: "./src/lib",
     },
   },
-  preprocess: vitePreprocess(),
+  preprocess: [
+    vitePreprocess(),
+    sveltePreprocess({
+      typescript: true, // Enable TypeScript preprocessing
+    }),
+  ],
 };
 
 export default config;

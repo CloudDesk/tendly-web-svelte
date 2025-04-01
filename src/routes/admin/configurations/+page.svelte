@@ -1,14 +1,18 @@
-<script lang="ts">
+<script>
   import { page } from "$app/stores";
+  import { onDestroy } from "svelte";
+  import { derived } from "svelte/store";
   import Tabs from "$lib/components/common/Tabs.svelte";
-  // import ShiftManagement from '$lib/components/management/ShiftManagement.svelte';
   import ShiftManagement from "$lib/components/management/shifts/ShiftManagement.svelte";
   import TrainingManagement from "$lib/components/management/TrainingManagement.svelte";
   import ConfigManagement from "$lib/components/management/ConfigManagement.svelte";
   import OrgChart from "$lib/components/employee/OrgChart.svelte";
-  // import SalaryStructureForm from '$lib/components/employee/salary-structure/SalaryStructureForm.svelte';
   import SalaryStructureManagement from "$lib/components/management/SalaryStructureManagement.svelte";
   import TaxSlabManagement from "$lib/components/management/TaxSlabManagement.svelte";
+  import CreateDataUnit from "$lib/components/management/Data Unit/CreateDataUnit.svelte";
+
+  import Modal from '$lib/components/common/Modal.svelte';
+
 
   const tabs = [
     { id: "configs", label: "Configs" },
@@ -17,9 +21,29 @@
     { id: "salary", label: "Salary Structure" },
     { id: "taxslab", label: "Tax Slab" },
     { id: "org", label: "Org Chart" },
+    { id: "dataunit", label: "Data Unit" }
   ];
 
-  $: activeTab = $page.url.searchParams.get("tab") || tabs[0]?.id;
+  // Reactive derived store to update the active tab based on the URL
+  const activeTab = derived(page, $page => $page.url.searchParams.get("tab") || tabs[0]?.id);
+
+  let showModal = false;
+
+  const unsubscribe = activeTab.subscribe(tab => {
+    console.log(tab,"tabb")
+    showModal = tab === "dataunit";
+  });
+
+  onDestroy(unsubscribe);
+
+  function closeModal() {
+    showModal = false;
+    history.pushState({}, "", "?tab=configs");
+  }
+
+  function openModal() {
+    showModal = true;
+  }
 </script>
 
 <div class="container mx-auto p-4">
@@ -30,20 +54,28 @@
   <div class="card">
     <div class="card-body">
       <Tabs {tabs}>
-        {#if activeTab === "shifts"}
+        {#if $activeTab === "shifts"}
           <ShiftManagement />
-        {:else if activeTab === "trainings"}
+        {:else if $activeTab === "trainings"}
           <TrainingManagement />
-        {:else if activeTab === "configs"}
+        {:else if $activeTab === "configs"}
           <ConfigManagement />
-        {:else if activeTab === "org"}
+        {:else if $activeTab === "org"}
           <OrgChart />
-        {:else if activeTab === "salary"}
+        {:else if $activeTab === "salary"}
           <SalaryStructureManagement />
-        {:else if activeTab === "taxslab"}
+        {:else if $activeTab === "taxslab"}
           <TaxSlabManagement />
+        {:else if $activeTab === "dataunit"}
+          <button class="btn btn-primary" on:click={openModal}>Create Data Unit</button>
         {/if}
       </Tabs>
     </div>
   </div>
 </div>
+
+{#if showModal}
+<!-- <Modal title="Create New Data Unit" show={showModal}  onClose={closeModal}> -->
+  <CreateDataUnit on:close={closeModal} />
+<!-- </Modal> -->
+{/if}
