@@ -16,6 +16,7 @@
     "@sveltejs/kit": "^2.0.0",
     "@sveltejs/vite-plugin-svelte": "^3.0.0",
     "@types/node": "^20.0.0",
+    "@types/xlsx": "^0.0.36",
     "autoprefixer": "^10.4.14",
     "postcss": "^8.4.24",
     "svelte": "^4.2.7",
@@ -32,8 +33,6 @@
     "lucide-svelte": "^0.469.0",
     "svelte-calendar": "^3.1.6",
     "svelte-chartjs": "^3.1.2",
-    "svelte-dnd-action": "^0.9.60",
-    "svelte-preprocess": "^6.0.3",
     "svelte-select": "^5.8.1"
   },
   "type": "module"

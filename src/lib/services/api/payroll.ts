@@ -15,7 +15,29 @@ export const payrollApi = {
         return fetchApi(`/payroll/approval-summary?month=${month}&year=${year}`, {
             method: 'GET'
         });
-    }
+    },
+    updateStatus: async (month: number, year: number, data: string) => {
+        return fetchApi(`/payroll/approval/status?month=${month}&year=${year}`, {
+            method: 'PUT',
+            body: JSON.stringify({ status: data })
+        });
+    },
+
+    getPayrollStatus: async (month: number, year: number) => {
+        return fetchApi(`/payroll/status?month=${month}&year=${year}`, {
+            method: 'GET',
+        })
+    },
+    canInitiatePayroll: async (month: number, year: number) => {
+        return fetchApi(`/payroll/can-initiate?month=${month}&year=${year}`, {
+            method: 'GET',
+        })
+    },
+    canApprovePayroll: async (month: number, year: number) => {
+        return fetchApi(`/payroll/can-approve?month=${month}&year=${year}`, {
+            method: 'GET',
+        })
+    },
 
     // getActiveSalaryStructure: async () => {
     //     //current salary structure of an loggedin employee
