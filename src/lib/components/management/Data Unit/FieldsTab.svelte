@@ -1,8 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy, afterUpdate } from "svelte";
   import { getfieldsapi } from "$lib/services/api";
-  import { Search, ChevronRight, X } from "lucide-svelte";
-  import { dataUnit as dataUnitStore } from "$lib/stores/dataUnit";
+  import { Search, X } from "lucide-svelte";
   import type { DataUnit } from "$lib/stores/dataUnit";
   import { get, writable, type Writable } from "svelte/store";
 
@@ -15,7 +14,8 @@
   let previousObject = get(dataUnit).object;
   let isInitialLoad = true;
   let isResetting = false;
-
+  console.log(get(dataUnit), "");
+  console.log(dataUnit, "dataUnits");
   // Create a separate local array to directly control what's shown in the UI
   let displayedSelectedFields: string[] = [];
 
@@ -29,8 +29,10 @@
       loading = true;
       error = null;
       fieldsData = [];
-
-      const response = await getfieldsapi.getFields();
+      let getDataUnit = get(dataUnit);
+      console.log(getDataUnit);
+      const response = await getfieldsapi.getFields(getDataUnit.object);
+      console.log(response, "Response");
       fieldsData = response.data || [];
 
       // Only populate selected fields on initial load

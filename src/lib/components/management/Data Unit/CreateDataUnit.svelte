@@ -1,20 +1,57 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
-  import { get } from "svelte/store";
-  import Modal from "$lib/components/common/Modal.svelte";
-
+  import { onMount, createEventDispatcher } from "svelte";
+  import { writable, get } from "svelte/store";
   import InfoTab from "./InfoTab.svelte";
   import FieldsTab from "./FieldsTab.svelte";
   import FiltersTab from "./FiltersTab.svelte";
   import SortLimitTab from "./SortLimitTab.svelte";
-  import ChildrenTab from "./ChildrenTab.svelte";
-  import PreviewTab from "./PreviewTab.svelte";
-  import { dataUnit } from "$lib/stores/dataUnit";
+  // import PreviewTab from "./PreviewTab.svelte";
 
-  let currentTab = "Info";
+  // Define TypeScript interfaces
+  interface Field {
+    apiName: string;
+    fieldType: string;
+    label: string;
+    referenceTo: string;
+  }
+  interface SortField {
+    field: string;
+    order: string;
+  }
+  interface Filter {
+    field: string;
+    condition: string;
+    value: string;
+    nestedFields: Array<any>;
+    subFilters: Array<any>;
+    isNestedObject?: boolean;
+  }
+  interface DataUnit {
+    id?: string;
+    name: string;
+    apiName: string;
+    description: string;
+    object: string | null;
+    fields: Field[];
+    filters: Filter[];
+    filterLogic: string;
+    sortFields: SortField[];
+    limit: number;
+    preview: any;
+  }
   const dispatch = createEventDispatcher();
+  // Props to accept initial values for update scenario
+  export let initialDataUnit: Partial<DataUnit> = {};
+  export let mode: "create" | "update" = "create";
+  export let showModal = true;
 
-  const initialDataUnit = {
+  // Form validation state
+  let errors: Record<string, string> = {};
+  let isSubmitting = false;
+  let currentTab = "Info";
+
+  // Create a writable store with initial values
+  const defaultDataUnit: DataUnit = {
     name: "",
     apiName: "",
     description: "",
@@ -22,130 +59,235 @@
     fields: [],
     filters: [],
     filterLogic: "",
-    sort: [],
-    sortFields: [], // Added missing property
-    limit: 0, // Changed from null to 0
-    children: [],
-    type: "",
+    sortFields: [],
+    limit: 10,
     preview: null,
-    id: "", // Added missing property
   };
 
-  let showModal = true; // Track modal visibility
-
-  $: if (showModal) {
-    dataUnit.set(initialDataUnit); // Reset the dataUnit store when the modal is opened
-  }
-
+  // Merge default values with any provided initial values
+  const initialValues = {
+    ...defaultDataUnit,
+    ...initialDataUnit,
+  };
+  console.log(initialValues, "initialValues");
+  // Create a writable store with the initial values
+  const dataUnit = writable<DataUnit>(initialValues);
+  console.log(get(dataUnit), "dataUnit");
+  console.log(errors, "errors");
   function setTab(tab: string) {
     currentTab = tab;
   }
 
+  // Handle modal closing
   function closeModal() {
-    showModal = false; // Hide the modal
+    showModal = false;
     dispatch("close");
-    location.reload(); // Reload the page
   }
 
+  // Handle modal opening
   function openModal() {
-    showModal = true; // Show the modal
+    showModal = true;
+  }
+
+  // Reset form to initial state
+  function resetForm() {
+    dataUnit.set(defaultDataUnit);
+    errors = {};
+  }
+
+  // Validate the form data
+  function validateForm(): boolean {
+    const $dataUnit = get(dataUnit);
+    let isValid = true;
+    const newErrors: Record<string, string> = {};
+
+    // Validate Info tab
+    if (!$dataUnit.name) {
+      newErrors.name = "Name is required";
+      isValid = false;
+    }
+
+    if (!$dataUnit.object) {
+      newErrors.object = "Object selection is required";
+      isValid = false;
+    }
+
+    // Validate Fields tab
+    if ($dataUnit.fields.length === 0) {
+      newErrors.fields = "At least one field must be selected";
+      isValid = false;
+    }
+
+    // Update errors state
+    errors = newErrors;
+    return isValid;
   }
 
   async function saveDataUnit() {
     try {
-      const $dataUnit = get(dataUnit);
-
-      if (!$dataUnit.name) {
-        alert("Please enter a name for the Data Unit");
+      if (!validateForm()) {
+        // If there's an error on the Info tab, navigate there
+        if (errors.name || errors.object) {
+          currentTab = "Info";
+        }
+        // If there's an error on the Fields tab, navigate there
+        else if (errors.fields) {
+          currentTab = "Fields";
+        }
         return;
       }
 
+      isSubmitting = true;
+      const $dataUnit = get(dataUnit);
       dispatch("save", $dataUnit);
-      closeModal();
+
+      // Close modal on successful save
+      await closeModal();
     } catch (error) {
       console.error("Error saving Data Unit:", error);
-      alert("Failed to save Data Unit");
+      alert(
+        error instanceof Error ? error.message : "An unknown error occurred"
+      );
+    } finally {
+      isSubmitting = false;
     }
   }
 
   function updateDataUnit(event: CustomEvent) {
     console.log(event.detail, "eventdetail");
+    const detail = event.detail;
+
     dataUnit.update((current) => {
-      if (event.detail?.object) {
+      // If object is changed, reset related fields
+      if (detail?.object && detail.object !== current.object) {
         return {
           ...current,
-          ...event.detail,
+          ...detail,
           fields: [],
           filters: [],
           filterLogic: "",
-          sort: [],
-          limit: 0,
-          children: [],
+          sortFields: [],
+          limit: 10,
           preview: null,
         };
       } else {
-        return { ...current, ...event.detail };
+        console.log("else", detail);
+        return { ...current, ...detail };
       }
     });
+    // Clear any errors related to the updated fields
+    if (detail.name) errors.name = "";
+    if (detail.object) errors.object = "";
+    if (detail.fields) errors.fields = "";
+    console.log(get(dataUnit), "dataUnit");
   }
+
+  // onMount(() => {
+  //   const $dataUnit = get(dataUnit);
+  // });
 </script>
 
-<Modal
-  title="Create New Data Unit"
-  show={showModal}
-  wide={true}
-  on:close={closeModal}
-  onClose={closeModal}
->
-  <div class="tabs flex justify-between mb-4">
-    {#each ["Info", "Fields", "Filters", "Sort & Limit", "Preview"] as tab}
+<!-- Content -->
+<div class="flex flex-col flex-1 overflow-hidden min-h-[60vh]">
+  <!-- Tabs -->
+  <div class="flex border-b px-4">
+    {#each ["Info", "Fields", "Filters", "Sort & Limit"] as tab}
       <button
         on:click={() => setTab(tab)}
-        class="btn {currentTab === tab ? 'btn-active' : 'btn-inactive'}"
+        class={`py-3 px-4 font-medium transition-colors ${
+          currentTab === tab
+            ? "border-b-2 border-yellow-500 text-yellow-600"
+            : "text-gray-600 hover:text-yellow-500"
+        }`}
       >
         {tab}
+        {#if tab === "Info" && (errors.name || errors.object)}
+          <span class="ml-1 text-red-500">*</span>
+        {/if}
+        {#if tab === "Fields" && errors.fields}
+          <span class="ml-1 text-red-500">*</span>
+        {/if}
       </button>
     {/each}
   </div>
 
   <!-- Tab Content -->
-  {#if currentTab === "Info"}
-    <InfoTab InfoData={dataUnit} on:update={updateDataUnit} />
-  {:else if currentTab === "Fields"}
-    <FieldsTab {dataUnit} on:update={updateDataUnit} />
-  {:else if currentTab === "Filters"}
-    <FiltersTab DataUnit={$dataUnit} on:update={updateDataUnit} />
-  {:else if currentTab === "Sort & Limit"}
-    <SortLimitTab {dataUnit} on:update={updateDataUnit} />
-    <!-- {:else if currentTab === "Children"}
-    <ChildrenTab {dataUnit} on:update={updateDataUnit} /> -->
-  {:else if currentTab === "Preview"}
-    <PreviewTab dataUnitt={$dataUnit} on:update={updateDataUnit} />
-  {/if}
-
-  <div class="modal-footer flex justify-end space-x-2 mt-4">
-    <button
-      class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-md transition"
-      on:click={closeModal}
-    >
-      Cancel
-    </button>
-    <button
-      class="px-4 py-2 bg-yellow-500 text-white rounded-md
-                   hover:bg-yellow-600 transition"
-      on:click={saveDataUnit}
-    >
-      Create Data Unit
-    </button>
+  <div class="flex-1 p-6 overflow-y-auto">
+    {#if currentTab === "Info"}
+      <InfoTab InfoData={$dataUnit} on:update={updateDataUnit} />
+      {#if errors.name}
+        <p class="text-red-500 mt-2">{errors.name}</p>
+      {/if}
+      {#if errors.object}
+        <p class="text-red-500 mt-2">{errors.object}</p>
+      {/if}
+    {:else if currentTab === "Fields"}
+      <FieldsTab {dataUnit} on:update={updateDataUnit} />
+      {#if errors.fields}
+        <p class="text-red-500 mt-2">{errors.fields}</p>
+      {/if}
+    {:else if currentTab === "Filters"}
+      <FiltersTab DataUnit={$dataUnit} on:update={updateDataUnit} />
+    {:else if currentTab === "Sort & Limit"}
+      <SortLimitTab {dataUnit} on:update={updateDataUnit} />
+    {:else if currentTab === "Preview"}
+      <!-- <PreviewTab dataUnit={$dataUnit} on:update={updateDataUnit} /> -->
+    {/if}
   </div>
-</Modal>
 
-<button
-  class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
-  on:click={openModal}
->
-  Open Modal
-</button>
+  <!-- Footer -->
+  <div
+    class="mt-auto p-4 border-t bg-gray-50 flex justify-between items-center"
+  >
+    <div>
+      {#if Object.keys(errors).length > 0}
+        <p class="text-red-500 text-sm">
+          Please fix the errors before submitting
+        </p>
+      {/if}
+    </div>
+    <div class="flex space-x-3">
+      <button
+        class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-md transition"
+        on:click={closeModal}
+        disabled={isSubmitting}
+      >
+        Cancel
+      </button>
+      <button
+        class="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition flex items-center"
+        on:click={saveDataUnit}
+        disabled={isSubmitting}
+      >
+        {#if isSubmitting}
+          <svg
+            class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          {mode === "create" ? "Creating..." : "Updating..."}
+        {:else}
+          {mode === "create" ? "Create Data Unit" : "Update Data Unit"}
+        {/if}
+      </button>
+    </div>
+  </div>
+</div>
 
 <style>
   .tabs {

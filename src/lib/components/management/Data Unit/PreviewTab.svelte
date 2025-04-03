@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { dataUnit as dataUnitStore } from "$lib/stores/dataUnit";
   import type { DataUnit } from "$lib/stores/dataUnit";
   import { get } from "svelte/store";
 
-  export let dataUnitt: DataUnit = get(dataUnitStore);
-  console.log(JSON.stringify(dataUnitt, null, 2), "dataUnit"); // Debugging line
+  export let dataUnit;
+  console.log(dataUnit, "dataUnit"); // Debugging line
   function generateSQLQuery(dataUnit: DataUnit): string {
     if (!dataUnit || !dataUnit.object || !dataUnit.fields) {
       return "Invalid data structure";

@@ -15,6 +15,14 @@
     X,
     AlertTriangle,
     DollarSign,
+    FileText,
+    Users,
+    TrendingUp,
+    Calendar,
+    Download,
+    Mail,
+    History,
+    Settings,
   } from "lucide-svelte";
   import PayslipProcess from "$lib/components/payroll/payslipProcess.svelte";
   import { payslipApi } from "$lib/services/api/payslip";
@@ -355,6 +363,54 @@
   $: payslips;
   console.log(payslips, "payslip");
 
+  const dashboardStats = [
+    {
+      title: "Total Employees",
+      value: reviewPayrollData?.totalEmployees || 0,
+      icon: Users,
+      color: "blue",
+    },
+    {
+      title: "Gross Payroll",
+      value: formatCurrency(reviewPayrollData?.totalGrossSalary || 0),
+      icon: DollarSign,
+      color: "green",
+    },
+    {
+      title: "Net Payroll",
+      value: formatCurrency(reviewPayrollData?.totalNetSalary || 0),
+      icon: TrendingUp,
+      color: "indigo",
+    },
+    {
+      title: "Processing Month",
+      value: `${month.name} ${year}`,
+      icon: Calendar,
+      color: "purple",
+    },
+  ];
+
+  const quickActions = [
+    {
+      title: "Generate Payslips",
+      icon: FileText,
+      action: generatePayslip,
+      disabled: !isPayslipGenerated,
+    },
+    {
+      title: "Download Reports",
+      icon: Download,
+      action: () => {},
+      disabled: false,
+    },
+    {
+      title: "Send Payslips",
+      icon: Mail,
+      action: () => {},
+      disabled: !isPayslipGenerated,
+    },
+  ];
+
   onMount(() => {
     getPayrolls();
     checkPayrollStatus();
@@ -363,83 +419,79 @@
 </script>
 
 <div class="page">
-  <div class="header">
-    <div class="title-section">
-      <h1>Payroll Management</h1>
-      <p class="subtitle">
-        Manage employee payroll, generate payslips, and track payroll history.
-      </p>
-    </div>
-  </div>
-  <Tabs {tabs} let:activeTab>
-    {#if activeTab === "processing"}
-      <PayrollProcess
-        {month}
-        {year}
-        payrollData={reviewPayrollData}
-        {isLoading}
-        {canInitiate}
-        {canApprove}
-        on:initiate={processPayroll}
-        on:approval={approvalPayroll}
-      />
-      {#if needsAdminApproval}
-        <div class="admin-approval-container">
-          <div
-            class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 flex items-center justify-between shadow-md"
-          >
-            <div class="flex items-center space-x-5">
-              <div class="bg-yellow-100 p-3 rounded-full">
-                <AlertTriangle class="h-8 w-8 text-yellow-600" />
+  <!-- Main Content Tabs -->
+  <div class="bg-white rounded-xl shadow-sm">
+    <Tabs {tabs} let:activeTab>
+      {#if activeTab === "processing"}
+        <PayrollProcess
+          {month}
+          {year}
+          payrollData={reviewPayrollData}
+          {isLoading}
+          {canInitiate}
+          {canApprove}
+          on:initiate={processPayroll}
+          on:approval={approvalPayroll}
+        />
+        {#if needsAdminApproval}
+          <div class="admin-approval-container">
+            <div
+              class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 flex items-center justify-between shadow-md"
+            >
+              <div class="flex items-center space-x-5">
+                <div class="bg-yellow-100 p-3 rounded-full">
+                  <AlertTriangle class="h-8 w-8 text-yellow-600" />
+                </div>
+                <div>
+                  <h3 class="text-xl font-bold text-gray-800 mb-2">
+                    Admin Action Required
+                  </h3>
+                  <p class="text-gray-600">
+                    All payroll records are currently in Draft status and need
+                    your attention.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 class="text-xl font-bold text-gray-800 mb-2">
-                  Admin Action Required
-                </h3>
-                <p class="text-gray-600">
-                  All payroll records are currently in Draft status and need
-                  your attention.
-                </p>
+              <div class="flex space-x-4">
+                <button
+                  on:click={handleAdminApproval}
+                  class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 shadow-md"
+                >
+                  <Check class="h-5 w-5" />
+                  <span>Approve for Processing</span>
+                </button>
+                <button
+                  on:click={handleCancelDraft}
+                  class="px-6 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center space-x-2 shadow-md"
+                >
+                  <X class="h-5 w-5" />
+                  <span>Cancel Draft</span>
+                </button>
               </div>
-            </div>
-            <div class="flex space-x-4">
-              <button
-                on:click={handleAdminApproval}
-                class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 shadow-md"
-              >
-                <Check class="h-5 w-5" />
-                <span>Approve for Processing</span>
-              </button>
-              <button
-                on:click={handleCancelDraft}
-                class="px-6 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center space-x-2 shadow-md"
-              >
-                <X class="h-5 w-5" />
-                <span>Cancel Draft</span>
-              </button>
             </div>
           </div>
-        </div>
+        {/if}
+      {:else if activeTab === "payslips"}
+        <PayslipProcess
+          {month}
+          {year}
+          {isPayslipGenerated}
+          {payslips}
+          on:payslip-generated={generatePayslip}
+          on:payslip-sent={sendPayslip}
+        />
+      {:else if activeTab === "history"}
+        <PayslipHistory
+          {startDate}
+          {endDate}
+          {page}
+          {limit}
+          on:filterChange={handleFilterChange}
+        />
       {/if}
-    {:else if activeTab === "payslips"}
-      <PayslipProcess
-        {month}
-        {year}
-        {isPayslipGenerated}
-        {payslips}
-        on:payslip-generated={generatePayslip}
-        on:payslip-sent={sendPayslip}
-      />
-    {:else if activeTab === "history"}
-      <PayslipHistory
-        {startDate}
-        {endDate}
-        {page}
-        {limit}
-        on:filterChange={handleFilterChange}
-      />
-    {/if}
-  </Tabs>
+    </Tabs>
+  </div>
+
   <!-- Modal to display payroll initiation data -->
   {#if showModal && payrollInitiateResponse}
     <Modal
@@ -579,23 +631,6 @@
   }
   .page {
     @apply p-6 bg-gray-50 min-h-screen;
-  }
-
-  /* Header Section Styles */
-  .header {
-    @apply flex flex-col gap-5 mb-6 bg-white p-6 rounded-xl shadow-md transition-shadow hover:shadow-lg;
-  }
-
-  .title-section h1 {
-    @apply text-3xl font-semibold text-gray-800 mb-2;
-  }
-
-  .subtitle {
-    @apply text-gray-600 text-base;
-  }
-
-  .actions {
-    @apply mt-4 flex space-x-4;
   }
 
   button {

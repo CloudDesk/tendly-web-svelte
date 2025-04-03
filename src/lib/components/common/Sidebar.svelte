@@ -19,7 +19,7 @@
     Briefcase,
     Bell,
     ChevronDown,
-    BookOpen,
+    ChartArea,
     FileCheck,
     Clock,
     GraduationCap,
@@ -97,6 +97,11 @@
       label: "Payroll",
       href: "/admin/payroll",
       icon: PayrollIcon,
+    },
+    {
+      label: "Reports",
+      href: "/admin/reports",
+      icon: ChartArea,
     },
     {
       label: "Configurations",

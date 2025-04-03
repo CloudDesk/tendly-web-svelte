@@ -35,6 +35,20 @@
     dispatch("update", { object });
   }
 
+  function handleDescriptionChange(event: Event) {
+    const description = (event.target as HTMLTextAreaElement).value;
+
+    // Update local value
+    InfoData.description = description;
+
+    // Dispatch event with explicit value
+    dispatch("update", {
+      description,
+    });
+
+    console.log("Description changed, dispatching:", { description });
+  }
+
   async function getCollection() {
     try {
       const response = await dataunitApi.getCollections();
@@ -92,7 +106,7 @@
         bind:value={InfoData.object}
         on:change={handleObjectSelect}
       >
-        <option value="">Select Salesforce object...</option>
+        <option value="">Select Object...</option>
         {#each collections as collection}
           <option value={collection}>{collection}</option>
         {/each}
