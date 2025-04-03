@@ -1,11 +1,10 @@
 <script lang="ts">
   import { onMount, onDestroy, afterUpdate } from "svelte";
-  import { getfieldsapi } from "$lib/services/api";
+  import { collectionsApi, type IReportDataUnit } from "$lib/services/api";
   import { Search, X } from "lucide-svelte";
-  import type { DataUnit } from "$lib/stores/dataUnit";
   import { get, writable, type Writable } from "svelte/store";
 
-  export let dataUnit: Writable<DataUnit>; // Update the type to Writable<DataUnit>
+  export let dataUnit: Writable<IReportDataUnit>; // Update the type to Writable<DataUnit>
   let selectedFields = writable<string[]>([]);
   let searchTerm = "";
   let fieldsData: any = [];
@@ -31,7 +30,7 @@
       fieldsData = [];
       let getDataUnit = get(dataUnit);
       console.log(getDataUnit);
-      const response = await getfieldsapi.getFields(getDataUnit.object);
+      const response = await collectionsApi.getFields(getDataUnit.object);
       console.log(response, "Response");
       fieldsData = response.data || [];
 

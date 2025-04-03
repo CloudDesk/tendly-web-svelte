@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, createEventDispatcher } from "svelte";
+  import { createEventDispatcher } from "svelte";
   import { writable, get } from "svelte/store";
   import InfoTab from "./InfoTab.svelte";
   import FieldsTab from "./FieldsTab.svelte";
@@ -7,41 +7,11 @@
   import SortLimitTab from "./SortLimitTab.svelte";
   // import PreviewTab from "./PreviewTab.svelte";
 
-  // Define TypeScript interfaces
-  interface Field {
-    apiName: string;
-    fieldType: string;
-    label: string;
-    referenceTo: string;
-  }
-  interface SortField {
-    field: string;
-    order: string;
-  }
-  interface Filter {
-    field: string;
-    condition: string;
-    value: string;
-    nestedFields: Array<any>;
-    subFilters: Array<any>;
-    isNestedObject?: boolean;
-  }
-  interface DataUnit {
-    id?: string;
-    name: string;
-    apiName: string;
-    description: string;
-    object: string | null;
-    fields: Field[];
-    filters: Filter[];
-    filterLogic: string;
-    sortFields: SortField[];
-    limit: number;
-    preview: any;
-  }
+  // Import the DataUnit type from the correct file
+  import type { IReportDataUnit } from "$lib/services/api";
   const dispatch = createEventDispatcher();
   // Props to accept initial values for update scenario
-  export let initialDataUnit: Partial<DataUnit> = {};
+  export let initialDataUnit: Partial<IReportDataUnit> = {};
   export let mode: "create" | "update" = "create";
   export let showModal = true;
 
@@ -51,7 +21,7 @@
   let currentTab = "Info";
 
   // Create a writable store with initial values
-  const defaultDataUnit: DataUnit = {
+  const defaultDataUnit = {
     name: "",
     apiName: "",
     description: "",
@@ -71,7 +41,7 @@
   };
   console.log(initialValues, "initialValues");
   // Create a writable store with the initial values
-  const dataUnit = writable<DataUnit>(initialValues);
+  const dataUnit = writable<IReportDataUnit>(initialValues);
   console.log(get(dataUnit), "dataUnit");
   console.log(errors, "errors");
   function setTab(tab: string) {
@@ -90,10 +60,10 @@
   }
 
   // Reset form to initial state
-  function resetForm() {
-    dataUnit.set(defaultDataUnit);
-    errors = {};
-  }
+  // function resetForm() {
+  //   dataUnit.set(defaultDataUnit);
+  //   errors = {};
+  // }
 
   // Validate the form data
   function validateForm(): boolean {
@@ -214,7 +184,7 @@
   <!-- Tab Content -->
   <div class="flex-1 p-6 overflow-y-auto">
     {#if currentTab === "Info"}
-      <InfoTab InfoData={$dataUnit} on:update={updateDataUnit} />
+      <InfoTab dataUnit={$dataUnit} on:update={updateDataUnit} />
       {#if errors.name}
         <p class="text-red-500 mt-2">{errors.name}</p>
       {/if}
@@ -227,7 +197,7 @@
         <p class="text-red-500 mt-2">{errors.fields}</p>
       {/if}
     {:else if currentTab === "Filters"}
-      <FiltersTab DataUnit={$dataUnit} on:update={updateDataUnit} />
+      <FiltersTab dataUnit={$dataUnit} on:update={updateDataUnit} />
     {:else if currentTab === "Sort & Limit"}
       <SortLimitTab {dataUnit} on:update={updateDataUnit} />
     {:else if currentTab === "Preview"}

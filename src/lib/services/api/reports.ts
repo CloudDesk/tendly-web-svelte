@@ -1,5 +1,27 @@
 import { fetchApi } from "./base";
 
+
+export interface IField {
+    apiName: string;
+    fieldType: string;
+    label: string;
+    referenceTo: string;
+}
+
+export interface IFilter {
+    field: string;
+    condition: string;
+    value: string;
+    nestedFields: string[];
+    subFilters: any[];
+    isNestedObject: boolean;
+}
+
+export interface ISortField {
+    field: string;
+    order: "Ascending" | "Descending";
+}
+
 export interface IReport {
     _id?: string;
     name: string;

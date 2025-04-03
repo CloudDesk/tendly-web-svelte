@@ -8,13 +8,9 @@ export type DataUnit = {
   fields: Array<any>;
   filters: Array<any>;
   filterLogic: string;
-  sort: Array<any>;
   sortFields: Array<any>;
   limit: number;
-  children: Array<any>;
-  type: string;
-  preview: any;
-  id: string;
+  _id?: string;
 };
 
 export const dataUnit = writable<DataUnit>({
@@ -25,11 +21,7 @@ export const dataUnit = writable<DataUnit>({
   fields: [],
   filters: [],
   filterLogic: '',
-  sort: [],
   sortFields: [],
   limit: 0,
-  children: [],
-  type: '',
-  preview: null,
-  id: '',
+  _id: '',
 });
