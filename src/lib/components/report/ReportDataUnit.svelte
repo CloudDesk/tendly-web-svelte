@@ -5,10 +5,9 @@
   import FieldsTab from "./FieldsTab.svelte";
   import FiltersTab from "./FiltersTab.svelte";
   import SortLimitTab from "./SortLimitTab.svelte";
-  // import PreviewTab from "./PreviewTab.svelte";
-
-  // Import the DataUnit type from the correct file
   import type { IReportDataUnit } from "$lib/services/api";
+  import { Loader } from "lucide-svelte";
+
   const dispatch = createEventDispatcher();
   // Props to accept initial values for update scenario
   export let initialDataUnit: Partial<IReportDataUnit> = {};
@@ -206,16 +205,14 @@
   </div>
 
   <!-- Footer -->
-  <div
-    class="mt-auto p-4 border-t bg-gray-50 flex justify-between items-center"
-  >
-    <div>
+  <div class="mt-auto p-4 border-t bg-gray-50 flex justify-end items-center">
+    <!-- <div>
       {#if Object.keys(errors).length > 0}
         <p class="text-red-500 text-sm">
           Please fix the errors before submitting
         </p>
       {/if}
-    </div>
+    </div> -->
     <div class="flex space-x-3">
       <button
         class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-md transition"
@@ -230,26 +227,7 @@
         disabled={isSubmitting}
       >
         {#if isSubmitting}
-          <svg
-            class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            ></circle>
-            <path
-              class="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
+          <Loader />
           {mode === "create" ? "Creating..." : "Updating..."}
         {:else}
           {mode === "create" ? "Create Data Unit" : "Update Data Unit"}
@@ -260,19 +238,6 @@
 </div>
 
 <style>
-  .tabs {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 1rem;
-  }
-  .tabs button {
-    flex-grow: 1;
-    margin: 0 2px;
-    padding: 0.5rem 1rem;
-    border: none;
-    cursor: pointer;
-    transition: color 0.3s ease;
-  }
   .btn-active {
     color: #1d4ed8;
   }

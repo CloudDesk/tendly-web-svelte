@@ -9,13 +9,14 @@
     ArrowUpDown,
     Database,
     Loader2,
+    Edit,
   } from "lucide-svelte";
   import Table from "$lib/components/common/Table.svelte";
   import { formatDate } from "$lib/utils/date";
   import LoaderNew from "$lib/components/common/LoaderNew.svelte";
   import { toast } from "$lib/components/common/stores/toast.store";
   import Modal from "$lib/components/common/Modal.svelte";
-  import CreateDataUnit from "$lib/components/management/Data Unit/CreateDataUnit.svelte";
+  import ReportDataUnit from "$lib/components/report/ReportDataUnit.svelte";
   import Card from "$lib/components/common/Card.svelte";
   let reportData: any = null;
   let executedData: any[] = [];
@@ -190,22 +191,9 @@
         </div>
         <div class="flex flex-wrap gap-3">
           <button class="btn-secondary" on:click={handleEdit}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="w-4 h-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-              ></path>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-              ></path>
-            </svg>
+            <Edit
+              class="w-4 h-4 text-gray-500 hover:text-blue-500 transition"
+            />
             Edit
           </button>
           <button
@@ -273,7 +261,7 @@
       onClose={closeModal}
       wide={true}
     >
-      <CreateDataUnit
+      <ReportDataUnit
         on:close={closeModal}
         on:save={handleSaveReport}
         {initialDataUnit}

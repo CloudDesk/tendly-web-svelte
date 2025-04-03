@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Plus, Filter, TableProperties, FileBarChart2 } from "lucide-svelte";
   import Modal from "$lib/components/common/Modal.svelte";
-  import CreateDataUnit from "$lib/components/management/Data Unit/CreateDataUnit.svelte";
+  import ReportDataUnit from "$lib/components/report/ReportDataUnit.svelte";
   import Table from "$lib/components/common/Table.svelte";
   import { onMount } from "svelte";
   import { reportsApi, type IReport } from "$lib/services/api/reports";
@@ -130,7 +130,7 @@
       onClose={closeModal}
       wide={true}
     >
-      <CreateDataUnit
+      <ReportDataUnit
         on:close={closeModal}
         on:save={handleSaveReport}
         {initialDataUnit}

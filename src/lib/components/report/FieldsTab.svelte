@@ -3,6 +3,7 @@
   import { collectionsApi, type IReportDataUnit } from "$lib/services/api";
   import { Search, X } from "lucide-svelte";
   import { get, writable, type Writable } from "svelte/store";
+  import LoaderNew from "$lib/components/common/LoaderNew.svelte";
 
   export let dataUnit: Writable<IReportDataUnit>; // Update the type to Writable<DataUnit>
   let selectedFields = writable<string[]>([]);
@@ -178,7 +179,7 @@
 
 {#if loading}
   <div class="flex justify-center items-center h-64">
-    <p class="text-gray-500">Loading...</p>
+    <LoaderNew />
   </div>
 {:else if error}
   <div class="bg-red-50 border border-red-200 p-4 rounded-md text-red-700">
