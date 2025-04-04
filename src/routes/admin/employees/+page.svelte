@@ -1,21 +1,22 @@
 <script lang="ts">
-  import Table from '$lib/components/common/Table.svelte';
-  import type { User } from '$lib/types_old.js';
-  import { goto } from '$app/navigation';
-  import { page } from '$app/stores';
-  import Modal from '$lib/components/common/Modal.svelte';
-  import EmployeeForm from '$lib/components/employee/EmployeeForm.svelte';
-  import { employeesApi } from '$lib/services/api/employees.js';
-  import { toast } from '$lib/components/common/stores/toast.store.js';
+  import Table from "$lib/components/common/Table.svelte";
+  import type { User } from "$lib/types_old.js";
+  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
+  import Modal from "$lib/components/common/Modal.svelte";
+  import EmployeeForm from "$lib/components/employee/EmployeeForm.svelte";
+  import { employeesApi } from "$lib/services/api/employees.js";
+  import { toast } from "$lib/components/common/stores/toast.store.js";
+  import "../../../Mobileview.css"; // Import responsive styles
 
   export let data;
 
   $: ({ employees, pagination, filters, sort } = data);
-  console.log(pagination,"pagination")
+  console.log(pagination, "pagination");
   const columns = [
-    { 
-      key: 'name', 
-      label: 'Name', 
+    {
+      key: "name",
+      label: "Name",
       sortable: true,
       render: (user: User) => `
         <div class="name-cell">
@@ -25,29 +26,29 @@
             <div class="email">${user.email}</div>
           </div>
         </div>
-      `
+      `,
     },
-    { 
-      key: 'role', 
-      label: 'Role', 
+    {
+      key: "role",
+      label: "Role",
       sortable: true,
       render: (user: User) => `
         <div class="role-badge ${user.role}">${user.role}</div>
-      `
-    },
-    { 
-      key: 'isActive', 
-      label: 'Status', 
-      sortable: true,
-      render: (user: User) => `
-        <div class="status-badge ${user.active ? 'active' : 'inactive'}">
-          ${user.active ? 'Active' : 'Inactive'}
-        </div>
-      `
+      `,
     },
     {
-      key: '_id',
-      label: 'Actions',
+      key: "isActive",
+      label: "Status",
+      sortable: true,
+      render: (user: User) => `
+        <div class="status-badge ${user.active ? "active" : "inactive"}">
+          ${user.active ? "Active" : "Inactive"}
+        </div>
+      `,
+    },
+    {
+      key: "_id",
+      label: "Actions",
       render: (user: User) => `
         <div class="actions">
           <button class="btn-action view" title="View Details">
@@ -60,30 +61,30 @@
             <i class="fas fa-ellipsis-h"></i>
           </button>
         </div>
-      `
-    }
+      `,
+    },
   ];
 
   function handleSearch(event: CustomEvent) {
     const { query } = event.detail;
     const url = new URL($page.url);
-    url.searchParams.set('search', query);
-    url.searchParams.set('page', '1');
+    url.searchParams.set("search", query);
+    url.searchParams.set("page", "1");
     goto(url, { replaceState: true });
   }
 
   function handleSort(event: CustomEvent) {
     const { key, direction } = event.detail;
     const url = new URL($page.url);
-    url.searchParams.set('sortBy', key);
-    url.searchParams.set('sortOrder', direction);
+    url.searchParams.set("sortBy", key);
+    url.searchParams.set("sortOrder", direction);
     goto(url, { replaceState: true });
   }
 
   function handlePage(event: CustomEvent) {
     const { page: newPage } = event.detail;
     const url = new URL($page.url);
-    url.searchParams.set('page', newPage.toString());
+    url.searchParams.set("page", newPage.toString());
     goto(url, { replaceState: true });
   }
 
@@ -93,21 +94,21 @@
   }
 
   let defaultFormValues = {
-    name:'',
-  email: '',
-  role: '',
-  joiningDate: '',
-  phone: '',
-  location: '',
-  emergencyContact: '',
-  address: '',
-  bloodGroup: '',
-  dateOfBirth: '',
-  managerId: '',
-  // isActive: true 
-};
+    name: "",
+    email: "",
+    role: "",
+    joiningDate: "",
+    phone: "",
+    location: "",
+    emergencyContact: "",
+    address: "",
+    bloodGroup: "",
+    dateOfBirth: "",
+    managerId: "",
+    // isActive: true
+  };
 
-  let formValues= {...defaultFormValues};
+  let formValues = { ...defaultFormValues };
   let showApplyForm = false;
   let loading = false;
 
@@ -117,36 +118,37 @@
     showApplyForm = true;
   }
 
-  async function handleFormSubmit(event:CustomEvent){
-    console.log("submitting form with data:",event.detail);
+  async function handleFormSubmit(event: CustomEvent) {
+    console.log("submitting form with data:", event.detail);
     // showApplyForm=false;
-    try{
-      loading=true;
+    try {
+      loading = true;
       const response = await employeesApi.create(event.detail);
-      console.log(response,"createResponse")
-      if(response.success){
-        toast.success('Employee added successfully');
+      console.log(response, "createResponse");
+      if (response.success) {
+        toast.success("Employee added successfully");
         // Redirect to the new employee page
-       await goto(`/admin/employees/${response.data._id}`);
-      }else{
-       toast.error('Failed to add employee');
+        await goto(`/admin/employees/${response.data._id}`);
+      } else {
+        toast.error("Failed to add employee");
       }
-    }catch(error){
-      toast.error('Failed to add employee');
-      console.error('Error submitting form:', error);
-    }
-    finally{
-      showApplyForm=false;
+    } catch (error) {
+      toast.error("Failed to add employee");
+      console.error("Error submitting form:", error);
+    } finally {
+      showApplyForm = false;
     }
   }
   function handleFormUpdate(event: CustomEvent) {
     formValues = event.detail;
   }
-
 </script>
 
 <svelte:head>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+  />
 </svelte:head>
 
 <div class="employees-page">
@@ -176,21 +178,19 @@
     </div>
   </header>
 
-
   {#if showApplyForm}
     <Modal
       show={showApplyForm}
       title="New Employee"
       onClose={() => (showApplyForm = false)}
     >
-    <EmployeeForm
-      {loading}
-      initialValues={formValues}
-      on:submit={handleFormSubmit}
-      on:update={handleFormUpdate}
-      on:cancel={() => (showApplyForm = false)}
-
-    />
+      <EmployeeForm
+        {loading}
+        initialValues={formValues}
+        on:submit={handleFormSubmit}
+        on:update={handleFormUpdate}
+        on:cancel={() => (showApplyForm = false)}
+      />
       <!-- <LeaveForm
         {loading}
         initialValues={formValues}
@@ -205,8 +205,9 @@
     <Table
       {columns}
       data={employees}
-      loading={$page.url.searchParams.toString() !== $page.url.searchParams.toString()}
-      meta={pagination}      
+      loading={$page.url.searchParams.toString() !==
+        $page.url.searchParams.toString()}
+      meta={pagination}
       serverSide={true}
       on:search={handleSearch}
       on:sort={handleSort}
@@ -286,13 +287,15 @@
     background: #f5f6f8;
   }
 
-  .btn-filter, .btn-view {
+  .btn-filter,
+  .btn-view {
     background: transparent;
     color: #676879;
     padding: 6px 12px;
   }
 
-  .btn-filter:hover, .btn-view:hover {
+  .btn-filter:hover,
+  .btn-view:hover {
     background: #f5f6f8;
   }
 
@@ -398,4 +401,12 @@
     background: #f5f6f8;
     color: #323338;
   }
-</style> 
+
+  @media (max-width: 640px) {
+    .btn-filter,
+    .btn-view,
+    .btn-secondary {
+      display: none;
+    }
+  }
+</style>

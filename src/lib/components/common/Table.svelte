@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import type { PaginationMeta } from "$lib/types";
+  import "../../../Mobileview.css"; // Import responsive CSS for mobile view
 
   type Column<T> = {
     key: keyof T;
@@ -162,7 +163,7 @@
         {#each sortedData as item}
           <tr on:click={() => handleRowClick(item)} class="clickable">
             {#each columns as column}
-              <td on:click={handleActionClick}>
+              <td data-label={column.label} on:click={handleActionClick}>
                 {#if column.render}
                   {@html column.render(item)}
                 {:else}

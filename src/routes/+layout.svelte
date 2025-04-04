@@ -8,15 +8,29 @@
   $: isPublicPage = ["/login"].includes($page.url.pathname);
 
   export const ssr = false;
+
+  let isSidebarOpen = false;
+
+  function handleSidebarToggle(event: CustomEvent) {
+    isSidebarOpen = event.detail;
+  }
 </script>
 
 <div class="min-h-screen bg-base-200" data-theme="tendlyPro">
   {#if !isPublicPage}
     <div class="flex">
       {#if isAuthenticated}
-        <Sidebar />
+        <Sidebar on:toggleSidebar={handleSidebarToggle} />
       {/if}
-      <div class="flex-1 {isAuthenticated ? 'ml-64' : ''}">
+      <div
+        class={`flex-1 transition-all duration-200 ${
+          isAuthenticated
+            ? isSidebarOpen
+              ? "ml-28 lg:ml-16" /* Sidebar open */
+              : "ml-0 lg:ml-64" /* Sidebar closed */
+            : ""
+        }`}
+      >
         <div class="p-6">
           <slot />
           <Toast />

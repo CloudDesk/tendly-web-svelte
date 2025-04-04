@@ -4,6 +4,7 @@
   import Table from "$lib/components/common/Table.svelte";
   import type { User, PaginationMeta } from "$lib/types_old";
   import { goto } from "$app/navigation";
+  import "../../../Mobileview.css"; // Import responsive CSS
 
   let employees: User[] = [];
   let loading = true;
@@ -103,7 +104,7 @@
   }
 </script>
 
-<div class="employees-page">
+<div class="employees-page container">
   <header>
     <h1>Employees</h1>
   </header>

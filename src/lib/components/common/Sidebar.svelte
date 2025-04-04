@@ -24,14 +24,19 @@
     Clock,
     GraduationCap,
     CalendarRange,
+    Menu, // Import hamburger menu icon
   } from "lucide-svelte";
   import PayrollIcon from "./icon/PayrollIcon.svelte";
   import { fly } from "svelte/transition";
   import { writable } from "svelte/store";
+  import { createEventDispatcher } from "svelte";
+  import "../../../Mobileview.css"; // Import responsive styles
   export const ssr = false;
 
   const isCollapsed = writable(false);
   const isLoggingOut = writable(false);
+  const isSidebarOpen = writable(false); // State to control sidebar visibility
+  const dispatch = createEventDispatcher();
 
   // Initialize collapsedSections based on navigation sections
   function initializeCollapsedSections(sections: NavigationSection[]) {
@@ -259,7 +264,16 @@
   };
 
   function toggleSidebar() {
-    isCollapsed.update((v) => !v);
+    isCollapsed.update((v) => {
+      const newValue = !v;
+      dispatch("toggleSidebar", newValue);
+      return newValue;
+    });
+    isSidebarOpen.update((v2) => {
+      const newValuev2 = !v2;
+      dispatch("toggleSidebar2", newValuev2);
+      return newValuev2;
+    });
   }
   async function handleLogout() {
     isLoggingOut.set(true);
@@ -269,10 +283,21 @@
   }
 </script>
 
+<!-- Hamburger Menu Button -->
+<button
+  class="hamburger-menu lg:hidden"
+  on:click={toggleSidebar}
+  aria-label="Toggle Sidebar"
+>
+  <Menu />
+</button>
+
 <aside
-  class="fixed left-0 top-0 h-screen bg-gradient-to-b from-[#F8FAFF] to-[#EDF3FF] border-r border-surface-border shadow-sm {$isCollapsed
+  class="sidebar fixed left-0 top-0 h-screen bg-gradient-to-b from-[#F8FAFF] to-[#EDF3FF] border-r border-surface-border shadow-sm {$isCollapsed
     ? 'w-20'
-    : 'w-64'} transition-all duration-200 z-20"
+    : 'w-64'} transition-all duration-200 z-20 {$isSidebarOpen
+    ? 'open'
+    : ''} lg:translate-x-0"
 >
   <!-- Header -->
   <div
