@@ -1,12 +1,11 @@
 <script lang="ts">
   import { onMount, onDestroy, afterUpdate } from "svelte";
-  import { getfieldsapi } from "$lib/services/api";
-  import { Search, ChevronRight, X } from "lucide-svelte";
-  import { dataUnit as dataUnitStore } from "$lib/stores/dataUnit";
-  import type { DataUnit } from "$lib/stores/dataUnit";
+  import { collectionsApi, type IReportDataUnit } from "$lib/services/api";
+  import { Search, X } from "lucide-svelte";
   import { get, writable, type Writable } from "svelte/store";
+  import LoaderNew from "$lib/components/common/LoaderNew.svelte";
 
-  export let dataUnit: Writable<DataUnit>; // Update the type to Writable<DataUnit>
+  export let dataUnit: Writable<IReportDataUnit>; // Update the type to Writable<DataUnit>
   let selectedFields = writable<string[]>([]);
   let searchTerm = "";
   let fieldsData: any = [];
@@ -15,7 +14,8 @@
   let previousObject = get(dataUnit).object;
   let isInitialLoad = true;
   let isResetting = false;
-
+  console.log(get(dataUnit), "");
+  console.log(dataUnit, "dataUnits");
   // Create a separate local array to directly control what's shown in the UI
   let displayedSelectedFields: string[] = [];
 
@@ -29,8 +29,10 @@
       loading = true;
       error = null;
       fieldsData = [];
-
-      const response = await getfieldsapi.getFields();
+      let getDataUnit = get(dataUnit);
+      console.log(getDataUnit);
+      const response = await collectionsApi.getFields(getDataUnit.object);
+      console.log(response, "Response");
       fieldsData = response.data || [];
 
       // Only populate selected fields on initial load
@@ -177,7 +179,7 @@
 
 {#if loading}
   <div class="flex justify-center items-center h-64">
-    <p class="text-gray-500">Loading...</p>
+    <LoaderNew />
   </div>
 {:else if error}
   <div class="bg-red-50 border border-red-200 p-4 rounded-md text-red-700">

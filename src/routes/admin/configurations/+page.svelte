@@ -9,10 +9,6 @@
   import OrgChart from "$lib/components/employee/OrgChart.svelte";
   import SalaryStructureManagement from "$lib/components/management/SalaryStructureManagement.svelte";
   import TaxSlabManagement from "$lib/components/management/TaxSlabManagement.svelte";
-  import CreateDataUnit from "$lib/components/management/Data Unit/CreateDataUnit.svelte";
-
-  import Modal from '$lib/components/common/Modal.svelte';
-
 
   const tabs = [
     { id: "configs", label: "Configs" },
@@ -21,16 +17,19 @@
     { id: "salary", label: "Salary Structure" },
     { id: "taxslab", label: "Tax Slab" },
     { id: "org", label: "Org Chart" },
-    { id: "dataunit", label: "Data Unit" }
+    // { id: "dataunit", label: "Data Unit" }
   ];
 
   // Reactive derived store to update the active tab based on the URL
-  const activeTab = derived(page, $page => $page.url.searchParams.get("tab") || tabs[0]?.id);
+  const activeTab = derived(
+    page,
+    ($page) => $page.url.searchParams.get("tab") || tabs[0]?.id
+  );
 
   let showModal = false;
 
-  const unsubscribe = activeTab.subscribe(tab => {
-    console.log(tab,"tabb")
+  const unsubscribe = activeTab.subscribe((tab) => {
+    console.log(tab, "tabb");
     showModal = tab === "dataunit";
   });
 
@@ -67,15 +66,11 @@
         {:else if $activeTab === "taxslab"}
           <TaxSlabManagement />
         {:else if $activeTab === "dataunit"}
-          <button class="btn btn-primary" on:click={openModal}>Create Data Unit</button>
+          <button class="btn btn-primary" on:click={openModal}
+            >Create Data Unit</button
+          >
         {/if}
       </Tabs>
     </div>
   </div>
 </div>
-
-{#if showModal}
-<!-- <Modal title="Create New Data Unit" show={showModal}  onClose={closeModal}> -->
-  <CreateDataUnit on:close={closeModal} />
-<!-- </Modal> -->
-{/if}
