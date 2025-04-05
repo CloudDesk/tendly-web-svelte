@@ -85,7 +85,7 @@
             datasets: [
               {
                 data: [payslipData.netSalary, payslipData.totalDeductions],
-                backgroundColor: ["#aed6f1", "#aeb6bf"],
+                backgroundColor: ["#2874a6", "#e74c3c"],
                 borderWidth: 0,
                 cutout: "75%",
               },
@@ -428,7 +428,6 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
             <div class="flex items-center mb-4">
-              <span class="w-2 h-6 bg-indigo-600 rounded-sm mr-3"></span>
               <h3 class="text-lg font-semibold text-gray-800">Earnings</h3>
             </div>
             <div class="space-y-2">
@@ -489,7 +488,6 @@
 
           <div>
             <div class="flex items-center mb-4">
-              <span class="w-2 h-6 bg-rose-500 rounded-sm mr-3"></span>
               <h3 class="text-lg font-semibold text-gray-800">Deductions</h3>
             </div>
             <div class="space-y-2">
