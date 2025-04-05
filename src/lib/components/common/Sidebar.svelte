@@ -207,6 +207,11 @@
       href: "/my/assignments",
       icon: Briefcase,
     },
+    {
+      label: "Payslips",
+      href: "/my/payslips",
+      icon: PayrollIcon,
+    },
   ];
 
   // Determine which navigation sections to show based on user role

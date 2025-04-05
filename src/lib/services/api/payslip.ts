@@ -45,5 +45,14 @@ export const payslipApi = {
             }
         );
     },
+    getPayslipMe: async (month: number, year: number, userId: string) => {
+        return fetchApi(
+            `/payslip/me?month=${month}&year=${year}&userId=${userId}`,
+            {
+                method: "GET",
+            }
+        );
+    }
+
 
 }
