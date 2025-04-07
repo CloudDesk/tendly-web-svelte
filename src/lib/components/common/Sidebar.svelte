@@ -212,6 +212,11 @@
       href: "/my/payslips",
       icon: PayrollIcon,
     },
+    {
+      label: "Timesheet",
+      href: "/my/Timesheet",
+      icon: CalendarRange,
+    },
   ];
 
   // Determine which navigation sections to show based on user role
