@@ -15,18 +15,22 @@ type TimesheetPayload = {
 
 export const timesheetApi = {
   submit: async (payload: TimesheetPayload) => {
-    
     return fetchApi('/timesheet', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
   },
-  getDateRange: async (employeeId: string, startDate: Date, endDate: Date) => { 
+  getbyDate: async (employeeId: string, startDate: string, endDate: string) => {
     return fetchApi(`/timesheet?employeeId=${employeeId}&startDate=${startDate}&endDate=${endDate}`, {
       method: 'GET',
     });
+  },
+  getbyMonth: async (employeeId: string, month: number, year: number) => {
+    // month, year, startDate, endDate } = data;
+    return fetchApi(`/timesheet?employeeId=${employeeId}&month=${month}&year=${year}`, {
+      method: 'GET',
+    });
   }
-
 
 
 };

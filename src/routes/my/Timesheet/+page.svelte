@@ -2,6 +2,8 @@
   import { onMount } from "svelte";
   import { auth } from "$lib/stores/auth";
   import { timesheetApi } from "$lib/services/api/timesheet";
+  import Calendar from "$lib/components/common/Calendar.svelte";
+  import { fromUTCDate } from "$lib/utils/date";
 
   $: employeeId = $auth.user?._id || "";
 
@@ -9,6 +11,8 @@
   selectedWeekStart.setDate(
     selectedWeekStart.getDate() - selectedWeekStart.getDay() + 1
   );
+  let selectedWeekEnd = new Date(selectedWeekStart);
+  selectedWeekEnd.setDate(selectedWeekEnd.getDate() + 6);
 
   let entries: any[] = [];
   let isLoading = false;
@@ -34,7 +38,6 @@
       0
     )
   );
-
   $: dayErrors = dayTotals.map((total) => total > 9);
   $: hasErrors = dayErrors.some((err) => err);
   $: totalHours = dayTotals.reduce((sum, val) => sum + val, 0);
@@ -42,51 +45,103 @@
   onMount(async () => {
     initializeWeek();
     updateWeekRange();
+    await fetchTimesheetData();
   });
 
-  function initializeWeek() {
-    entries = days.map((day, index) => {
-      const date = new Date(selectedWeekStart);
-      date.setDate(date.getDate() + index);
+  function getDaysInRange(start: Date, end: Date): number {
+    console.log("daysInRange", start, end);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end
+  }
 
-      return {
-        day,
+  function initializeWeek() {
+    entries = [];
+    const startDate = new Date(selectedWeekStart);
+    const daysInRange = getDaysInRange(selectedWeekStart, selectedWeekEnd);
+
+    for (let i = 0; i < daysInRange; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1; // Adjust for Monday start
+      entries.push({
+        day: days[dayIndex],
         date,
-        entries: [
-          {
-            project: "",
-            task: "",
-            description: "",
-            duration: 0,
-          },
-        ],
-      };
-    });
+        entries: [{ project: "", task: "", description: "", duration: 0 }],
+      });
+    }
   }
 
   function updateWeekRange() {
-    const end = new Date(selectedWeekStart);
-    end.setDate(end.getDate() + 6);
     const format = (d: Date) =>
       `${d.toLocaleString("default", { month: "short" })} ${d.getDate()}`;
-    weekRange = `${format(selectedWeekStart)} - ${format(end)}`;
+    weekRange = `${format(selectedWeekStart)} - ${format(selectedWeekEnd)}`;
   }
 
-  async function selectWeek(event: any) {
-    const value = event.target.value;
-    if (value === "next")
-      selectedWeekStart.setDate(selectedWeekStart.getDate() + 7);
-    else if (value === "prev")
-      selectedWeekStart.setDate(selectedWeekStart.getDate() - 7);
-    else {
-      const today = new Date();
-      selectedWeekStart = new Date(today);
-      selectedWeekStart.setDate(today.getDate() - today.getDay() + 1);
+  async function fetchTimesheetData() {
+    isLoading = true;
+    console.log(selectedWeekStart, selectedWeekEnd, "selectedWeekStart");
+    //2025-05-01
+    try {
+      const response = await timesheetApi.getbyDate(
+        employeeId,
+        selectedWeekStart.toISOString().split("T")[0],
+        selectedWeekEnd.toISOString().split("T")[0]
+      );
+      console.log(response, "response");
+      if (response && response.length) {
+        const daysInRange = getDaysInRange(selectedWeekStart, selectedWeekEnd);
+        console.log(daysInRange, "daysInRange");
+        entries = Array(daysInRange)
+          .fill(null)
+          .map((_, i) => {
+            const date = new Date(selectedWeekStart);
+            date.setDate(selectedWeekStart.getDate() + i);
+            const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1;
+            const entry = response.find(
+              (e) => new Date(e.dateUTC).toDateString() === date.toDateString()
+            );
+            console.log(entry, "entry");
+            return {
+              day: days[dayIndex],
+              date,
+              entries: entry?.entries.length
+                ? entry.entries
+                : [{ project: "", task: "", description: "", duration: 0 }],
+            };
+          });
+      } else {
+        initializeWeek();
+      }
+    } catch (err) {
+      console.error("Error fetching timesheet:", err);
+      error = "Failed to load timesheet data.";
+    } finally {
+      isLoading = false;
     }
+  }
 
-    selectedWeekStart = new Date(selectedWeekStart);
+  function handleMonthChange(event: CustomEvent) {
+    const { year, month } = event.detail;
+    const firstDayOfMonth = new Date(Date.UTC(year, month - 1, 1));
+    selectedWeekStart = new Date(firstDayOfMonth);
+    selectedWeekStart.setDate(
+      selectedWeekStart.getDate() - selectedWeekStart.getDay() + 1
+    );
+    selectedWeekEnd = new Date(selectedWeekStart);
+    selectedWeekEnd.setDate(selectedWeekEnd.getDate() + 6);
+
     initializeWeek();
     updateWeekRange();
+    fetchTimesheetData();
+  }
+
+  function handleRangeSelect(event: CustomEvent) {
+    const { startDate, endDate } = event.detail;
+    selectedWeekStart = new Date(startDate);
+    selectedWeekEnd = new Date(endDate);
+    initializeWeek();
+    updateWeekRange();
+    fetchTimesheetData();
   }
 
   function updateEntry(
@@ -100,7 +155,6 @@
   }
 
   function addEntry(dayIndex: number) {
-    console.log(dayIndex, "dayIndexdayIndex");
     entries[dayIndex].entries.push({
       project: "",
       task: "",
@@ -111,8 +165,6 @@
   }
 
   function removeEntry(dayIndex: number, entryIndex: number) {
-    console.log(dayIndex, "dayIndexdayIndexdayIndex");
-    console.log(entryIndex, "entryIndexentryIndexentryIndexentryIndex");
     if (entries[dayIndex].entries.length > 1) {
       entries[dayIndex].entries.splice(entryIndex, 1);
       entries = [...entries];
@@ -120,21 +172,17 @@
   }
 
   function showNotification(message: string, isError = false) {
-    console.log(message, "messagemessagemessage");
     if (notificationTimeout) clearTimeout(notificationTimeout);
     error = isError ? message : "";
     success = !isError;
-
-    if (message) {
-      notificationTimeout = setTimeout(() => {
-        error = "";
-        success = false;
-      }, 5000);
-    }
+    notificationTimeout = setTimeout(() => {
+      error = "";
+      success = false;
+    }, 5000);
   }
-  async function handleSubmit() {
-    console.log("Submitting timesheet...");
 
+  async function handleSubmit() {
+    console.log("first");
     const payload = entries
       .map((day) => ({
         employeeId,
@@ -145,22 +193,17 @@
       }))
       .filter((day) => day.entries.length > 0);
 
-    console.log(payload, "Filtered Payload =>....");
-
     isSubmitting = true;
     success = false;
     error = "";
 
     try {
       for (const dayPayload of payload) {
-        const res = await timesheetApi.submit(dayPayload);
-        console.log("Response:---->", res);
+        await timesheetApi.submit(dayPayload);
       }
-
       showNotification("Timesheet submitted successfully!");
-      console.log("All valid timesheet entries submitted.");
+      await fetchTimesheetData();
     } catch (err) {
-      console.error("Error submitting timesheet:", err);
       showNotification("Error submitting timesheet. Please try again.", true);
     } finally {
       isSubmitting = false;
@@ -172,15 +215,22 @@
   <div class="max-w-6xl mx-auto bg-white rounded-lg shadow p-6">
     <div class="flex justify-between items-center mb-6">
       <div class="flex items-center">
-        <span class="mr-3 font-medium">Week Selector</span>
-        <select on:change={selectWeek} class="border rounded p-2 bg-white">
-          <option disabled selected>Select Week</option>
-          <option value="current">Current Week</option>
-          <option value="prev">Previous Week</option>
-          <option value="next">Next Week</option>
-        </select>
+        <Calendar
+          maxRange={7}
+          initialMonth={new Date()}
+          metaData={{
+            "2025-04-08": { hours: 8 },
+            "2025-04-09": { hours: 6.5 },
+          }}
+          {selectedWeekStart}
+          {selectedWeekEnd}
+          on:rangeSelect={handleRangeSelect}
+          on:monthChange={handleMonthChange}
+        />
       </div>
-      <div class="font-medium">Date Range: {weekRange}</div>
+      <div class="font-medium">
+        Date Range: {weekRange}
+      </div>
     </div>
 
     {#if employeeId}
@@ -232,7 +282,6 @@
             </div>
           </div>
 
-          <!-- Improved table structure -->
           <div class="overflow-x-auto">
             <table class="min-w-full bg-white border border-gray-200 rounded">
               <thead>
@@ -362,11 +411,11 @@
           <div class="text-sm text-gray-600 mt-1">* Required fields</div>
         </div>
         <div class="flex space-x-3">
-          <button
+          <!-- <button
             class="px-6 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600"
           >
             Save Draft
-          </button>
+          </button> -->
           <button
             on:click={handleSubmit}
             disabled={isSubmitting || !employeeId || hasErrors}

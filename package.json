@@ -29,6 +29,7 @@
   "dependencies": {
     "chart.js": "^4.4.7",
     "date-fns": "^2.30.0",
+    "date-picker-svelte": "^2.16.0",
     "lucide": "^0.469.0",
     "lucide-svelte": "^0.469.0",
     "svelte-calendar": "^3.1.6",
