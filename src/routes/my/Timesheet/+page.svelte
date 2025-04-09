@@ -5,9 +5,15 @@
   import CalendarWrapper from "$lib/components/timesheet/CalendarWrapper.svelte";
   import TimesheetEntries from "$lib/components/timesheet/TimesheetEntries.svelte";
   import { toast } from "$lib/components/common/stores/toast.store";
+  import {
+    Clock,
+    Calendar,
+    ArrowLeft,
+    ArrowRight,
+    Briefcase,
+  } from "lucide-svelte";
 
   $: employeeId = $auth.user?._id || "";
-
   let selectedWeekStart = new Date();
   selectedWeekStart.setDate(
     selectedWeekStart.getDate() - selectedWeekStart.getDay() + 1
@@ -21,7 +27,8 @@
   let error = "";
   let success = false;
   let weekRange = "";
-  console.log(entries, "entries");
+
+  let meta: { [key: string]: { hours: number } } = {};
   const days = [
     "Monday",
     "Tuesday",
@@ -39,10 +46,7 @@
   });
 
   function getDaysInRange(start: Date, end: Date): number {
-    console.log("daysInRange", start, end);
     const diffTime = Math.abs(end.getTime() - start.getTime());
-    console.log(diffTime, "diffTime");
-    console.log(Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1, "diffTime");
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end
   }
 
@@ -50,7 +54,6 @@
     entries = [];
     const startDate = new Date(selectedWeekStart);
     const daysInRange = getDaysInRange(selectedWeekStart, selectedWeekEnd);
-
     for (let i = 0; i < daysInRange; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
@@ -71,18 +74,15 @@
 
   async function fetchTimesheetData() {
     isLoading = true;
-    console.log(selectedWeekStart, selectedWeekEnd, "selectedWeekStart");
-    //2025-05-01
     try {
       const response: any = await timesheetApi.getbyDate(
         employeeId,
         selectedWeekStart.toISOString().split("T")[0],
         selectedWeekEnd.toISOString().split("T")[0]
       );
-      console.log(response, "response");
+      console.log(response.data);
       if (response.success && response.data) {
         const daysInRange = getDaysInRange(selectedWeekStart, selectedWeekEnd);
-        console.log(daysInRange, "daysInRange");
         entries = Array(daysInRange)
           .fill(null)
           .map((_, i) => {
@@ -93,19 +93,22 @@
               (e: { dateUTC: string }) =>
                 new Date(e.dateUTC).toDateString() === date.toDateString()
             );
-            console.log(entry, "entry");
 
-            let obj = {
+            return {
               day: days[dayIndex],
               date,
               entries: entry?.entries.length
                 ? entry.entries
                 : [{ project: "", task: "", description: "", duration: 0 }],
             };
-
-            console.log(obj, "****************");
-            return obj;
           });
+
+        // Update meta data if available
+        response.data.forEach((entry: Timesheet) => {
+          const date = new Date(entry.dateUTC);
+          const dateKey = date.toISOString().split("T")[0];
+          meta[dateKey] = { hours: entry.totalDuration ?? 0 };
+        });
       } else {
         initializeWeek();
       }
@@ -136,17 +139,29 @@
     const { startDate, endDate } = event.detail;
     selectedWeekStart = new Date(startDate);
     selectedWeekEnd = new Date(endDate);
-    console.log(selectedWeekStart, selectedWeekEnd, "handleRangeSelect");
+
     initializeWeek();
     updateWeekRange();
     fetchTimesheetData();
   }
 
+  function navigateWeek(direction: "prev" | "next") {
+    const newStart = new Date(selectedWeekStart);
+    newStart.setDate(newStart.getDate() + (direction === "next" ? 7 : -7));
+    selectedWeekStart = newStart;
+
+    const newEnd = new Date(newStart);
+    newEnd.setDate(newEnd.getDate() + 6);
+    selectedWeekEnd = newEnd;
+
+    updateWeekRange();
+    initializeWeek();
+    fetchTimesheetData();
+  }
+
   async function handleSubmit() {
-    console.log("handleSubmit", entries);
     const payload = entries
       .map((day) => {
-        console.log(day, "day handleSubmit");
         return {
           employeeId,
           dateUTC: new Date(day.date.toISOString().split("T")[0]),
@@ -160,7 +175,6 @@
     isSubmitting = true;
     success = false;
     error = "";
-    console.log(payload, "payload handleSubmit");
 
     try {
       for (const dayPayload of payload) {
@@ -169,67 +183,142 @@
       toast.success("Timesheet submitted successfully!");
       await fetchTimesheetData();
     } catch (err) {
-      console.log(err, "Error submitting timesheet");
+      console.error("Error submitting timesheet:", err);
       toast.error("Error submitting timesheet. Please try again.");
     } finally {
       isSubmitting = false;
     }
   }
+
+  function calculateTotalHours() {
+    return entries
+      .reduce((total, day) => {
+        return (
+          total +
+          day.entries.reduce((dayTotal: number, entry: any) => {
+            return dayTotal + (parseFloat(entry.duration) || 0);
+          }, 0)
+        );
+      }, 0)
+      .toFixed(1);
+  }
 </script>
 
-<div class="min-h-screen bg-gray-100 p-4">
-  <div class="max-w-6xl mx-auto bg-white rounded-lg shadow p-6">
-    <div class="flex justify-between items-center mb-6">
-      <div class="flex items-center">
-        <CalendarWrapper
-          maxRange={7}
-          initialMonth={new Date()}
-          metaData={{
-            "2025-04-08": { hours: 8 },
-            "2025-04-09": { hours: 6.5 },
-          }}
-          {selectedWeekStart}
-          {selectedWeekEnd}
-          on:rangeSelect={handleRangeSelect}
-          on:monthChange={handleMonthChange}
-        />
-      </div>
-      <div class="font-medium">
-        Date Range: {weekRange}
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-6xl mx-auto py-8 px-4 sm:px-6">
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold text-gray-900">Weekly Timesheet</h1>
+      <p class="text-gray-600 mt-1">Track and submit your working hours</p>
+    </div>
+
+    <!-- Header Control Panel -->
+    <div class="bg-white rounded-xl shadow-sm mb-6 p-4">
+      <div
+        class="flex flex-col md:flex-row md:justify-between md:items-center gap-4"
+      >
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center">
+            <button
+              on:click={() => navigateWeek("prev")}
+              class="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+              aria-label="Previous week"
+            >
+              <ArrowLeft size={18} />
+            </button>
+
+            <div class="flex items-center mx-2 px-4 py-2 bg-gray-50 rounded-lg">
+              <Calendar size={18} class="text-blue-600 mr-2" />
+              <span class="font-medium text-gray-800">{weekRange}</span>
+            </div>
+
+            <button
+              on:click={() => navigateWeek("next")}
+              class="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+              aria-label="Next week"
+            >
+              <ArrowRight size={18} />
+            </button>
+          </div>
+
+          <div class="ml-0 md:ml-2">
+            <CalendarWrapper
+              maxRange={7}
+              initialMonth={new Date()}
+              metaData={meta}
+              {selectedWeekStart}
+              {selectedWeekEnd}
+              on:rangeSelect={handleRangeSelect}
+              on:monthChange={handleMonthChange}
+            />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div
+            class="flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded-lg"
+          >
+            <Clock size={18} class="mr-2" />
+            <span class="font-medium"
+              >{calculateTotalHours()} hrs this week</span
+            >
+          </div>
+
+          {#if employeeId}
+            <div class="flex items-center px-4 py-2 bg-gray-50 rounded-lg">
+              <Briefcase size={18} class="text-gray-500 mr-2" />
+              <span class="text-sm text-gray-600 truncate max-w-xs"
+                >ID: {employeeId}</span
+              >
+            </div>
+          {:else}
+            <div class="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm">
+              Please log in to submit
+            </div>
+          {/if}
+        </div>
       </div>
     </div>
 
-    {#if employeeId}
-      <div class="mb-4 text-sm text-gray-600">
-        Employee ID: {employeeId} (automatically assigned from your account)
-      </div>
-    {:else}
-      <div class="mb-4 text-sm text-red-600">
-        No employee ID found. Please log in to submit timesheets.
-      </div>
-    {/if}
-
     {#if error}
       <div
-        class="bg-red-50 border border-red-300 text-red-800 p-3 rounded mb-4"
+        class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6 animate-fade-in"
       >
-        {error}
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <!-- Error icon could be added here -->
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium">{error}</p>
+          </div>
+        </div>
       </div>
     {/if}
 
     {#if success}
       <div
-        class="bg-green-50 border border-green-300 text-green-800 p-3 rounded mb-4"
+        class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg mb-6 animate-fade-in"
       >
-        Timesheet saved successfully!
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <!-- Success icon could be added here -->
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium">Timesheet saved successfully!</p>
+          </div>
+        </div>
       </div>
     {/if}
 
     {#if isLoading}
-      <div class="flex items-center justify-center p-6">
-        <div
-          class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"
-        ></div>
+      <div class="flex items-center justify-center p-12">
+        <div class="relative w-16 h-16">
+          <div
+            class="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"
+          ></div>
+          <div
+            class="absolute top-0 left-0 w-full h-full border-4 border-t-blue-600 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"
+          ></div>
+        </div>
       </div>
     {:else}
       <TimesheetEntries {entries} on:submit={handleSubmit} />

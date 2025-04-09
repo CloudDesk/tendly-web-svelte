@@ -1,5 +1,5 @@
 <script>
-  import { ChevronLeft, ChevronRight } from "lucide-svelte";
+  import { ChevronLeft, ChevronRight, Clock } from "lucide-svelte";
   import { createEventDispatcher, onMount } from "svelte";
 
   export let maxRange = 7;
@@ -64,8 +64,6 @@
   }
 
   function handleDateClick(day) {
-    console.log(day, "handleDateClick");
-    console.log(startDate, endDate, "startDate,endDate handleDateClick");
     if (day.isDisabled) return;
 
     const clickedDate = new Date(
@@ -94,8 +92,6 @@
         alert(`Selection exceeds maximum range of ${maxRange} days`);
       }
     }
-
-    console.log(startDate, endDate, "startDate,endDate after handleDateClick");
   }
 
   function handleMouseOver(day) {
@@ -212,73 +208,125 @@
   }).format(currentMonth);
 </script>
 
-<div
-  class="calendar-container w-full max-w-md bg-white rounded-lg shadow-md p-4"
->
-  <div class="calendar-header flex justify-between items-center mb-4">
-    <div class="flex space-x-2">
-      <button
-        class="prev-month p-2 rounded-full hover:bg-gray-100 focus:outline-none"
-        on:click={prevMonth}
-      >
-        <ChevronLeft />
-      </button>
-    </div>
-    <h2 class="month-year text-lg font-semibold text-gray-800">{monthName}</h2>
-    <div class="flex space-x-2">
-      <button
-        class="next-month p-2 rounded-full hover:bg-gray-100 focus:outline-none"
-        on:click={nextMonth}
-      >
-        <ChevronRight />
-      </button>
-    </div>
+<div class="calendar-container bg-white rounded-lg overflow-hidden">
+  <div
+    class="calendar-header flex justify-between items-center p-4 border-b border-gray-100"
+  >
+    <button
+      class="prev-month p-2 rounded-full text-gray-600 hover:bg-gray-100 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200"
+      on:click={prevMonth}
+    >
+      <ChevronLeft size={18} />
+    </button>
+
+    <h2 class="month-year text-base font-semibold text-gray-800">
+      {monthName}
+    </h2>
+
+    <button
+      class="next-month p-2 rounded-full text-gray-600 hover:bg-gray-100 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200"
+      on:click={nextMonth}
+    >
+      <ChevronRight size={18} />
+    </button>
   </div>
 
   <div
-    class="weekdays grid grid-cols-7 gap-1 mb-2 text-center text-gray-500 text-sm"
+    class="weekdays grid grid-cols-7 gap-1 px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50"
   >
-    <div class="font-medium">Mo</div>
-    <div class="font-medium">Tu</div>
-    <div class="font-medium">We</div>
-    <div class="font-medium">Th</div>
-    <div class="font-medium">Fr</div>
-    <div class="font-medium">Sa</div>
-    <div class="font-medium">Su</div>
+    <div>Mon</div>
+    <div>Tue</div>
+    <div>Wed</div>
+    <div>Thu</div>
+    <div>Fri</div>
+    <div>Sat</div>
+    <div>Sun</div>
   </div>
 
-  <div class="calendar-grid grid grid-cols-7 gap-1">
+  <div class="calendar-grid grid grid-cols-7 gap-1 p-4">
     {#each calendarDays as day}
       <div
-        class="calendar-day p-1 relative flex flex-col justify-start items-center text-center rounded-md min-h-12 transition-colors duration-200
+        class="calendar-day relative flex flex-col justify-start items-center text-center rounded-md h-12 transition-all duration-200
             {!day.isCurrentMonth ? 'text-gray-300 bg-gray-50' : ''}
             {day.isDisabled
           ? 'opacity-50 cursor-not-allowed'
           : 'cursor-pointer hover:bg-blue-50'}
-            {day.isToday && day.isCurrentMonth ? 'border border-blue-400' : ''}
+            {day.isToday && day.isCurrentMonth
+          ? 'ring-2 ring-blue-400 ring-opacity-50'
+          : ''}
             {isInRange(day.date) ? 'bg-blue-100 hover:bg-blue-200' : ''}
             {isInHoverRange(day.date) ? 'bg-blue-50' : ''}
             {isInSelectedWeekRange(day.date)
-          ? 'bg-green-100 hover:bg-green-200'
+          ? 'bg-blue-50 hover:bg-blue-100'
           : ''}
             {formatDateKey(day.date) === formatDateKey(selectedWeekStart)
-          ? 'bg-green-500 text-white hover:bg-green-600'
+          ? 'bg-blue-600 text-white hover:bg-blue-700'
           : ''}
             {formatDateKey(day.date) === formatDateKey(selectedWeekEnd)
-          ? 'bg-green-500 text-white hover:bg-green-600'
+          ? 'bg-blue-600 text-white hover:bg-blue-700'
           : ''}"
         on:click={() => handleDateClick(day)}
         on:mouseover={() => handleMouseOver(day)}
       >
-        <span class="day-number text-sm"
-          >{day.isCurrentMonth ? day.day : ""}</span
-        >
+        <span class="day-number font-medium text-sm pt-1">
+          {day.isCurrentMonth ? day.day : ""}
+        </span>
+
         {#if day.isCurrentMonth && day.meta.hours}
-          <div class="metadata text-xs mt-1">
-            <span class="hours text-gray-600">⏱ {day.meta.hours}h</span>
+          <div class="metadata flex items-center justify-center mt-1 text-xs">
+            <span
+              class="flex items-center hours text-blue-600 bg-blue-50 px-1 rounded"
+            >
+              <Clock size={10} class="mr-1" />
+              {day.meta.hours}h
+            </span>
           </div>
         {/if}
       </div>
     {/each}
   </div>
+
+  <!-- {#if selectedWeekStart && selectedWeekEnd}
+    <div
+      class="calendar-footer flex justify-between items-center p-4 border-t border-gray-100 bg-gray-50"
+    >
+      <button
+        class="text-xs px-3 py-1.5 bg-white border border-gray-300 rounded text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200"
+        on:click={prevWeek}
+      >
+        Previous Week
+      </button>
+
+      <button
+        class="text-xs px-3 py-1.5 bg-white border border-gray-300 rounded text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200"
+        on:click={nextWeek}
+      >
+        Next Week
+      </button>
+    </div>
+  {/if} -->
 </div>
+
+<style>
+  .calendar-container {
+    width: 100%;
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  .calendar-day {
+    aspect-ratio: 1;
+    padding: 2px;
+  }
+
+  /* Transition styles */
+  .calendar-day {
+    transition: all 0.2s ease-in-out;
+  }
+
+  /* Day hover effect */
+  .calendar-day:not(.opacity-50):hover {
+    transform: translateY(-1px);
+  }
+</style>
