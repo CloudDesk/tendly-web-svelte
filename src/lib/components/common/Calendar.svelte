@@ -64,6 +64,8 @@
   }
 
   function handleDateClick(day) {
+    console.log(day, "handleDateClick");
+    console.log(startDate, endDate, "startDate,endDate handleDateClick");
     if (day.isDisabled) return;
 
     const clickedDate = new Date(
@@ -92,6 +94,8 @@
         alert(`Selection exceeds maximum range of ${maxRange} days`);
       }
     }
+
+    console.log(startDate, endDate, "startDate,endDate after handleDateClick");
   }
 
   function handleMouseOver(day) {

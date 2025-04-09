@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { auth } from "$lib/stores/auth";
-  import { timesheetApi } from "$lib/services/api/timesheet";
-  import Calendar from "$lib/components/common/Calendar.svelte";
-  import { fromUTCDate } from "$lib/utils/date";
+  import { timesheetApi, type Timesheet } from "$lib/services/api/timesheet";
+  import CalendarWrapper from "$lib/components/timesheet/CalendarWrapper.svelte";
+  import TimesheetEntries from "$lib/components/timesheet/TimesheetEntries.svelte";
+  import { toast } from "$lib/components/common/stores/toast.store";
 
   $: employeeId = $auth.user?._id || "";
 
@@ -20,8 +21,7 @@
   let error = "";
   let success = false;
   let weekRange = "";
-  let notificationTimeout: ReturnType<typeof setTimeout>;
-
+  console.log(entries, "entries");
   const days = [
     "Monday",
     "Tuesday",
@@ -32,16 +32,6 @@
     "Sunday",
   ];
 
-  $: dayTotals = entries.map((day) =>
-    day.entries.reduce(
-      (sum: number, entry: any) => sum + (parseFloat(entry.duration) || 0),
-      0
-    )
-  );
-  $: dayErrors = dayTotals.map((total) => total > 9);
-  $: hasErrors = dayErrors.some((err) => err);
-  $: totalHours = dayTotals.reduce((sum, val) => sum + val, 0);
-
   onMount(async () => {
     initializeWeek();
     updateWeekRange();
@@ -51,6 +41,8 @@
   function getDaysInRange(start: Date, end: Date): number {
     console.log("daysInRange", start, end);
     const diffTime = Math.abs(end.getTime() - start.getTime());
+    console.log(diffTime, "diffTime");
+    console.log(Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1, "diffTime");
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end
   }
 
@@ -82,13 +74,13 @@
     console.log(selectedWeekStart, selectedWeekEnd, "selectedWeekStart");
     //2025-05-01
     try {
-      const response = await timesheetApi.getbyDate(
+      const response: any = await timesheetApi.getbyDate(
         employeeId,
         selectedWeekStart.toISOString().split("T")[0],
         selectedWeekEnd.toISOString().split("T")[0]
       );
       console.log(response, "response");
-      if (response && response.length) {
+      if (response.success && response.data) {
         const daysInRange = getDaysInRange(selectedWeekStart, selectedWeekEnd);
         console.log(daysInRange, "daysInRange");
         entries = Array(daysInRange)
@@ -97,17 +89,22 @@
             const date = new Date(selectedWeekStart);
             date.setDate(selectedWeekStart.getDate() + i);
             const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1;
-            const entry = response.find(
-              (e) => new Date(e.dateUTC).toDateString() === date.toDateString()
+            const entry = response.data.find(
+              (e: { dateUTC: string }) =>
+                new Date(e.dateUTC).toDateString() === date.toDateString()
             );
             console.log(entry, "entry");
-            return {
+
+            let obj = {
               day: days[dayIndex],
               date,
               entries: entry?.entries.length
                 ? entry.entries
                 : [{ project: "", task: "", description: "", duration: 0 }],
             };
+
+            console.log(obj, "****************");
+            return obj;
           });
       } else {
         initializeWeek();
@@ -139,72 +136,41 @@
     const { startDate, endDate } = event.detail;
     selectedWeekStart = new Date(startDate);
     selectedWeekEnd = new Date(endDate);
+    console.log(selectedWeekStart, selectedWeekEnd, "handleRangeSelect");
     initializeWeek();
     updateWeekRange();
     fetchTimesheetData();
   }
 
-  function updateEntry(
-    dayIndex: number,
-    entryIndex: number,
-    field: string,
-    value: any
-  ) {
-    entries[dayIndex].entries[entryIndex][field] = value;
-    entries = [...entries];
-  }
-
-  function addEntry(dayIndex: number) {
-    entries[dayIndex].entries.push({
-      project: "",
-      task: "",
-      description: "",
-      duration: 0,
-    });
-    entries = [...entries];
-  }
-
-  function removeEntry(dayIndex: number, entryIndex: number) {
-    if (entries[dayIndex].entries.length > 1) {
-      entries[dayIndex].entries.splice(entryIndex, 1);
-      entries = [...entries];
-    }
-  }
-
-  function showNotification(message: string, isError = false) {
-    if (notificationTimeout) clearTimeout(notificationTimeout);
-    error = isError ? message : "";
-    success = !isError;
-    notificationTimeout = setTimeout(() => {
-      error = "";
-      success = false;
-    }, 5000);
-  }
-
   async function handleSubmit() {
-    console.log("first");
+    console.log("handleSubmit", entries);
     const payload = entries
-      .map((day) => ({
-        employeeId,
-        dateUTC: new Date(day.date.toISOString().split("T")[0]),
-        entries: day.entries.filter(
-          (entry: any) => entry.duration > 0 && entry.project.trim() !== ""
-        ),
-      }))
+      .map((day) => {
+        console.log(day, "day handleSubmit");
+        return {
+          employeeId,
+          dateUTC: new Date(day.date.toISOString().split("T")[0]),
+          entries: day.entries.filter(
+            (entry: any) => entry.duration > 0 && entry.project.trim() !== ""
+          ),
+        };
+      })
       .filter((day) => day.entries.length > 0);
 
     isSubmitting = true;
     success = false;
     error = "";
+    console.log(payload, "payload handleSubmit");
 
     try {
       for (const dayPayload of payload) {
         await timesheetApi.submit(dayPayload);
       }
-      showNotification("Timesheet submitted successfully!");
+      toast.success("Timesheet submitted successfully!");
       await fetchTimesheetData();
     } catch (err) {
-      showNotification("Error submitting timesheet. Please try again.", true);
+      console.log(err, "Error submitting timesheet");
+      toast.error("Error submitting timesheet. Please try again.");
     } finally {
       isSubmitting = false;
     }
@@ -215,7 +181,7 @@
   <div class="max-w-6xl mx-auto bg-white rounded-lg shadow p-6">
     <div class="flex justify-between items-center mb-6">
       <div class="flex items-center">
-        <Calendar
+        <CalendarWrapper
           maxRange={7}
           initialMonth={new Date()}
           metaData={{
@@ -266,165 +232,7 @@
         ></div>
       </div>
     {:else}
-      {#each entries as day, dayIndex}
-        <div class="mb-6 bg-gray-50 rounded p-4">
-          <div class="flex justify-between items-center mb-3">
-            <h3 class="font-medium text-lg">
-              {day.day} ({day.date.toLocaleDateString()})
-            </h3>
-            <div class="flex items-center">
-              <span class="font-medium mr-2"
-                >Day Total: {dayTotals[dayIndex]} hrs</span
-              >
-              {#if dayErrors[dayIndex]}
-                <span class="text-red-600 text-sm">Exceeds 9-hour limit!</span>
-              {/if}
-            </div>
-          </div>
-
-          <div class="overflow-x-auto">
-            <table class="min-w-full bg-white border border-gray-200 rounded">
-              <thead>
-                <tr class="bg-gray-100">
-                  <th
-                    class="py-2 px-3 text-left text-sm font-medium text-gray-700 w-1/5"
-                    >Project<span class="text-red-500">*</span></th
-                  >
-                  <th
-                    class="py-2 px-3 text-left text-sm font-medium text-gray-700 w-1/5"
-                    >Task</th
-                  >
-                  <th
-                    class="py-2 px-3 text-left text-sm font-medium text-gray-700 w-2/5"
-                    >Description</th
-                  >
-                  <th
-                    class="py-2 px-3 text-left text-sm font-medium text-gray-700 w-1/5"
-                    >Hours<span class="text-red-500">*</span></th
-                  >
-                  <th
-                    class="py-2 px-1 text-left text-sm font-medium text-gray-700 w-12"
-                  ></th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each day.entries as entry, entryIndex}
-                  <tr class={entryIndex % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                    <td class="py-2 px-2">
-                      <input
-                        type="text"
-                        placeholder="Project name"
-                        value={entry.project}
-                        on:input={(e) =>
-                          updateEntry(
-                            dayIndex,
-                            entryIndex,
-                            "project",
-                            e.target.value
-                          )}
-                        class="w-full border rounded p-1.5 text-sm border-gray-300"
-                      />
-                    </td>
-                    <td class="py-2 px-2">
-                      <input
-                        type="text"
-                        placeholder="Task name"
-                        value={entry.task}
-                        on:input={(e) =>
-                          updateEntry(
-                            dayIndex,
-                            entryIndex,
-                            "task",
-                            e.target.value
-                          )}
-                        class="w-full border rounded p-1.5 text-sm border-gray-300"
-                      />
-                    </td>
-                    <td class="py-2 px-2">
-                      <input
-                        type="text"
-                        placeholder="What did you work on?"
-                        value={entry.description}
-                        on:input={(e) =>
-                          updateEntry(
-                            dayIndex,
-                            entryIndex,
-                            "description",
-                            e.target.value
-                          )}
-                        class="w-full border rounded p-1.5 text-sm"
-                      />
-                    </td>
-                    <td class="py-2 px-2">
-                      <input
-                        type="number"
-                        placeholder="0"
-                        value={entry.duration}
-                        on:input={(e) =>
-                          updateEntry(
-                            dayIndex,
-                            entryIndex,
-                            "duration",
-                            parseFloat(e.target.value) || 0
-                          )}
-                        min="0"
-                        max="9"
-                        step="0.5"
-                        class="w-full border rounded p-1.5 text-sm"
-                      />
-                    </td>
-                    <td class="py-2 px-1 text-center">
-                      <button
-                        on:click={() => removeEntry(dayIndex, entryIndex)}
-                        class="text-red-600 hover:text-red-800 {day.entries
-                          .length === 1
-                          ? 'opacity-50 cursor-not-allowed'
-                          : ''}"
-                        disabled={day.entries.length === 1}
-                      >
-                        🗑
-                      </button>
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colspan="5" class="py-2 px-3">
-                    <button
-                      on:click={() => addEntry(dayIndex)}
-                      class="flex items-center text-sm text-blue-600 hover:text-blue-800"
-                    >
-                      ➕ Add another entry
-                    </button>
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-      {/each}
-
-      <div class="mt-6 flex justify-between items-center">
-        <div>
-          <div class="font-bold">Total Hours: {totalHours}</div>
-          <div class="text-sm text-gray-600 mt-1">* Required fields</div>
-        </div>
-        <div class="flex space-x-3">
-          <!-- <button
-            class="px-6 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600"
-          >
-            Save Draft
-          </button> -->
-          <button
-            on:click={handleSubmit}
-            disabled={isSubmitting || !employeeId || hasErrors}
-            class="px-6 py-2 bg-black text-white rounded hover:bg-gray-800 disabled:opacity-50"
-          >
-            {isSubmitting ? "Submitting..." : "Submit"}
-          </button>
-        </div>
-      </div>
+      <TimesheetEntries {entries} on:submit={handleSubmit} />
     {/if}
   </div>
 </div>

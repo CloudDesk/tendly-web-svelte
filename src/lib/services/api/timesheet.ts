@@ -13,6 +13,14 @@ type TimesheetPayload = {
   entries: TimesheetEntry[];
 };
 
+export type Timesheet = {
+  _id?: number;
+  employeeId: string;
+  dateUTC: string;
+  entries: TimesheetEntry[];
+  totalDuration?: number;
+}
+
 export const timesheetApi = {
   submit: async (payload: TimesheetPayload) => {
     return fetchApi('/timesheet', {
