@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { auth } from "$lib/stores/auth";
-  import { timesheetApi, type Timesheet } from "$lib/services/api/timesheet";
+  import { timesheetApi, type Timesheet } from "$lib/services/api";
   import CalendarWrapper from "$lib/components/timesheet/CalendarWrapper.svelte";
   import TimesheetEntries from "$lib/components/timesheet/TimesheetEntries.svelte";
   import { toast } from "$lib/components/common/stores/toast.store";
@@ -12,6 +12,8 @@
     ArrowRight,
     Briefcase,
   } from "lucide-svelte";
+  import Modal from "$lib/components/common/Modal.svelte";
+  import TimesheetExport from "$lib/components/timesheet/TimesheetExport.svelte";
 
   $: employeeId = $auth.user?._id || "";
   let selectedWeekStart = new Date();
@@ -27,6 +29,7 @@
   let error = "";
   let success = false;
   let weekRange = "";
+  let isExporting = false;
 
   let meta: { [key: string]: { hours: number } } = {};
   const days = [
@@ -202,12 +205,16 @@
       }, 0)
       .toFixed(1);
   }
+
+  const handleExport = () => {
+    isExporting = true;
+  };
 </script>
 
 <div class="min-h-screen bg-gray-50">
   <div class="max-w-6xl mx-auto py-8 px-4 sm:px-6">
     <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-900">Weekly Timesheet</h1>
+      <h1 class="text-2xl font-bold text-gray-900">Timesheet</h1>
       <p class="text-gray-600 mt-1">Track and submit your working hours</p>
     </div>
 
@@ -257,10 +264,11 @@
           <div
             class="flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded-lg"
           >
-            <Clock size={18} class="mr-2" />
+            <!-- <Clock size={18} class="mr-2" />
             <span class="font-medium"
               >{calculateTotalHours()} hrs this week</span
-            >
+            > -->
+            <button on:click={handleExport}>Export</button>
           </div>
 
           {#if employeeId}
@@ -324,4 +332,13 @@
       <TimesheetEntries {entries} on:submit={handleSubmit} />
     {/if}
   </div>
+  {#if isExporting}
+    <Modal
+      title="Export Timesheet"
+      show={isExporting}
+      onClose={() => (isExporting = false)}
+    >
+      <TimesheetExport />
+    </Modal>
+  {/if}
 </div>
