@@ -7,7 +7,7 @@
   import EmployeeTrainingAttendance from "$lib/components/attendance/EmployeeTrainingAttendance.svelte";
   import { page } from "$app/stores";
   import { navigationContext } from "$lib/stores/navigation";
-  import "../../../Mobileview.css"; // Import the external CSS file
+  // import "../../../Mobileview.css"; // Import the external CSS file
 
   let loading = false;
   let error: string | null = null;

@@ -82,6 +82,7 @@
 
   function confirmSubmission() {
     showConfirmationDialog = false;
+    console.log(entries, "entries to submit");
     dispatch("submit", entries);
   }
 

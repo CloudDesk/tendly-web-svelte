@@ -4,7 +4,7 @@
   import Table from "$lib/components/common/Table.svelte";
   import type { User, PaginationMeta } from "$lib/types_old";
   import { goto } from "$app/navigation";
-  import "../../../Mobileview.css"; // Import responsive CSS
+  // import "../../../Mobileview.css"; // Import responsive CSS
 
   let employees: User[] = [];
   let loading = true;

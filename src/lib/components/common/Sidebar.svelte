@@ -30,7 +30,7 @@
   import { fly } from "svelte/transition";
   import { writable } from "svelte/store";
   import { createEventDispatcher } from "svelte";
-  import "../../../Mobileview.css"; // Import responsive styles
+  // import "../../../Mobileview.css"; // Import responsive styles
   export const ssr = false;
 
   const isCollapsed = writable(false);

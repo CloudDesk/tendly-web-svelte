@@ -7,7 +7,7 @@
   import EmployeeForm from "$lib/components/employee/EmployeeForm.svelte";
   import { employeesApi } from "$lib/services/api/employees.js";
   import { toast } from "$lib/components/common/stores/toast.store.js";
-  import "../../../Mobileview.css"; // Import responsive styles
+  // import "../../../Mobileview.css"; // Import responsive styles
 
   export let data;
 

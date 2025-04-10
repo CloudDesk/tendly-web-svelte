@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import type { PaginationMeta } from "$lib/types";
-  import "../../../Mobileview.css"; // Import responsive CSS for mobile view
+  // import "../../../Mobileview.css"; // Import responsive CSS for mobile view
 
   type Column<T> = {
     key: keyof T;

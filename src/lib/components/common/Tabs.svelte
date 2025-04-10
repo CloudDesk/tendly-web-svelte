@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import "../../../Mobileview.css"; // Import the external CSS file
+  // import "../../../Mobileview.css"; // Import the external CSS file
 
   export let tabs: { id: string; label: string }[];
   export let urlParam = "tab"; // Allow custom URL parameter name

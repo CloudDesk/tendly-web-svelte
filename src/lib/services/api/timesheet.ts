@@ -38,6 +38,12 @@ export const timesheetApi = {
     return fetchApi(`/timesheet?employeeId=${employeeId}&month=${month}&year=${year}`, {
       method: 'GET',
     });
+  },
+  generate: async (employeeId: string, month: number, year: number) => {
+    return fetchApi(`/timesheet/generate`, {
+      method: 'POST',
+      body: JSON.stringify({ employeeId, month, year }),
+    })
   }
 
 

@@ -6,11 +6,11 @@
   import TimesheetEntries from "$lib/components/timesheet/TimesheetEntries.svelte";
   import { toast } from "$lib/components/common/stores/toast.store";
   import {
-    Clock,
     Calendar,
     ArrowLeft,
     ArrowRight,
     Briefcase,
+    Download,
   } from "lucide-svelte";
   import Modal from "$lib/components/common/Modal.svelte";
   import TimesheetExport from "$lib/components/timesheet/TimesheetExport.svelte";
@@ -162,19 +162,25 @@
     fetchTimesheetData();
   }
 
-  async function handleSubmit() {
-    const payload = entries
+  async function handleSubmit(event: CustomEvent) {
+    console.log(event.detail, "submit event handleSubmit");
+    let values = event.detail;
+
+    const payload = values
       .map((day) => {
         return {
           employeeId,
           dateUTC: new Date(day.date.toISOString().split("T")[0]),
-          entries: day.entries.filter(
-            (entry: any) => entry.duration > 0 && entry.project.trim() !== ""
-          ),
+          entries: day.entries
+            .filter(
+              (entry: any) => entry.duration > 0 && entry.project.trim() !== ""
+            )
+            .map(({ _id, ...entryWithoutId }) => entryWithoutId), // remove _id
         };
       })
       .filter((day) => day.entries.length > 0);
 
+    console.log(payload, "payload handleSubmit");
     isSubmitting = true;
     success = false;
     error = "";
@@ -213,9 +219,16 @@
 
 <div class="min-h-screen bg-gray-50">
   <div class="max-w-6xl mx-auto py-8 px-4 sm:px-6">
-    <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-900">Timesheet</h1>
-      <p class="text-gray-600 mt-1">Track and submit your working hours</p>
+    <div class="flex flex-row justify-between items-center flex-wrap gap-4">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Timesheet</h1>
+        <p class="text-gray-600 mt-1">Track and submit your working hours</p>
+      </div>
+      <div>
+        <button class="btn-primary" on:click={handleExport}
+          ><Download size={18} class="mr-2" />Export</button
+        >
+      </div>
     </div>
 
     <!-- Header Control Panel -->
@@ -261,17 +274,7 @@
         </div>
 
         <div class="flex items-center gap-3">
-          <div
-            class="flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded-lg"
-          >
-            <!-- <Clock size={18} class="mr-2" />
-            <span class="font-medium"
-              >{calculateTotalHours()} hrs this week</span
-            > -->
-            <button on:click={handleExport}>Export</button>
-          </div>
-
-          {#if employeeId}
+          <!-- {#if employeeId}
             <div class="flex items-center px-4 py-2 bg-gray-50 rounded-lg">
               <Briefcase size={18} class="text-gray-500 mr-2" />
               <span class="text-sm text-gray-600 truncate max-w-xs"
@@ -282,7 +285,7 @@
             <div class="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm">
               Please log in to submit
             </div>
-          {/if}
+          {/if} -->
         </div>
       </div>
     </div>
@@ -338,7 +341,39 @@
       show={isExporting}
       onClose={() => (isExporting = false)}
     >
-      <TimesheetExport />
+      <TimesheetExport onClose={() => (isExporting = false)} />
     </Modal>
   {/if}
 </div>
+
+<style>
+  .btn-primary,
+  .btn-secondary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 2.75rem;
+    padding: 0 1.25rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary {
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+  }
+
+  .btn-primary:hover {
+    background-color: #2563eb;
+  }
+
+  .btn-primary:disabled {
+    background-color: #93c5fd;
+    cursor: not-allowed;
+  }
+</style>
