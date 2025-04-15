@@ -224,6 +224,7 @@
       {loading}
       serverSide={true}
       meta={pagination}
+      searchable={false}
       variant="transparent"
       on:action={handleTableAction}
       on:page={handlePageChange}

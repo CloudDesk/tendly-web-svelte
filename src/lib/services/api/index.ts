@@ -13,3 +13,5 @@ export * from './taxSlab';
 export * from './collection';
 export * from './reports';
 export * from './timesheet';
+export * from './payroll';
+export * from './holidayCalendar';

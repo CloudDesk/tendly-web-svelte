@@ -9,6 +9,7 @@
   import OrgChart from "$lib/components/employee/OrgChart.svelte";
   import SalaryStructureManagement from "$lib/components/management/SalaryStructureManagement.svelte";
   import TaxSlabManagement from "$lib/components/management/TaxSlabManagement.svelte";
+  import HolidayCalendar from "$lib/components/management/holiday/HolidayCalendar.svelte";
 
   const tabs = [
     { id: "configs", label: "Configs" },
@@ -16,6 +17,7 @@
     { id: "trainings", label: "Trainings" },
     { id: "salary", label: "Salary Structure" },
     { id: "taxslab", label: "Tax Slab" },
+    { id: "holiday", label: "Holiday Calendar" },
     { id: "org", label: "Org Chart" },
     // { id: "dataunit", label: "Data Unit" }
   ];
@@ -65,6 +67,8 @@
           <SalaryStructureManagement />
         {:else if $activeTab === "taxslab"}
           <TaxSlabManagement />
+        {:else if $activeTab === "holiday"}
+          <HolidayCalendar />
         {:else if $activeTab === "dataunit"}
           <button class="btn btn-primary" on:click={openModal}
             >Create Data Unit</button
