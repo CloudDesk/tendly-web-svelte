@@ -15,3 +15,4 @@ export * from './reports';
 export * from './timesheet';
 export * from './payroll';
 export * from './holidayCalendar';
+export * from './weekendCalendar';

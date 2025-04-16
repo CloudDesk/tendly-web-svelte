@@ -10,6 +10,7 @@
   import EmployeeShiftAssignment from "$lib/components/employee/EmployeeShiftAssignment.svelte";
   import Bankingcomponent from "$lib/components/employee/Banking-Identity/Bankingcomponent.svelte";
   import { employeesApi } from '$lib/services/api/employees';
+    import EmployeeInfo from "$lib/components/employee/EmployeeInfo.svelte";
   export let data;
   $: ({ employee } = data);
   console.log( data,"employeeemployee")
@@ -101,7 +102,8 @@
     <div class="tab-container">
       <Tabs {tabs}>
         {#if activeTab === "overview"}
-          <div class="info-grid">
+        <EmployeeInfo employeeId={employee._id} employee={employee}  />
+          <!-- <div class="info-grid">
             <div class="info-card">
               <h3 class="text-base font-medium text-text mb-6">
                 Contact Information
@@ -137,7 +139,7 @@
                 </div>
               </div>
             </div>
-          </div>
+          </div> -->
         {:else if activeTab === "leaves"}
           <EmployeeLeaves employeeId={employee._id} />
         {:else if activeTab === "attendance"}

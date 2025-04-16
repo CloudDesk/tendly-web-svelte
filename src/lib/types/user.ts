@@ -47,6 +47,8 @@ export type User = {
   image?: string | null;
   bankDetails?: IBankDetails[]; // Array for multiple bank accounts
   governmentIds?: IGovernmentIds; // Separate section for identity documents
+  holidayCalendarId?: string;
+  weekendId?: string;
 };
 
 export type UserProfile = Omit<User, 'role' | 'isActive' | 'createdAt' | 'updatedAt'> & {
