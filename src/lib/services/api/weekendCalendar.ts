@@ -2,7 +2,7 @@ import type { IWeekendCalendar } from '$lib/types';
 import { fetchApi, type ListParams } from './base';
 
 export const weekendCalendarApi = {
-    
+
     getbyId: async (id: string) => {
         const response: any = await fetchApi<IWeekendCalendar>(`/weekend-calendar/${id}`);
         return response;
@@ -31,5 +31,10 @@ export const weekendCalendarApi = {
     assign: async (id: string, data: string[]) => {
         console.log(JSON.stringify({ employeeIds: data }), "assignemployeeIds")
         return fetchApi(`/weekend-calendar/${id}/assign`, { method: "POST", body: JSON.stringify({ employeeIds: data }) });
+    },
+
+    getByUserId: async (userId: string) => {
+        return fetchApi<IWeekendCalendar[]>(`/weekend-calendar/user/${userId}`, { method: "GET" });
     }
+
 };

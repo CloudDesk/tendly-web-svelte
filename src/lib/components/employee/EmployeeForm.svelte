@@ -2,11 +2,6 @@
   import { createEventDispatcher, onMount } from "svelte";
   import "../../styles/form.css";
   import { lovsApi } from "$lib/services/api/lovs";
-  // import {
-  //   userBloodGroups,
-  //   userLocations,
-  //   userRoles,
-  // } from "$lib/constants/users";
   import { employeesApi } from "$lib/services/api";
 
   // Field interface defines the structure of form fields
@@ -180,25 +175,25 @@
   // Fetch list of values (LOVs) from API on component mount
   onMount(async () => {
     try {
-      const rolesResponse = await lovsApi.getByType("role");
+      const rolesResponse: any = await lovsApi.getByType("role");
       if (rolesResponse.success) {
-        userRoles = rolesResponse.data.values.map((role) => ({
+        userRoles = rolesResponse?.data?.values.map((role: any) => ({
           label: role.label,
           value: role.value,
         }));
       }
 
-      const locationsResponse = await lovsApi.getByType("city");
+      const locationsResponse: any = await lovsApi.getByType("city");
       if (locationsResponse.success) {
-        userLocations = locationsResponse.data.values.map((location) => ({
+        userLocations = locationsResponse.data.values.map((location: any) => ({
           label: location.label,
           value: location.value,
         }));
       }
 
-      const bloodGroupsResponse = await lovsApi.getByType("bloodgroup");
+      const bloodGroupsResponse: any = await lovsApi.getByType("bloodgroup");
       if (bloodGroupsResponse.success) {
-        userBloodGroups = bloodGroupsResponse.data.values.map((bg) => ({
+        userBloodGroups = bloodGroupsResponse.data.values.map((bg: any) => ({
           label: bg.label,
           value: bg.value,
         }));

@@ -4,6 +4,10 @@
   import { Trash2, Copy, Plus, AlertCircle, Check } from "lucide-svelte";
 
   export let entries: any[] = [];
+  export let holidays: { date: string; name: string; type: string }[] = [];
+  export let weekendDays: number[] = [];
+
+  console.log(holidays, weekendDays, "holidays,weekendDays");
   const dispatch = createEventDispatcher();
   console.log(entries, "entries");
   let showConfirmationDialog = false;
@@ -65,11 +69,29 @@
         );
       }
       // Check for incomplete entries
-      day.entries.forEach((entry: any) => {
-        if (entry.duration > 0 && entry.project.trim() === "") {
-          validationErrors.push(
-            `${day.day} (${day.date.toLocaleDateString()}): Entry has hours but no project specified`
-          );
+      day.entries.forEach((entry: any, entryIndex: number) => {
+        if (entry.duration > 0) {
+          if (entry.project.trim() === "") {
+            validationErrors.push(
+              `${day.day} (${day.date.toLocaleDateString()}): Entry #${
+                entryIndex + 1
+              } has hours but no project specified`
+            );
+          }
+          if (entry.task.trim() === "") {
+            validationErrors.push(
+              `${day.day} (${day.date.toLocaleDateString()}): Entry #${
+                entryIndex + 1
+              } has hours but no task specified`
+            );
+          }
+          if (entry.description.trim() === "") {
+            validationErrors.push(
+              `${day.day} (${day.date.toLocaleDateString()}): Entry #${
+                entryIndex + 1
+              } has hours but no description specified`
+            );
+          }
         }
       });
     });
@@ -97,19 +119,28 @@
 
   function getFormattedDate(date: Date) {
     return date.toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
       day: "numeric",
+      month: "short",
     });
   }
 
   function isWeekend(date: Date) {
-    const day = date.getDay();
-    return day === 0 || day === 6;
+    return weekendDays.includes(date.getDay());
+  }
+
+  function isHoliday(date: Date) {
+    const dateStr = date.toISOString().split("T")[0];
+    return holidays.some((h) => h.date.startsWith(dateStr));
+  }
+
+  function getHolidayName(date: Date) {
+    const dateStr = date.toISOString().split("T")[0];
+    const holiday = holidays.find((h) => h.date.startsWith(dateStr));
+    return holiday ? holiday.name : "";
   }
 </script>
 
-<div class="space-y-4">
+<div Berger="space-y-4">
   <div
     class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
   >
@@ -121,6 +152,8 @@
         class:bg-blue-50={expandedDay === dayIndex}
         class:bg-amber-50={isWeekend(day.date)}
         class:border-amber-200={isWeekend(day.date)}
+        class:bg-red-50={isHoliday(day.date)}
+        class:border-red-200={isHoliday(day.date)}
       >
         <!-- Day Header -->
         <button
@@ -130,12 +163,30 @@
           class="w-full text-left px-4 py-3 flex justify-between items-center cursor-pointer border-b border-gray-100"
           class:border-blue-200={expandedDay === dayIndex}
           class:border-amber-200={isWeekend(day.date)}
+          class:border-red-200={isHoliday(day.date)}
           on:click={() => toggleDayExpansion(dayIndex)}
           on:keydown={(e) => e.key === "Enter" && toggleDayExpansion(dayIndex)}
         >
-          <div>
-            <h3 class="font-medium text-gray-900">{day.day}</h3>
-            <p class="text-sm text-gray-500">{getFormattedDate(day.date)}</p>
+          <div class="flex items-center gap-2">
+            <h3 class="font-medium text-gray-900">
+              {getFormattedDate(day.date)} |
+              {day.day.substring(0, 3)}
+            </h3>
+            {#if isHoliday(day.date)}
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                title={getHolidayName(day.date)}
+              >
+                Holiday
+              </span>
+            {/if}
+            {#if isWeekend(day.date)}
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"
+              >
+                Weekend
+              </span>
+            {/if}
           </div>
           <div class="text-right">
             <div class="text-lg font-semibold text-blue-600">
@@ -181,6 +232,7 @@
                         )}
                       class:border-red-300={entry.duration > 0 &&
                         entry.project === ""}
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                     />
                   </div>
                   <div>
@@ -248,14 +300,14 @@
                   </div>
 
                   <div class="flex space-x-2">
-                    <!-- <button
+                    <button
                       on:click={() => copyEntryToNextDay(dayIndex, entryIndex)}
                       disabled={dayIndex === entries.length - 1}
                       class="p-2 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                       title="Copy to next day"
                     >
                       <Copy size={16} />
-                    </button> -->
+                    </button>
                     <button
                       on:click={() => removeEntry(dayIndex, entryIndex)}
                       disabled={day.entries.length === 1}
@@ -355,7 +407,22 @@
                 {#if totalHours > 0}
                   <tr class="hover:bg-gray-50">
                     <td class="px-4 py-2 text-sm text-gray-900">
-                      {day.day.substring(0, 3)}, {day.date.toLocaleDateString()}
+                      {getFormattedDate(day.date)}
+                      {day.day.substring(0, 3)}
+                      {#if isHoliday(day.date)}
+                        <span
+                          class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                        >
+                          {getHolidayName(day.date)}
+                        </span>
+                      {/if}
+                      {#if isWeekend(day.date)}
+                        <span
+                          class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"
+                        >
+                          Weekend
+                        </span>
+                      {/if}
                     </td>
                     <td class="px-4 py-2 text-sm text-gray-500">
                       {day.entries
@@ -434,7 +501,7 @@
           <button
             on:click={confirmSubmission}
             disabled={validationErrors.length > 0}
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Check size={16} class="mr-1" />
             Confirm Submission

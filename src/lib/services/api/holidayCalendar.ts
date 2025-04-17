@@ -29,5 +29,9 @@ export const holidayCalendarApi = {
     assign: async (id: string, data: string[]) => {
         console.log(JSON.stringify({ employeeIds: data }), "assignemployeeIds")
         return fetchApi(`/holiday-calendar/${id}/assign`, { method: "POST", body: JSON.stringify({ employeeIds: data }) });
+    },
+
+    getByUserId: async (userId: string) => {
+        return fetchApi<IHolidayCalendar[]>(`/holiday-calendar/user/${userId}`, { method: "GET" });
     }
 };

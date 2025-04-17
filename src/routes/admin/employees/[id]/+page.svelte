@@ -9,13 +9,13 @@
   import ITDeclarationApproval from "$lib/components/employee/ITDeclarationApproval.svelte";
   import EmployeeShiftAssignment from "$lib/components/employee/EmployeeShiftAssignment.svelte";
   import Bankingcomponent from "$lib/components/employee/Banking-Identity/Bankingcomponent.svelte";
-  import { employeesApi } from '$lib/services/api/employees';
-    import EmployeeInfo from "$lib/components/employee/EmployeeInfo.svelte";
+  import { employeesApi } from "$lib/services/api/employees";
+  import EmployeeInfo from "$lib/components/employee/EmployeeInfo.svelte";
   export let data;
   $: ({ employee } = data);
-  console.log( data,"employeeemployee")
-   
-   let employeeBankdetailsData ;
+  console.log(data, "employeeemployee");
+
+  let employeeBankdetailsData;
   const tabs = [
     { id: "overview", label: "Overview" },
     { id: "shifts", label: "Shifts" },
@@ -24,7 +24,7 @@
     { id: "training", label: "Training" },
     { id: "salary", label: "Employee Salary" },
     { id: "it-declaration", label: "IT Declaration" },
-    { id: "Banking-Identity", label: "Banking Identity" },
+    // { id: "Banking-Identity", label: "Banking Identity" },
   ];
 
   $: activeTab = $page.url.searchParams.get("tab") || tabs[0]?.id;
@@ -43,27 +43,27 @@
 
   async function handleRefresh(event: CustomEvent) {
     console.log("Refresh event triggered:", event.detail);
-    
-    try {
-    const response = await employeesApi.getById(employee._id);
-     console.log(response,"responseresponse")
-    if (!response.success) {
-      throw response as unknown as ApiError;
-    }
-    employeeBankdetailsData=response.data;
-    console.log(employeeBankdetailsData,"employeeBankdetailsData")
-    return {
-      employee: response.data
-    };
-  } catch (error) {
-    console.error('Failed to load employee:', error);
 
-    // // Ensure event.detail contains updated employee data before modifying `data`
-    // if (event.detail) {
-    //   data = { ...data, employee: event.detail };
-    // }
+    try {
+      const response = await employeesApi.getById(employee._id);
+      console.log(response, "responseresponse");
+      if (!response.success) {
+        throw response as unknown as ApiError;
+      }
+      employeeBankdetailsData = response.data;
+      console.log(employeeBankdetailsData, "employeeBankdetailsData");
+      return {
+        employee: response.data,
+      };
+    } catch (error) {
+      console.error("Failed to load employee:", error);
+
+      // // Ensure event.detail contains updated employee data before modifying `data`
+      // if (event.detail) {
+      //   data = { ...data, employee: event.detail };
+      // }
+    }
   }
-}
 </script>
 
 <div class="p-8 bg-surface-muted min-h-screen">
@@ -102,7 +102,7 @@
     <div class="tab-container">
       <Tabs {tabs}>
         {#if activeTab === "overview"}
-        <EmployeeInfo employeeId={employee._id} employee={employee}  />
+          <EmployeeInfo employeeId={employee._id} {employee} />
           <!-- <div class="info-grid">
             <div class="info-card">
               <h3 class="text-base font-medium text-text mb-6">
@@ -152,13 +152,13 @@
           <ITDeclarationApproval employeeId={employee._id} />
         {:else if activeTab === "shifts"}
           <EmployeeShiftAssignment employeeId={employee._id} />
-        {:else if activeTab === "Banking-Identity"}  
-        <Bankingcomponent 
-        employeeId={employee._id} 
-        {employee}
-        on:refresh={handleRefresh}
-      />
-      {/if}
+        {:else if activeTab === "Banking-Identity"}
+          <Bankingcomponent
+            employeeId={employee._id}
+            {employee}
+            on:refresh={handleRefresh}
+          />
+        {/if}
       </Tabs>
     </div>
     <!-- 

@@ -1,17 +1,16 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { auth } from "$lib/stores/auth";
-  import { timesheetApi, type Timesheet } from "$lib/services/api";
+  import {
+    holidayCalendarApi,
+    timesheetApi,
+    weekendCalendarApi,
+    type Timesheet,
+  } from "$lib/services/api";
   import CalendarWrapper from "$lib/components/timesheet/CalendarWrapper.svelte";
   import TimesheetEntries from "$lib/components/timesheet/TimesheetEntries.svelte";
   import { toast } from "$lib/components/common/stores/toast.store";
-  import {
-    Calendar,
-    ArrowLeft,
-    ArrowRight,
-    Briefcase,
-    Download,
-  } from "lucide-svelte";
+  import { Calendar, ArrowLeft, ArrowRight, Download } from "lucide-svelte";
   import Modal from "$lib/components/common/Modal.svelte";
   import TimesheetExport from "$lib/components/timesheet/TimesheetExport.svelte";
 
@@ -30,6 +29,12 @@
   let success = false;
   let weekRange = "";
   let isExporting = false;
+  let showConfirmModal = false;
+  let pendingPayload: any[] = [];
+
+  // Store holidays and weekends
+  let holidays: { date: string; name: string; type: string }[] = [];
+  let weekendDays: number[] = [];
 
   let meta: { [key: string]: { hours: number } } = {};
   const days = [
@@ -45,12 +50,12 @@
   onMount(async () => {
     initializeWeek();
     updateWeekRange();
-    await fetchTimesheetData();
+    await Promise.all([fetchTimesheetData(), getHolidays(), getWeekends()]);
   });
 
   function getDaysInRange(start: Date, end: Date): number {
     const diffTime = Math.abs(end.getTime() - start.getTime());
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
   }
 
   function initializeWeek() {
@@ -60,11 +65,17 @@
     for (let i = 0; i < daysInRange; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
-      const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1; // Adjust for Monday start
+      const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1;
+      const dateStr = date.toISOString().split("T")[0];
+      const isHoliday = holidays.some((h) => h.date.startsWith(dateStr));
+      const isWeekend = weekendDays.includes(date.getDay());
+
       entries.push({
         day: days[dayIndex],
         date,
         entries: [{ project: "", task: "", description: "", duration: 0 }],
+        isHoliday,
+        isWeekend,
       });
     }
   }
@@ -83,7 +94,6 @@
         selectedWeekStart.toISOString().split("T")[0],
         selectedWeekEnd.toISOString().split("T")[0]
       );
-      console.log(response.data);
       if (response.success && response.data) {
         const daysInRange = getDaysInRange(selectedWeekStart, selectedWeekEnd);
         entries = Array(daysInRange)
@@ -92,10 +102,13 @@
             const date = new Date(selectedWeekStart);
             date.setDate(selectedWeekStart.getDate() + i);
             const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1;
+            const dateStr = date.toISOString().split("T")[0];
             const entry = response.data.find(
               (e: { dateUTC: string }) =>
                 new Date(e.dateUTC).toDateString() === date.toDateString()
             );
+            const isHoliday = holidays.some((h) => h.date.startsWith(dateStr));
+            const isWeekend = weekendDays.includes(date.getDay());
 
             return {
               day: days[dayIndex],
@@ -103,10 +116,11 @@
               entries: entry?.entries.length
                 ? entry.entries
                 : [{ project: "", task: "", description: "", duration: 0 }],
+              isHoliday,
+              isWeekend,
             };
           });
 
-        // Update meta data if available
         response.data.forEach((entry: Timesheet) => {
           const date = new Date(entry.dateUTC);
           const dateKey = date.toISOString().split("T")[0];
@@ -123,6 +137,45 @@
     }
   }
 
+  async function getHolidays() {
+    try {
+      const response: any = await holidayCalendarApi.getByUserId(employeeId);
+      console.log(response, "response getHolidays);");
+      if (response.success && response.data) {
+        let holidaysData = response.data.holidays.map((h: any) => ({
+          date: h.date,
+          name: h.name,
+          type: h.type,
+        }));
+        console.log(holidaysData, "holidaysData");
+        holidays = holidaysData;
+        initializeWeek(); // Reinitialize to apply holiday markers
+      }
+    } catch (error) {
+      console.error("Error fetching holidays:", error);
+      toast.error("Failed to load holidays.");
+    }
+  }
+
+  async function getWeekends() {
+    try {
+      const response: any = await weekendCalendarApi.getByUserId(employeeId);
+      console.log(response, " response getWeekends);");
+      if (response.success && response.data) {
+        console.log(
+          response.data.weekends.map((w: any) => w.weekday),
+          "******"
+        );
+        weekendDays = response.data.weekends.map((w: any) => w.weekday);
+        initializeWeek(); // Reinitialize to apply weekend markers
+      }
+    } catch (error) {
+      console.error("Error fetching weekends:", error);
+      toast.error("Failed to load weekend configuration.");
+    }
+  }
+  console.log(weekendDays, "weekendDays");
+  console.log(holidays, "holidays");
   function handleMonthChange(event: CustomEvent) {
     const { year, month } = event.detail;
     const firstDayOfMonth = new Date(Date.UTC(year, month - 1, 1));
@@ -162,8 +215,31 @@
     fetchTimesheetData();
   }
 
+  function checkHolidayWeekendEntries(payload: any[]) {
+    const holidayEntries: string[] = [];
+    const weekendEntries: string[] = [];
+
+    payload.forEach((day) => {
+      const dateStr = new Date(day.dateUTC).toISOString().split("T")[0];
+      const isHoliday = holidays.some((h) => h.date.startsWith(dateStr));
+      const isWeekend = weekendDays.includes(new Date(day.dateUTC).getDay());
+
+      if (isHoliday && day.entries.length > 0) {
+        holidayEntries.push(
+          `${new Date(day.dateUTC).toLocaleDateString()} (${
+            holidays.find((h) => h.date.startsWith(dateStr))?.name
+          })`
+        );
+      }
+      if (isWeekend && day.entries.length > 0) {
+        weekendEntries.push(new Date(day.dateUTC).toLocaleDateString());
+      }
+    });
+
+    return { holidayEntries, weekendEntries };
+  }
+
   async function handleSubmit(event: CustomEvent) {
-    console.log(event.detail, "submit event handleSubmit");
     let values = event.detail;
 
     const payload = values
@@ -175,12 +251,24 @@
             .filter(
               (entry: any) => entry.duration > 0 && entry.project.trim() !== ""
             )
-            .map(({ _id, ...entryWithoutId }) => entryWithoutId), // remove _id
+            .map(({ _id, ...entryWithoutId }) => entryWithoutId),
         };
       })
       .filter((day) => day.entries.length > 0);
 
-    console.log(payload, "payload handleSubmit");
+    const { holidayEntries, weekendEntries } =
+      checkHolidayWeekendEntries(payload);
+
+    if (holidayEntries.length > 0 || weekendEntries.length > 0) {
+      pendingPayload = payload;
+      showConfirmModal = true;
+      return;
+    }
+
+    await submitTimesheet(payload);
+  }
+
+  async function submitTimesheet(payload: any[]) {
     isSubmitting = true;
     success = false;
     error = "";
@@ -196,6 +284,8 @@
       toast.error("Error submitting timesheet. Please try again.");
     } finally {
       isSubmitting = false;
+      showConfirmModal = false;
+      pendingPayload = [];
     }
   }
 
@@ -272,21 +362,6 @@
             />
           </div>
         </div>
-
-        <div class="flex items-center gap-3">
-          <!-- {#if employeeId}
-            <div class="flex items-center px-4 py-2 bg-gray-50 rounded-lg">
-              <Briefcase size={18} class="text-gray-500 mr-2" />
-              <span class="text-sm text-gray-600 truncate max-w-xs"
-                >ID: {employeeId}</span
-              >
-            </div>
-          {:else}
-            <div class="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm">
-              Please log in to submit
-            </div>
-          {/if} -->
-        </div>
       </div>
     </div>
 
@@ -295,9 +370,6 @@
         class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6 animate-fade-in"
       >
         <div class="flex">
-          <div class="flex-shrink-0">
-            <!-- Error icon could be added here -->
-          </div>
           <div class="ml-3">
             <p class="text-sm font-medium">{error}</p>
           </div>
@@ -310,9 +382,6 @@
         class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg mb-6 animate-fade-in"
       >
         <div class="flex">
-          <div class="flex-shrink-0">
-            <!-- Success icon could be added here -->
-          </div>
           <div class="ml-3">
             <p class="text-sm font-medium">Timesheet saved successfully!</p>
           </div>
@@ -332,9 +401,15 @@
         </div>
       </div>
     {:else}
-      <TimesheetEntries {entries} on:submit={handleSubmit} />
+      <TimesheetEntries
+        {holidays}
+        {weekendDays}
+        {entries}
+        on:submit={handleSubmit}
+      />
     {/if}
   </div>
+
   {#if isExporting}
     <Modal
       title="Export Timesheet"
@@ -342,6 +417,57 @@
       onClose={() => (isExporting = false)}
     >
       <TimesheetExport onClose={() => (isExporting = false)} />
+    </Modal>
+  {/if}
+
+  {#if showConfirmModal}
+    <Modal
+      title="Confirm Submission"
+      show={showConfirmModal}
+      onClose={() => (showConfirmModal = false)}
+    >
+      <div class="p-4">
+        <p class="text-gray-700 mb-4">
+          Your timesheet includes entries on the following holidays or weekends:
+        </p>
+        {#if checkHolidayWeekendEntries(pendingPayload).holidayEntries.length > 0}
+          <div class="mb-4">
+            <p class="font-medium text-red-600">Holidays:</p>
+            <ul class="list-disc pl-5">
+              {#each checkHolidayWeekendEntries(pendingPayload).holidayEntries as holiday}
+                <li>{holiday}</li>
+              {/each}
+            </ul>
+          </div>
+        {/if}
+        {#if checkHolidayWeekendEntries(pendingPayload).weekendEntries.length > 0}
+          <div class="mb-4">
+            <p class="font-medium text-gray-600">Weekends:</p>
+            <ul class="list-disc pl-5">
+              {#each checkHolidayWeekendEntries(pendingPayload).weekendEntries as weekend}
+                <li>{weekend}</li>
+              {/each}
+            </ul>
+          </div>
+        {/if}
+        <p class="text-gray-700 mb-4">
+          Are you sure you want to submit these entries?
+        </p>
+        <div class="flex justify-end gap-2">
+          <button
+            class="btn-secondary"
+            on:click={() => (showConfirmModal = false)}
+          >
+            Cancel
+          </button>
+          <button
+            class="btn-primary"
+            on:click={() => submitTimesheet(pendingPayload)}
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
     </Modal>
   {/if}
 </div>
@@ -375,5 +501,15 @@
   .btn-primary:disabled {
     background-color: #93c5fd;
     cursor: not-allowed;
+  }
+
+  .btn-secondary {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+  }
+
+  .btn-secondary:hover {
+    background-color: #e5e7eb;
   }
 </style>

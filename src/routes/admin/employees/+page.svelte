@@ -123,7 +123,7 @@
     // showApplyForm=false;
     try {
       loading = true;
-      const response = await employeesApi.create(event.detail);
+      const response: any = await employeesApi.create(event.detail);
       console.log(response, "createResponse");
       if (response.success) {
         toast.success("Employee added successfully");
