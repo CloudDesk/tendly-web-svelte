@@ -16,3 +16,4 @@ export * from './timesheet';
 export * from './payroll';
 export * from './holidayCalendar';
 export * from './weekendCalendar';
+export * from './user-resignation';

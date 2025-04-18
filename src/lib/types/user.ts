@@ -15,13 +15,28 @@ interface IBankDetails {
   ifscCode: string;
   isActive: boolean; // Main salary account
 }
- 
+
 interface IGovernmentIds {
   panNumber?: string;
   aadhaarNumber?: string;
   passportNumber?: string;
   voterId?: string;
   drivingLicense?: string;
+}
+
+interface IResignation {
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Withdrawn';
+  summary: string;
+  remarks?: string;
+  submittedAt: { type: 'string', format: 'date-time' };
+  approvedAt?: { type: 'string', format: 'date-time' };
+  rejectedAt?: { type: 'string', format: 'date-time' };
+  withdrawnAt?: { type: 'string', format: 'date-time' };
+  approvedBy?: string;
+  noticePeriodDays?: number;
+  preferredLastWorkingDay?: { type: 'string', format: 'date-time' };
+  approvedLastWorkingDay?: { type: 'string', format: 'date-time' };
+  finalSettlementDone: boolean;
 }
 
 export type User = {
@@ -49,6 +64,7 @@ export type User = {
   governmentIds?: IGovernmentIds; // Separate section for identity documents
   holidayCalendarId?: string;
   weekendId?: string;
+  resignation?: IResignation
 };
 
 export type UserProfile = Omit<User, 'role' | 'isActive' | 'createdAt' | 'updatedAt'> & {

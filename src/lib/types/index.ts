@@ -12,5 +12,6 @@ export * from './salaryStructure';
 export * from './salaryAssignment';
 export * from './taxSlab';
 export * from './taxDeclaration';
-export * from './holidayCalendar';  
+export * from './holidayCalendar';
 export * from './weekendCalendar';
+export * from './userResignation';
