@@ -184,13 +184,14 @@
       title="New Employee"
       onClose={() => (showApplyForm = false)}
     >
-      <EmployeeForm
-        {loading}
-        initialValues={formValues}
-        on:submit={handleFormSubmit}
-        on:update={handleFormUpdate}
-        on:cancel={() => (showApplyForm = false)}
-      />
+    <EmployeeForm
+    mode="create"
+    {loading}
+    initialValues={formValues}
+    on:submit={handleFormSubmit}
+    on:cancel={() => (showApplyForm = false)}
+  />
+
       <!-- <LeaveForm
         {loading}
         initialValues={formValues}

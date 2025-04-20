@@ -11,9 +11,16 @@
   import Bankingcomponent from "$lib/components/employee/Banking-Identity/Bankingcomponent.svelte";
   import { employeesApi } from "$lib/services/api/employees";
   import EmployeeInfo from "$lib/components/employee/EmployeeInfo.svelte";
+    import { toast } from "$lib/components/common/stores/toast.store.js";
+    import Modal from "$lib/components/common/Modal.svelte";
+    import EmployeeForm from "$lib/components/employee/EmployeeForm.svelte";
   export let data;
   $: ({ employee } = data);
-  console.log(data, "employeeemployee");
+  console.log(data.employee, "employeeemployee");
+  console.log(data, "data");
+
+  let showEditForm = false;
+  let loading = false;
 
   let employeeBankdetailsData;
   const tabs = [
@@ -64,6 +71,40 @@
       // }
     }
   }
+
+  async function handleEditSubmit(event: CustomEvent) {
+
+    let data = event.detail;
+
+    //remove dates createdAt and updatedAt
+    delete data.createdAt;
+    delete data.updatedAt;
+    delete data.currentShiftAssignmentData;
+    delete data.upcomingShiftAssignmentData
+    // Remove dateOfBirth if it is false, empty, or null
+if (!data.dateOfBirth) {
+    delete data.dateOfBirth;
+}
+
+    try {
+      loading = true;
+      const response = await employeesApi.update(employee._id, event.detail);
+      if (response.success) {
+        toast.success("Profile updated successfully");
+        showEditForm = false;
+        // Refresh the page or update the employee data
+        employee = response.data;
+      } else {
+        toast.error("Failed to update profile");
+      }
+    } catch (error) {
+      toast.error("Failed to update profile");
+      console.error("Error updating profile:", error);
+    } finally {
+      loading = false;
+    }
+  }
+
 </script>
 
 <div class="p-8 bg-surface-muted min-h-screen">
@@ -82,7 +123,7 @@
         <i class="fas fa-envelope"></i>
         Message
       </button>
-      <button class="btn btn-primary">
+      <button class="btn btn-primary"  on:click={() => (showEditForm = true)}>
         <i class="fas fa-pencil"></i>
         Edit Profile
       </button>
@@ -161,6 +202,22 @@
         {/if}
       </Tabs>
     </div>
+    {#if showEditForm}
+    <Modal
+      show={showEditForm}
+      title="Edit Employee Profile"
+      onClose={() => (showEditForm = false)}
+    >
+      <EmployeeForm
+        mode="update"
+        {loading}
+        initialValues={data.employee}
+        on:update={handleEditSubmit}
+        on:cancel={() => (showEditForm = false)}
+      />
+    </Modal>
+  {/if}
+
     <!-- 
     <div class="tab-container">
       <nav class="tabs">
@@ -250,6 +307,8 @@
       {/if}
     </div> -->
   </div>
+
+  
 </div>
 
 <style>

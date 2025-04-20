@@ -16,8 +16,7 @@
   
     // Basic Info
     let basicInfo = {
-      firstName: employee.firstName || '',
-      lastName: employee.lastName || '',
+      name: employee.name || '',
       email: employee.email || '',
       phone: employee.phone || '',
       role: employee.role || '',
@@ -379,97 +378,49 @@
   
     <!-- Basic Info Section -->
     {#if activeTab === 'Basic Info'}
-      <div class="bg-white shadow-lg rounded-xl p-6">
-        <h2 class="text-xl font-semibold text-gray-800 mb-4">Basic Information</h2>
-        <form on:submit|preventDefault={handleBasicInfoSubmit} class="space-y-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="form-control">
-              <label class="label" for="firstName">First Name <span class="text-error">*</span></label>
-              <input
-                id="firstName"
-                type="text"
-                class="input input-bordered {basicInfoErrors.firstName ? 'input-error' : ''}"
-                bind:value={basicInfo.firstName}
-                on:input={(e) => handleBasicInfoInput('firstName', e.target.value)}
-              />
-              {#if basicInfoErrors.firstName}
-                <span class="text-error text-sm">{basicInfoErrors.firstName}</span>
-              {/if}
-            </div>
-            <div class="form-control">
-              <label class="label" for="lastName">Last Name <span class="text-error">*</span></label>
-              <input
-                id="lastName"
-                type="text"
-                class="input input-bordered {basicInfoErrors.lastName ? 'input-error' : ''}"
-                bind:value={basicInfo.lastName}
-                on:input={(e) => handleBasicInfoInput('lastName', e.target.value)}
-              />
-              {#if basicInfoErrors.lastName}
-                <span class="text-error text-sm">{basicInfoErrors.lastName}</span>
-              {/if}
-            </div>
-            <div class="form-control">
-              <label class="label" for="email">Email <span class="text-error">*</span></label>
-              <input
-                id="email"
-                type="email"
-                class="input input-bordered {basicInfoErrors.email ? 'input-error' : ''}"
-                bind:value={basicInfo.email}
-                on:input={(e) => handleBasicInfoInput('email', e.target.value)}
-              />
-              {#if basicInfoErrors.email}
-                <span class="text-error text-sm">{basicInfoErrors.email}</span>
-              {/if}
-            </div>
-            <div class="form-control">
-              <label class="label" for="phone">Phone <span class="text-error">*</span></label>
-              <input
-                id="phone"
-                type="text"
-                class="input input-bordered {basicInfoErrors.phone ? 'input-error' : ''}"
-                bind:value={basicInfo.phone}
-                on:input={(e) => handleBasicInfoInput('phone', e.target.value)}
-              />
-              {#if basicInfoErrors.phone}
-                <span class="text-error text-sm">{basicInfoErrors.phone}</span>
-              {/if}
-            </div>
-            <div class="form-control">
-              <label class="label" for="role">Role</label>
-              <input
-                id="role"
-                type="text"
-                class="input input-bordered"
-                bind:value={basicInfo.role}
-                on:input={(e) => handleBasicInfoInput('role', e.target.value)}
-              />
-            </div>
-            <div class="form-control">
-              <label class="label" for="joiningDate">Joining Date</label>
-              <input
-                id="joiningDate"
-                type="date"
-                class="input input-bordered"
-                bind:value={basicInfo.joiningDate}
-                on:input={(e) => handleBasicInfoInput('joiningDate', e.target.value)}
-              />
-            </div>
-          </div>
-          {#if basicInfoErrors.submit}
-            <span class="text-error text-sm">{basicInfoErrors.submit}</span>
-          {/if}
-          <div class="flex justify-end gap-2">
-            <button
-              type="submit"
-              class="btn btn-primary"
-              disabled={!basicInfoFormValid || basicInfoLoading}
-            >
-              {basicInfoLoading ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-        </form>
+  <div class="bg-white shadow-lg rounded-xl p-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
+      <div class="info-item">
+        <h3 class="text-sm font-medium text-gray-500">Full Name</h3>
+        <p class="mt-1 text-base font-semibold text-gray-900">{basicInfo.name} </p>
       </div>
+      
+      <div class="info-item">
+        <h3 class="text-sm font-medium text-gray-500">Email</h3>
+        <p class="mt-1 text-base text-gray-900">{basicInfo.email || 'N/A'}</p>
+      </div>
+      
+      <div class="info-item">
+        <h3 class="text-sm font-medium text-gray-500">Phone</h3>
+        <p class="mt-1 text-base text-gray-900">{basicInfo.phone || 'N/A'}</p>
+      </div>
+      
+      <div class="info-item">
+        <h3 class="text-sm font-medium text-gray-500">Role</h3>
+        <p class="mt-1 text-base text-gray-900">{basicInfo.role || 'N/A'}</p>
+      </div>
+      
+      <div class="info-item">
+        <h3 class="text-sm font-medium text-gray-500">Manager</h3>
+        <p class="mt-1 text-base text-gray-900">{employee.manager?.name || 'N/A'}</p>
+      </div>
+      
+      <div class="info-item">
+        <h3 class="text-sm font-medium text-gray-500">Location</h3>
+        <p class="mt-1 text-base text-gray-900">{employee.location || 'N/A'}</p>
+      </div>
+      
+      <div class="info-item">
+        <h3 class="text-sm font-medium text-gray-500">Joining Date</h3>
+        <p class="mt-1 text-base text-gray-900">{formatDate(basicInfo.joiningDate)}</p>
+      </div>
+      
+      <div class="info-item">
+        <h3 class="text-sm font-medium text-gray-500">Employee ID</h3>
+        <p class="mt-1 text-base text-gray-900">{employeeId}</p>
+      </div>
+    </div>
+    </div>
     {/if}
   
     <!-- Bank Information Section -->
