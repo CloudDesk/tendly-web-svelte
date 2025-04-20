@@ -14,6 +14,7 @@ export const resignationApi = {
     withdraw: async (userId: string): Promise<Resignation> => {
         return fetchApi(`/users-resignations/${userId}/withdraw`, {
             method: 'PUT',
+            body: JSON.stringify({}),
         });
     },
 

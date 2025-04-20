@@ -23,12 +23,12 @@ export interface UserResignation {
 
 export interface SubmitResignationData {
     summary: string;
-    remarks?: string;
     preferredLastWorkingDay?: string;
 }
 
 export interface ApproveResignationData {
     noticePeriodDays: number;
     approvedLastWorkingDay: string;
+    
     remarks?: string;
 }

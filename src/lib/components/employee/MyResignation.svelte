@@ -8,7 +8,16 @@
     Resignation,
     SubmitResignationData,
   } from "$lib/types/userResignation";
+  import { FileText, Info, LoaderCircle } from "lucide-svelte";
 
+  interface IResignationStatus{
+    canApply: boolean;
+    canWithdraw: boolean;
+    activeResignation:  Partial<Resignation> | null;
+  }
+
+
+  const ADMIN_MAIL = import.meta.env.VITE_ADMIN_MAIL;
   $: user = $auth.user;
   let resignation: Resignation | null = null;
   let showModal = false;
@@ -16,44 +25,78 @@
   let reason = "";
   let proposedLastWorkingDay = "";
   let noticePeriodServed = false;
-  let error = "";
+
+  // ✅ Error fields
+  let reasonError = "";
+  let lwdError = "";
+
+  // Calculate minimum date (7 days from today)
+  const minDate = new Date();
+  minDate.setDate(minDate.getDate() + 7);
+  const minDateString = minDate.toISOString().split("T")[0];
 
   async function loadResignationStatus() {
     if (!user?._id) return;
     try {
       const result: any = await resignationApi.getStatus(user._id);
-      console.log(result, "resignation status");
-      resignation = !result.data ? result.data : null;
+      if(result.success){
+       let data:IResignationStatus = result.data 
+       console.log(data,"getStatus data");
+       resignation = data.activeResignation
+  ? {
+      ...(() => {
+        const { _id, ...rest } = data.activeResignation; // Exclude `_id`
+        return rest;
+      })(),
+      status: data.activeResignation.status || "Pending",
+    } as Resignation
+  : null;
+      }else{
+        resignation = null;
+
+      }
+      console.log(resignation,"getStatus result");
+      // resignation = Object.keys(result.data).length > 0 ? result.data : null;
     } catch (err: any) {
-      error = err.message || "Failed to load resignation status.";
-      toast.error(error);
+      toast.error(err.message || "Failed to load resignation status.");
     }
   }
 
   async function submitResignation() {
+    // ✅ Reset errors
+    reasonError = "";
+    lwdError = "";
+
+    let hasError = false;
+
     if (!reason.trim()) {
-      toast.error("Please provide a reason for resignation.");
-      return;
+      reasonError = "Please provide a reason for resignation.";
+      hasError = true;
     }
+
     if (!proposedLastWorkingDay) {
-      toast.error("Please select a proposed last working day.");
-      return;
+      lwdError = "Please select a proposed last working day.";
+      hasError = true;
+    } else {
+      const lwd = new Date(proposedLastWorkingDay);
+      if (lwd <= new Date(new Date().setDate(new Date().getDate() + 6))) {
+        lwdError = "Date must be at least 7 days from today.";
+        hasError = true;
+      }
     }
-    const lwd = new Date(proposedLastWorkingDay);
-    if (lwd <= new Date(new Date().setDate(new Date().getDate() + 6))) {
-      toast.error(
-        "Proposed last working day must be at least 7 days from today."
-      );
-      return;
-    }
+
+    if (hasError) return;
 
     submitting = true;
     try {
-      const data: SubmitResignationData = {
-        summary: reason,
-        preferredLastWorkingDay: proposedLastWorkingDay,
-        remarks: noticePeriodServed ? "Notice period served" : undefined,
-      };
+        // Convert `proposedLastWorkingDay` to ISO 8601 format
+        const isoLastWorkingDay = new Date(proposedLastWorkingDay).toISOString();
+
+const data: SubmitResignationData = {
+  summary: reason,
+  preferredLastWorkingDay: isoLastWorkingDay, // Use ISO format
+};
+
       const result = await resignationApi.submit(user._id, data);
       resignation = result.data;
       toast.success("Resignation submitted successfully.");
@@ -64,6 +107,7 @@
     } catch (err: any) {
       toast.error(err.message || "Failed to submit resignation.");
     } finally {
+      await loadResignationStatus;
       submitting = false;
     }
   }
@@ -81,92 +125,174 @@
     }
   }
 
+  function formatDate(dateString) {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
   onMount(loadResignationStatus);
 </script>
 
-<div class="bg-white shadow rounded-lg p-6 max-w-2xl mx-auto">
-  <h2 class="text-xl font-bold mb-4">My Resignation</h2>
+
+<div class="bg-white rounded-lg max-w-3xl mx-auto ">
+  
+  <div class="mb-6 "></div>
 
   {#if resignation}
-    <div class="card bg-base-100 shadow-md mb-4">
-      <div class="card-body">
-        <p><strong>Status:</strong> {resignation.status}</p>
-        <p><strong>Reason:</strong> {resignation.summary}</p>
-        <p>
-          <strong>Proposed Last Working Day:</strong>
-          {new Date(resignation.preferredLastWorkingDay).toLocaleDateString()}
-        </p>
+    <div class="bg-gray-50 rounded-lg p-6 mb-6 border border-gray-200">
+      <div class="flex items-center mb-4">
         {#if resignation.status === "Pending"}
+          <div class="w-3 h-3 bg-yellow-400 rounded-full mr-2"></div>
+          <span class="font-medium text-yellow-700">Pending Review</span>
+        {:else if resignation.status === "Approved"}
+          <div class="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
+          <span class="font-medium text-green-700">Approved</span>
+        {:else if resignation.status === "Rejected"}
+          <div class="w-3 h-3 bg-red-400 rounded-full mr-2"></div>
+          <span class="font-medium text-red-700">Rejected</span>
+        {:else}
+          <div class="w-3 h-3 bg-gray-400 rounded-full mr-2"></div>
+          <span class="font-medium text-gray-700">{resignation.status}</span>
+        {/if}
+      </div>
+      
+      <div class="space-y-3 text-gray-700">
+        <div class="grid grid-cols-3 gap-4">
+          <div class="text-sm text-gray-500">Submission Date</div>
+          <div class="col-span-2 font-medium">
+            {resignation.submittedAt ? formatDate(resignation.submittedAt) : 'N/A'}
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-3 gap-4">
+          <div class="text-sm text-gray-500">Requested Last Working Day</div>
+          <div class="col-span-2 font-medium">
+            {formatDate(resignation.preferredLastWorkingDay)}
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-3 gap-4">
+          <div class="text-sm text-gray-500">Reason</div>
+          <div 
+            class="col-span-2 font-medium truncate hover:overflow-visible relative"
+            title={resignation.summary} 
+          >
+            {resignation.summary.slice(0, 30)}{resignation.summary.length > 30 ? "..." : ""}
+            <!-- Custom tooltip -->
+            <div 
+              class="absolute left-0 top-full mt-1 hidden w-max bg-gray-800 text-white text-xs rounded-md px-2 py-1 shadow-lg group-hover:block"
+            >
+              {resignation.summary}
+            </div>
+          </div>
+        </div>
+      
+      </div>
+      
+      {#if resignation.status === "Pending"}
+        <div class="mt-6 border-t pt-4">
           <button
-            class="btn btn-error mt-4"
+            class="flex items-center justify-center px-4 py-2 bg-white text-red-600 border border-red-600 rounded-md hover:bg-red-50 transition-colors duration-200"
             on:click={withdrawResignation}
             disabled={submitting}
           >
-            {submitting ? "Withdrawing..." : "Withdraw Request"}
+            {#if submitting}
+            <LoaderCircle class="animate-spin -ml-1 mr-2 h-4 w-4 text-red-600" />
+              Withdrawing...
+            {:else}
+              Withdraw Resignation Request
+            {/if}
           </button>
-        {/if}
+        </div>
+      {/if}
+    </div>
+    
+    <div class="bg-blue-50 p-4 rounded-md">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <Info class="h-5 w-5 text-blue-600" />
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-blue-700">
+            For any questions regarding your resignation, please contact HR at <span class="font-medium">{ADMIN_MAIL}</span>
+          </p>
+        </div>
       </div>
     </div>
   {:else}
-    <button class="btn btn-primary" on:click={() => (showModal = true)}>
-      Apply for Resignation
-    </button>
+    <div class="text-center py-12 bg-gray-50 rounded-lg">
+<FileText class="mx-auto h-12 w-12 text-gray-400" />
+      <h3 class="mt-4 text-lg font-medium text-gray-900">No Resignation Request</h3>
+      <p class="mt-1 text-sm text-gray-500">You haven't submitted a resignation request yet.</p>
+      <div class="mt-6">
+        <button
+          class="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          on:click={() => (showModal = true)}
+        >
+          Submit Resignation Request
+        </button>
+      </div>
+    </div>
   {/if}
 </div>
 
-<!-- Resignation Modal -->
+<!-- Improved Resignation Modal -->
 <Modal
   show={showModal}
   title="Apply for Resignation"
   onClose={() => (showModal = false)}
 >
-  <form on:submit|preventDefault={submitResignation} class="space-y-4">
+  <form on:submit|preventDefault={submitResignation} class="space-y-5">
     <div>
-      <label for="reason" class="label">
-        <span class="label-text">Reason for Resignation</span>
+      <label for="reason" class="block text-sm font-medium text-gray-700 mb-1">
+        Reason for Resignation <span class="text-red-500">*</span>
       </label>
       <textarea
         id="reason"
         bind:value={reason}
         required
-        class="textarea textarea-bordered w-full"
-        placeholder="Enter your reason for resignation"
+        rows="4"
+        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+        placeholder="Please provide details about your decision to resign"
       ></textarea>
     </div>
+    
     <div>
-      <label for="proposedLastWorkingDay" class="label">
-        <span class="label-text">Proposed Last Working Day</span>
+      <label for="proposedLastWorkingDay" class="block text-sm font-medium text-gray-700 mb-1">
+        Proposed Last Working Day <span class="text-red-500">*</span>
       </label>
       <input
         id="proposedLastWorkingDay"
         type="date"
         bind:value={proposedLastWorkingDay}
-        class="input input-bordered w-full"
-        min={new Date(new Date().setDate(new Date().getDate() + 7))
-          .toISOString()
-          .split("T")[0]}
+        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+        min={minDateString}
       />
+      <p class="mt-1 text-xs text-gray-500">Must be at least 7 days from today</p>
     </div>
-    <!-- <div class="form-control">
-      <label class="cursor-pointer label">
-        <span class="label-text">Notice Period Served</span>
-        <input
-          type="checkbox"
-          class="toggle toggle-primary"
-          bind:checked={noticePeriodServed}
-        />
-      </label>
-    </div> -->
-    <div class="flex justify-end space-x-4">
+    
+    <div class="pt-4 border-t flex justify-end space-x-3">
       <button
         type="button"
-        class="btn btn-ghost"
+        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         on:click={() => (showModal = false)}
       >
         Cancel
       </button>
-      <button type="submit" class="btn btn-primary" disabled={submitting}>
-        {submitting ? "Submitting..." : "Submit"}
+      <button 
+        type="submit" 
+        class="inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        disabled={submitting}
+      >
+        {#if submitting}
+        <LoaderCircle class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
+          Submitting...
+        {:else}
+          Submit Request
+        {/if}
       </button>
     </div>
   </form>
