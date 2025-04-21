@@ -1,6 +1,12 @@
 import type { ApproveResignationData, Resignation, SubmitResignationData, UserResignation } from "$lib/types/userResignation";
 import { fetchApi } from "./base";
 
+interface IMeta {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+}
 export const resignationApi = {
     // Submit resignation
     submit: async (userId: string, data: SubmitResignationData): Promise<Resignation> => {
@@ -25,24 +31,6 @@ export const resignationApi = {
         });
     },
 
-    // List all users (for managers)
-    list: async (): Promise<{ awaiting: UserResignation[]; history: UserResignation[] }> => {
-        const response: any = await fetchApi('/users?active=true', { method: 'GET' });
-        const users: UserResignation[] = response.data.users;
-        return {
-            awaiting: users.filter(user => user.resignation?.status === 'Pending').map(user => ({
-                ...user,
-                employeeName: user.name,
-            })),
-            history: users.filter(user =>
-                user.resignation && ['Approved', 'Rejected', 'Withdrawn'].includes(user.resignation.status)
-            ).map(user => ({
-                ...user,
-                employeeName: user.name,
-            })),
-        };
-    },
-
     // Approve resignation
     approve: async (userId: string, data: ApproveResignationData): Promise<Resignation> => {
         return fetchApi(`/users-resignations/${userId}/approve`, {
@@ -57,6 +45,51 @@ export const resignationApi = {
             method: 'PUT',
             body: JSON.stringify({ remarks }),
         })
+    },
+
+    // get regignation for manager
+
+    manager: async (userId: string, status: string | null, meta: IMeta): Promise<UserResignation> => {
+        let url = `/users-resignations/manager/${userId}`;
+        const queryParams: string[] = [];
+        if (meta.page) {
+            queryParams.push(`page=${meta.page}`);
+        }
+        if (meta.limit) {
+            queryParams.push(`limit=${meta.limit}`);
+        }
+        if (status) {
+            queryParams.unshift(`status=${status}`);
+        }
+        if (queryParams.length > 0) {
+            url += `?${queryParams.join('&')}`;
+        }
+        console.log(url, "url")
+        return fetchApi(url, {
+            method: 'GET',
+        });
+    },
+
+    // Get resignation for admin
+    admin: async (userId: string, status: string | null, meta: IMeta): Promise<UserResignation> => {
+        let url = `/users-resignations/admin/${userId}`;
+        const queryParams: string[] = [];
+        if (meta.page) {
+            queryParams.push(`page=${meta.page}`);
+        }
+        if (meta.limit) {
+            queryParams.push(`limit=${meta.limit}`);
+        }
+        if (status) {
+            queryParams.unshift(`status=${status}`);
+        }
+        if (queryParams.length > 0) {
+            url += `?${queryParams.join('&')}`;
+        }
+        console.log(url, "url")
+        return fetchApi(url, {
+            method: 'GET',
+        });
     },
 
     // Get approved resignations for the current month (for payroll)

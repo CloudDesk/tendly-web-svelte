@@ -4,11 +4,12 @@
   import AssignedLeaves from "$lib/components/managerActions/AssignedLeaves.svelte";
   import Regularization from "$lib/components/managerActions/Regularization.svelte";
   import { page } from "$app/stores";
-  import ManagerResignation from "$lib/components/employee/ManagerResignation.svelte";
+  import Resignation from "$lib/components/employee/resignation/Resignation.svelte";
   const tabs = [
     { id: "leave", label: "Leave" },
     { id: "regularization", label: "Regularization" },
     { id: "resignation", label: "Resignation" },
+    { id: "admin-resignation", label: "Admin Resignation" },
   ];
 
   $: activeTab = $page.url.searchParams.get("tab") || tabs[0]?.id;
@@ -27,7 +28,9 @@
         {:else if activeTab === "regularization"}
           <Regularization />
         {:else if activeTab === "resignation"}
-          <ManagerResignation />
+          <Resignation viewMode="manager" />
+        {:else if activeTab === "admin-resignation"}
+          <Resignation viewMode="admin" />
         {/if}
       </Tabs>
     </div>

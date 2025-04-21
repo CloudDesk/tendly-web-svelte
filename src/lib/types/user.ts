@@ -24,20 +24,20 @@ interface IGovernmentIds {
   drivingLicense?: string;
 }
 
-interface IResignation {
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Withdrawn';
-  summary: string;
-  remarks?: string;
-  submittedAt: { type: 'string', format: 'date-time' };
-  approvedAt?: { type: 'string', format: 'date-time' };
-  rejectedAt?: { type: 'string', format: 'date-time' };
-  withdrawnAt?: { type: 'string', format: 'date-time' };
-  approvedBy?: string;
-  noticePeriodDays?: number;
-  preferredLastWorkingDay?: { type: 'string', format: 'date-time' };
-  approvedLastWorkingDay?: { type: 'string', format: 'date-time' };
-  finalSettlementDone: boolean;
-}
+// interface IResignation {
+//   status: 'Pending' | 'Approved' | 'Rejected' | 'Withdrawn';
+//   summary: string;
+//   remarks?: string;
+//   submittedAt: { type: 'string', format: 'date-time' };
+//   approvedAt?: { type: 'string', format: 'date-time' };
+//   rejectedAt?: { type: 'string', format: 'date-time' };
+//   withdrawnAt?: { type: 'string', format: 'date-time' };
+//   approvedBy?: string;
+//   noticePeriodDays?: number;
+//   preferredLastWorkingDay?: { type: 'string', format: 'date-time' };
+//   approvedLastWorkingDay?: { type: 'string', format: 'date-time' };
+//   finalSettlementDone: boolean;
+// }
 
 export type User = {
   _id: string;
@@ -72,4 +72,29 @@ export type UserProfile = Omit<User, 'role' | 'isActive' | 'createdAt' | 'update
     id: UserRole;
     label: string;
   };
-}; 
+};
+
+
+export interface IResignation {
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Withdrawn';
+  summary: string;
+  remarks?: string;
+  submittedAt: string | Date;
+  approvedAt?: string | Date;
+  rejectedAt?: string | Date;
+  withdrawnAt?: string | Date;
+  approvedBy?: string; // ObjectId as string
+  noticePeriodDays?: number;
+  preferredLastWorkingDay?: string | Date;
+  approvedLastWorkingDay?: string | Date;
+  finalSettlementDone: boolean;
+  isActive: boolean;
+  _id: string;
+}
+
+export interface IResignationEmployee {
+  employeeId: string;
+  employeeName: string;
+  email: string;
+  resignation: IResignation;
+}

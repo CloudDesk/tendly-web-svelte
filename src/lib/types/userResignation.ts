@@ -29,6 +29,5 @@ export interface SubmitResignationData {
 export interface ApproveResignationData {
     noticePeriodDays: number;
     approvedLastWorkingDay: string;
-    
     remarks?: string;
 }
