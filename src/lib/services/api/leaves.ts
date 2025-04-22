@@ -54,8 +54,8 @@ export type LeaveFilters = {
     limit?: number;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
-    status ?:string;
-    leaveType?:string;
+    status?: string;
+    leaveType?: string;
 };
 
 export const leavesApi = {

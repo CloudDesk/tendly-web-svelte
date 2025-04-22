@@ -12,6 +12,7 @@ export interface Resignation {
     preferredLastWorkingDay?: string;
     approvedLastWorkingDay?: string;
     finalSettlementDone: boolean;
+    _id?: string;//its not recordId in DB, getting it from API
 }
 
 export interface UserResignation {

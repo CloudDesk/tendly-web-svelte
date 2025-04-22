@@ -78,6 +78,8 @@
     try {
       loading = true;
       const response = await leavesApi.getSummary(employeeId);
+      console.log(response, "loadLeaveSummary");
+      //leavesApi.getSummary
       leaveSummary = processLeaveSummary(response.data);
     } catch (err) {
       error = "Failed to load leave summary";

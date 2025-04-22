@@ -17,7 +17,6 @@
     Mail,
     FileText,
     AlertCircle,
-    Clock,
     ChevronLeft,
     ChevronRight,
   } from "lucide-svelte";
@@ -84,7 +83,7 @@
       const apiMethod =
         role === "admin" ? resignationApi.admin : resignationApi.manager;
       const response: any = await apiMethod(user._id, status, meta);
-
+      console.log(response, "response");
       if (response.success) {
         resignations = response.data.resignations;
         meta = response.data.meta;
@@ -291,7 +290,7 @@
       </div>
     {:else}
       <div class="space-y-4">
-        {#each resignations as item, index (item.employeeId)}
+        {#each resignations as item, index (item.employeeId + item.resignation.submittedAt)}
           <div
             transition:fade={{ duration: 150, delay: index * 50 }}
             class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300"

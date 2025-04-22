@@ -37,6 +37,7 @@
   const authState = get(auth);
   console.log(summary, "summary");
   console.log(authState, "authState");
+  console.log(initialValues, "initialValues");
 
   const dispatch = createEventDispatcher<{
     submit: LeaveFormData;

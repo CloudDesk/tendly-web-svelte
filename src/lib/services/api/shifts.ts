@@ -122,6 +122,12 @@ export const shiftsApi = {
       ...response,
       data: response.data.map((shift: any) => convertShiftTimesFromUTC(shift))
     };
+  },
+
+  current: async () => {
+    const response: any = await fetchApi<Shift[]>(`/shifts/current`);
+    console.log(response, "response")
+    return response;
   }
 
 };

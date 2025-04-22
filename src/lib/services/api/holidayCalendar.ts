@@ -33,5 +33,13 @@ export const holidayCalendarApi = {
 
     getByUserId: async (userId: string) => {
         return fetchApi<IHolidayCalendar[]>(`/holiday-calendar/user/${userId}`, { method: "GET" });
+    },
+
+    upcomingHolidays: async (context: string, view: string | null) => {
+        let url = `/holiday-calendar/upcoming?context=${context}`;
+        if (view) {
+            url += `&view=${view}`;
+        }
+        return fetchApi<IHolidayCalendar[]>(url, { method: "GET" });
     }
 };
