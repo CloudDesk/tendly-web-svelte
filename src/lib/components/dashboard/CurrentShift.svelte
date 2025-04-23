@@ -2,6 +2,9 @@
   import { shiftsApi } from "$lib/services/api";
   import { Clock, Info } from "lucide-svelte";
   import { onMount } from "svelte";
+  import { auth } from "$lib/stores/auth";
+
+  $: user = $auth.user;
 
   // Shift model
   interface ShiftDetails {
@@ -30,7 +33,10 @@
     loading = true;
     error = null;
     try {
-      const response = await shiftsApi.current();
+      if (!user?._id) {
+        throw new Error("User ID is undefined");
+      }
+      const response = await shiftsApi.current(user._id);
       console.log(response, "response.data");
       if (response.success && response.data?.shiftId) {
         const shiftInfo = response.data.shiftId;

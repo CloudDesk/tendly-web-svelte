@@ -22,3 +22,29 @@ export type Shift = {
   updatedAt: string;
 };
 
+
+
+export type ShiftDetails = {
+  _id: string;
+  name: string;
+  code: string;
+  startTime: string; // Format: "HH:mm"
+  endTime: string;   // Format: "HH:mm"
+  graceTimeInMinutes: number;
+}
+
+export type IShiftAssignment = {
+  _id: string;
+  userId: string;
+  shiftId: ShiftDetails;
+  shiftCode: string;
+  startDate: string; // ISO Date string
+  endDate?: string; // ISO Date string
+  isActive: boolean;
+  status: "current" | "upcoming" | "past"; // You can expand this union as needed
+  assignedBy: string;
+  assignedAt: string; // ISO Date string
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}

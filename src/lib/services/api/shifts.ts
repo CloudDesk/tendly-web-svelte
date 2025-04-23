@@ -124,10 +124,48 @@ export const shiftsApi = {
     };
   },
 
-  current: async () => {
-    const response: any = await fetchApi<Shift[]>(`/shifts/current`);
+  current: async (employeeId: string) => {
+    const response: any = await fetchApi<Shift[]>(`/shifts/current/${employeeId}`);
     console.log(response, "response")
     return response;
+  },
+
+  upcoming: async (employeeId: string) => {
+    const response: any = await fetchApi<Shift>(`/shifts/upcoming-shifts/${employeeId}`);
+    console.log(response, "response")
+    return response;
+
+  },
+  updateAssignment: async (shiftAssignmentId: string,
+    shiftId: string, shiftCode: string, validity: { validFrom: string, validTill?: string }
+  ) => {
+    console.log(validity.validFrom, "1 validFrom")
+    console.log(validity.validTill, "1 validityTill")
+    // Convert dates to UTC at midnight
+    const validFromDate = new Date(validity.validFrom);
+    validFromDate.setHours(0, 0, 0, 0);
+    const utcValidFrom = validFromDate.toISOString();
+
+    let utcValidTill: string | undefined;
+    if (validity.validTill) {
+      const validTillDate = new Date(validity.validTill);
+      validTillDate.setHours(23, 59, 59, 999);
+      utcValidTill = validTillDate.toISOString();
+    }
+    console.log(utcValidFrom, "2 validFrom")
+    console.log(utcValidTill, "2 validityTill")
+
+    return fetchApi<void>(`/shifts/shift-assignment/${shiftAssignmentId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        shiftAssignmentId,
+        shiftId,
+        shiftCode,
+        startDate: utcValidFrom,
+        endDate: utcValidTill
+      })
+    });
+
   }
 
 };
