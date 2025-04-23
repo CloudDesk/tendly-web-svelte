@@ -1,0 +1,20 @@
+{
+  "email": "மின்னஞ்சல்",
+  "enter_email": "உங்கள் மின்னஞ்சலை உள்ளிடவும்",
+  "password": "கடவுச்சொல்",
+  "enter_password": "உங்கள் கடவுச்சொல்லை உள்ளிடவும்",
+  "sign_in": "உள்நுழைக",
+  "dashboard": "டாஷ்போர்டு",
+  "employee": "ஊழியர்",
+  "attendance": "வருகை",
+  "trainings": "பயிற்சிகள்",
+  "leaves": "விடுப்புகள்",
+  "payroll": "ஊதியம்",
+  "reports": "அறிக்கைகள்",
+  "configurations": "அமைப்புகள்",
+  "lovs": "LOVs",
+  "shifts": "ஷிப்ட்கள்",
+  "salary_structure": "சம்பள அமைப்பு",
+  "tax_slab": "வரி நிலை",
+  "org_chart": "அமைப்பு வரைபடம்"
+} 

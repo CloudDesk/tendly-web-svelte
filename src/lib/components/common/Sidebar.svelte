@@ -30,6 +30,7 @@
   import { fly } from "svelte/transition";
   import { writable } from "svelte/store";
   import { createEventDispatcher } from "svelte";
+  import { t } from 'svelte-i18n';
   // import "../../../Mobileview.css"; // Import responsive styles
   export const ssr = false;
 
@@ -74,67 +75,67 @@
   // Admin navigation items
   const adminItems: NavItem[] = [
     {
-      label: "Dashboard",
+      label: $t('dashboard'),
       href: "/admin/dashboard",
       icon: LayoutDashboard,
     },
     {
-      label: "Employee",
+      label: $t('employee'),
       href: "/admin/employees",
       icon: Users,
     },
     {
-      label: "Attendance",
+      label: $t('attendance'),
       href: "/admin/attendance",
       icon: Clock,
     },
     {
-      label: "Trainings",
+      label: $t('trainings'),
       href: "/admin/trainings",
       icon: GraduationCap,
     },
     {
-      label: "Leaves",
+      label: $t('leaves'),
       href: "/admin/leaves",
       icon: CalendarRange,
     },
     {
-      label: "Payroll",
+      label: $t('payroll'),
       href: "/admin/payroll",
       icon: PayrollIcon,
     },
     {
-      label: "Reports",
+      label: $t('reports'),
       href: "/admin/reports",
       icon: ChartArea,
     },
     {
-      label: "Configurations",
+      label: $t('configurations'),
       href: "/admin/configurations",
       icon: Settings,
       children: [
         {
-          label: "LOVs",
+          label: $t('lovs'),
           href: "/admin/configurations?tab=lovs",
         },
         {
-          label: "Shifts",
+          label: $t('shifts'),
           href: "/admin/configurations?tab=shifts",
         },
         {
-          label: "Trainings",
+          label: $t('trainings'),
           href: "/admin/configurations?tab=trainings",
         },
         {
-          label: "Salary Structure",
+          label: $t('salary_structure'),
           href: "/admin/configurations?tab=salary",
         },
         {
-          label: "Tax Slab",
+          label: $t('tax_slab'),
           href: "/admin/configurations?tab=taxslab",
         },
         {
-          label: "Org Chart",
+          label: $t('org_chart'),
           href: "/admin/configurations?tab=org",
         },
       ],

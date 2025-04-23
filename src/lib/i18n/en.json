@@ -1,0 +1,20 @@
+{
+  "email": "Email",
+  "enter_email": "Enter your email",
+  "password": "Password",
+  "enter_password": "Enter your password",
+  "sign_in": "Sign In",
+  "dashboard": "Dashboard",
+  "employee": "Employee",
+  "attendance": "Attendance",
+  "trainings": "Trainings",
+  "leaves": "Leaves",
+  "payroll": "Payroll",
+  "reports": "Reports",
+  "configurations": "Configurations",
+  "lovs": "LOVs",
+  "shifts": "Shifts",
+  "salary_structure": "Salary Structure",
+  "tax_slab": "Tax Slab",
+  "org_chart": "Org Chart"
+} 

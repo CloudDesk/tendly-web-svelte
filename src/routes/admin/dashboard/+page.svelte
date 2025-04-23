@@ -3,6 +3,7 @@
   import { Chart, registerables } from "chart.js";
   import { attendanceApi } from "$lib/services/api";
   import { navigationContext } from "$lib/stores/navigation";
+  import { t } from 'svelte-i18n';
 
   Chart.register(...registerables);
 
@@ -59,8 +60,15 @@
   }
 
   function processAttendanceTypes(data: any[]) {
+    const attendanceTypeLabels = [
+      $t('present'),
+      $t('late'),
+      $t('absent'),
+      $t('leave'),
+      $t('holiday')
+    ];
     return {
-      labels: ["Present", "Late", "Absent", "Leave", "Holiday"],
+      labels: attendanceTypeLabels,
       data: [75, 10, 5, 5, 5],
     };
   }
@@ -115,7 +123,7 @@
         overtimeTrend,
       };
     } catch (e) {
-      error = "Failed to load dashboard data";
+      error = $t('failed_to_load_dashboard_data');
       console.error(e);
     } finally {
       loading = false;
@@ -181,7 +189,7 @@
             plugins: {
               title: {
                 display: true,
-                text: "Daily Attendance Overview (Last 7 Days)",
+                text: $t('daily_attendance_overview'),
                 padding: 20,
                 font: {
                   size: 16,

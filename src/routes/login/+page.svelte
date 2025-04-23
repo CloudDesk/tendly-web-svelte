@@ -1,12 +1,63 @@
 <script lang="ts">
   import { loginController } from './controller';
   import { fade, fly } from 'svelte/transition';
+  import { locale, register, init, getLocaleFromNavigator, t } from 'svelte-i18n';
+  import { languagePreference, setLanguagePreference } from '$lib/stores/preferences';
 
   let email = '';
   let password = '';
   let error = '';
   let loading = false;
 
+  // Register locales
+  register('en', () => import('../../lib/i18n/en.json'));
+  register('ta', () => import('../../lib/i18n/ta.json'));
+
+  // Initialize i18n
+  init({
+    fallbackLocale: 'en',
+    initialLocale: getLocaleFromNavigator(),
+    loadingDelay: 200,
+    formats: {
+      number: {
+        currency: {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2
+        }
+      },
+      date: {
+        short: {
+          day: 'numeric', month: 'short', year: 'numeric'
+        },
+        long: {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+        }
+      },
+      time: {
+        short: {
+          hour: 'numeric', minute: 'numeric'
+        },
+        long: {
+          hour: 'numeric', minute: 'numeric', second: 'numeric'
+        }
+      }
+    },
+    warnOnMissingMessages: true
+  });
+
+  // Set initial locale explicitly
+  locale.set(getLocaleFromNavigator());
+
+  // Function to change language
+  function changeLanguage(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    setLanguagePreference(select.value);
+    locale.set(select.value);
+  }
+
+  // Subscribe to language preference changes
+  $: locale.set($languagePreference);
 
   async function handleLogin(e: SubmitEvent) {
     e.preventDefault();
@@ -40,7 +91,15 @@
 
       <form on:submit={handleLogin}>
         <div class="form-group">
-          <label for="email">Email</label>
+          <label for="language">Language</label>
+          <select id="language" on:change={changeLanguage} bind:value={$languagePreference}>
+            <option value="en">English</option>
+            <option value="ta">Tamil</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="email">{$t('email')}</label>
           <div class="input-wrapper">
             <input
               type="email"
@@ -48,14 +107,14 @@
               bind:value={email}
               required
               disabled={loading}
-              placeholder="Enter your email"
+              placeholder={$t('enter_email')}
               class:loading
             />
           </div>
         </div>
 
         <div class="form-group">
-          <label for="password">Password</label>
+          <label for="password">{$t('password')}</label>
           <div class="input-wrapper">
             <input
               type="password"
@@ -63,7 +122,7 @@
               bind:value={password}
               required
               disabled={loading}
-              placeholder="Enter your password"
+              placeholder={$t('enter_password')}
               class:loading
             />
           </div>
@@ -73,7 +132,7 @@
           {#if loading}
             <span class="loader"></span>
           {:else}
-            Sign In
+            {$t('sign_in')}
           {/if}
         </button>
       </form>
