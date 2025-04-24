@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
   import type { User, Shift } from "$lib/types";
   import { fromUTCDate } from "$lib/utils/date";
   import ConfirmDialog from "$lib/components/common/ConfirmDialog.svelte";
+  import { lovsApi } from "$lib/services/api";
 
   export let shift: Shift | null = null;
   export let employees: User[] = [];
@@ -10,6 +11,9 @@
   export let assignmentStep = 1;
   export let assignmentValidFrom = "";
   export let assignmentValidTill = "";
+
+  let weekends: { label: string; value: number[]; isActive: boolean }[] = [];
+  let selectedWeekendDays = [0];
 
   const dispatch = createEventDispatcher();
 
@@ -185,8 +189,7 @@
     if (validEmployees.length === 0) {
       return;
     }
-
-    dispatch("submit", {
+    let data = {
       shiftId: shift._id,
       shiftCode: shift.code,
       employees: validEmployees,
@@ -194,8 +197,28 @@
         validFrom: assignmentValidFrom,
         validTill: assignmentValidTill || undefined,
       },
-    });
+      weekends: selectedWeekendDays,
+    };
+    console.log(data, "data");
+    dispatch("submit", data);
   }
+  const getWeekends = async () => {
+    try {
+      let result = await lovsApi.getByType("weekendsettings");
+      console.log(result.data?.values, "getweekends");
+
+      weekends = result.data?.values.map((item) => ({
+        label: item.label,
+        value: JSON.parse(item.value), // Parse "[0,6]" to [0, 6]
+        isActive: item.isActive,
+      })) || [{ label: "Sunday Only", value: [0], isActive: true }];
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  onMount(() => {
+    getWeekends();
+  });
 </script>
 
 {#if assignmentStep === 1}
@@ -348,6 +371,18 @@
         />
       </div>
     </div>
+    <div class="form-control">
+      <label class="label" for="weekend-days">Weekend Days*</label>
+      <select
+        class="select select-bordered w-full"
+        bind:value={selectedWeekendDays}
+        required
+      >
+        {#each weekends.filter((w) => w.isActive) as weekend}
+          <option value={weekend.value}>{weekend.label}</option>
+        {/each}
+      </select>
+    </div>
 
     <div>
       <h3 class="font-medium mb-2">
@@ -392,6 +427,7 @@
         class="btn btn-primary"
         disabled={!!dateError ||
           !assignmentValidFrom ||
+          !selectedWeekendDays ||
           Array.from(selectedEmployees).every((id) => {
             const employee = employees.find((e) => e._id === id);
             return !employee || !validateAssignment(employee);

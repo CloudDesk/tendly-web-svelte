@@ -41,6 +41,7 @@ export type IShiftAssignment = {
   startDate: string; // ISO Date string
   endDate?: string; // ISO Date string
   isActive: boolean;
+  weekendDays: number[]; // Array of numbers representing days of the week (0-6, where 0 is Sunday)
   status: "current" | "upcoming" | "past"; // You can expand this union as needed
   assignedBy: string;
   assignedAt: string; // ISO Date string

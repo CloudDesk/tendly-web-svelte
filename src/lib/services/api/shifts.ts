@@ -69,7 +69,8 @@ export const shiftsApi = {
     shiftId: string,
     shiftCode: string,
     employeeIds: string[],
-    validity: { validFrom: string; validTill?: string }
+    validity: { validFrom: string; validTill?: string },
+    weekends: number[]
   ) => {
 
     console.log(validity.validFrom, "1 validFrom")
@@ -87,7 +88,7 @@ export const shiftsApi = {
     }
     console.log(utcValidFrom, "2 validFrom")
     console.log(utcValidTill, "2 validityTill")
-
+    console.log(weekends, "weekends")
     /* console.log(validity.validFrom, "1 validFrom")
      console.log(validity.validTill, "1 validityTill")
      const utcValidFrom = toISTISOString(validity.validFrom);
@@ -102,7 +103,8 @@ export const shiftsApi = {
         removeUserIds: [],
         shiftCode,
         startDate: utcValidFrom,
-        endDate: utcValidTill
+        endDate: utcValidTill,
+        weekends
       })
     });
   },
@@ -137,7 +139,8 @@ export const shiftsApi = {
 
   },
   updateAssignment: async (shiftAssignmentId: string,
-    shiftId: string, shiftCode: string, validity: { validFrom: string, validTill?: string }
+    shiftId: string, shiftCode: string, validity: { validFrom: string, validTill?: string },
+    weekends: number[], createNew: boolean = false
   ) => {
     console.log(validity.validFrom, "1 validFrom")
     console.log(validity.validTill, "1 validityTill")
@@ -162,10 +165,17 @@ export const shiftsApi = {
         shiftId,
         shiftCode,
         startDate: utcValidFrom,
-        endDate: utcValidTill
+        endDate: utcValidTill,
+        weekends,
+        createNew
       })
     });
 
+  },
+  deleteAssignment: (shiftAssignmentId: string) => {
+    return fetchApi<void>(`/shifts/shift-assignment/${shiftAssignmentId}`, {
+      method: 'DELETE'
+    });
   }
 
 };

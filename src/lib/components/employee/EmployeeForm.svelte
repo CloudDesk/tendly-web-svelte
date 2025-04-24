@@ -46,14 +46,14 @@
 
   // Component props with default values
   export let loading = false;
-  export let mode: 'create' | 'update' = 'create';
+  export let mode: "create" | "update" = "create";
   let formValid = false;
   export let initialValues: EmployeeFormData = {
     email: "",
     role: "",
     joiningDate: "",
   };
-  
+
   let userRoles: Array<{ label: string; value: string }> = [];
   let userLocations: Array<{ label: string; value: string }> = [];
   let userBloodGroups: Array<{ label: string; value: string }> = [];
@@ -71,8 +71,8 @@
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return "";
-      
-      return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD
+
+      return date.toISOString().split("T")[0]; // Returns YYYY-MM-DD
     } catch (error) {
       console.error("Error formatting date:", error);
       return "";
@@ -82,19 +82,19 @@
   // Process initial values for the form
   const processInitialValues = () => {
     console.log("Processing initial values:", initialValues);
-    
+
     // Create a deep copy of initialValues
     const processed = { ...initialValues };
-    
+
     // Format date fields
     if (processed.joiningDate) {
       processed.joiningDate = formatDateForInput(processed.joiningDate);
     }
-    
+
     if (processed.dateOfBirth) {
       processed.dateOfBirth = formatDateForInput(processed.dateOfBirth);
     }
-    
+
     console.log("Processed values:", processed);
     return processed;
   };
@@ -209,7 +209,7 @@
             ? userBloodGroups
             : field.options,
   }));
-  
+
   // Fetch list of values (LOVs) from API on component mount
   onMount(async () => {
     try {
@@ -278,19 +278,19 @@
         ? convertToDateTimeFormat(formData.dateOfBirth)
         : "",
     };
-    
+
     // Add password only in create mode
-    if (mode === 'create') {
+    if (mode === "create") {
       payload.password = "123456";
       payload.departmentId = "60d5f483f8d2e30db8c1a5e4";
       payload.isActive = "true";
     }
-    
+
     // Explicitly preserve _id for update operations
-    if (mode === 'update' && initialValues._id) {
+    if (mode === "update" && initialValues._id) {
       payload._id = initialValues._id;
     }
-    
+
     console.log(`Payload for ${mode}:`, payload);
     return payload;
   };
@@ -361,15 +361,18 @@
     try {
       console.log(`Submitting form in ${mode} mode with data:`, formData);
       const employeePayload = prepareEmployeePayload(formData);
-      
-      if (mode === 'create') {
+
+      if (mode === "create") {
         dispatch("submit", employeePayload);
       } else {
         dispatch("update", employeePayload);
       }
     } catch (error) {
       console.error("Submission failed:", error);
-      errors.submit = mode === 'create' ? "Failed to add employee." : "Failed to update employee.";
+      errors.submit =
+        mode === "create"
+          ? "Failed to add employee."
+          : "Failed to update employee.";
     } finally {
       // Reset loading state after form submission (whether success or failure)
       loading = false;
@@ -440,7 +443,7 @@
             id={field.key}
             class="select select-bordered w-full"
             bind:value={formData[field.key]}
-            on:input={handleChange}
+            on:change={handleChange}
             required={field.required}
             disabled={managerLookupLoading}
             class:input-error={errors[field.key]}
@@ -509,7 +512,13 @@
       class="btn btn-primary"
       disabled={!formValid || loading}
     >
-      {loading ? (mode === 'create' ? "Saving..." : "Updating...") : (mode === 'create' ? "Save" : "Update")}
+      {loading
+        ? mode === "create"
+          ? "Saving..."
+          : "Updating..."
+        : mode === "create"
+          ? "Save"
+          : "Update"}
     </button>
   </div>
 </form>

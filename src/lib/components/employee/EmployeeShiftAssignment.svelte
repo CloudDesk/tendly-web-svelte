@@ -96,19 +96,25 @@
       shiftCode,
       shiftId,
       validity,
+      weekendDays,
+      createNew,
     }: // Select only required fields
     {
       shiftAssignmentId: string;
       shiftCode: string;
-      shiftId: { _id: string };
+      shiftId: string;
       validity: { validFrom: string; validTill: string };
+      weekendDays: number[];
+      createNew: boolean;
     } = data;
     try {
       let result = await shiftsApi.updateAssignment(
         shiftAssignmentId,
-        shiftId._id,
+        shiftId,
         shiftCode,
-        validity
+        validity,
+        weekendDays,
+        createNew
       );
       console.log(result, "result ");
     } catch (e) {

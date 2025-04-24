@@ -137,10 +137,17 @@
   // }
 
   async function handleAssignmentSubmit(event: CustomEvent) {
-    const { shiftId, shiftCode, employees, dates } = event.detail;
+    const { shiftId, shiftCode, employees, dates, weekends } = event.detail;
+
     try {
       loading = true;
-      await shiftsApi.assignEmployees(shiftId, shiftCode, employees, dates);
+      await shiftsApi.assignEmployees(
+        shiftId,
+        shiftCode,
+        employees,
+        dates,
+        weekends
+      );
       showAssignModal = false;
       assignmentStep = 1;
       selectedEmployees.clear();
