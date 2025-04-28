@@ -55,4 +55,49 @@ export const loginController = {
       throw error;
     }
   },
+  forgotPassword: async (email: string): Promise<void> => {
+    try {
+      const response = await authApi.forgotPassword(email);
+
+      if (!response.success) {
+        handleApiError(response);
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Forgot password failed:', error);
+      throw error;
+    }
+  },
+
+  validateResetToken: async (token: string): Promise<void> => {
+    try {
+      const response = await authApi.validateResetToken(token);
+
+      if (!response.success) {
+        handleApiError(response);
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Token validation failed:', error);
+      throw error;
+    }
+  },
+
+  resetPassword: async (token: string, password: string): Promise<void> => {
+    try {
+      const response = await authApi.resetPassword(token, password);
+
+      if (!response.success) {
+        handleApiError(response);
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Password reset failed:', error);
+      throw error;
+    }
+  }
+
 }; 

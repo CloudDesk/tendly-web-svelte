@@ -76,6 +76,7 @@
         limit: pagination.limit,
         search: searchQuery,
       });
+      console.log(response, "0.shifts");
       (pagination = {
         total: response.meta?.total || 0,
         page: response.meta?.page || 1,
@@ -109,6 +110,7 @@
   }
 
   async function handleSubmit() {
+    console.log(editingShift, "editingShift");
     try {
       loading = true;
       if (editingShift._id) {

@@ -54,6 +54,7 @@ export type User = {
   joiningDate?: string;
   managerId?: string;
   managerName?: string;
+  phone?: string;
   currentShiftAssignment?: string;
   currentShiftAssignmentData?: ShiftAssignment;
   upcomingShiftAssignment?: string;

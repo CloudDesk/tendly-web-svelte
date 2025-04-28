@@ -68,6 +68,10 @@ export const employeesApi = {
   search: async (query: string): Promise<ApiResponse<User[]>> => {
     return await fetchApi<ApiResponse<User[]>>(`/users/search?q=${query}`);
   }
+  ,
+  getUserByRoleDepartment: async (role: string, department: string): Promise<ApiResponse<User[]>> => {
+    return await fetchApi<ApiResponse<User[]>>(`/users/filter?role=${role}&departmentId=${department}`);
+  }
 
 
 }; 
