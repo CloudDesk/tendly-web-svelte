@@ -1,4 +1,4 @@
-import { fetchApi } from './base';
+import { fetchApi, uploadFiles } from './base';
 import type { ApiResponse } from '$lib/types/api';
 import type { User } from '$lib/types/user';
 
@@ -71,7 +71,45 @@ export const employeesApi = {
   ,
   getUserByRoleDepartment: async (role: string, department: string): Promise<ApiResponse<User[]>> => {
     return await fetchApi<ApiResponse<User[]>>(`/users/filter?role=${role}&departmentId=${department}`);
+  },
+  filesUpload: async (id: string, file: File): Promise<ApiResponse<User>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return await fetchApi<ApiResponse<User>>(`/users/${id}/upload-info`, {
+      method: 'POST',
+      body: formData
+    });
   }
+  ,
+  updateGovernmentId: async (id: string,
+    data: { files: Record<string, File>; numbers: Record<string, { number?: string; uan?: string }> }
+  ) => {
+
+    const formData = new FormData();
+
+    // Add files with fieldname like pan_document
+    Object.entries(data.files).forEach(([sectionKey, file]) => {
+      formData.append(`${sectionKey}_document`, file);
+    });
+
+    // Add numbers
+    Object.entries(data.numbers).forEach(([key, value]) => {
+      if (value.number) {
+        formData.append(`${key}[number]`, value.number);
+      }
+      if (key === "pf" && value.uan) {
+        formData.append("pf[uan]", value.uan);
+      }
+    });
+
+    console.log("formData entries:", [...formData.entries()]); // Debug: Log FormData
+
+    return await uploadFiles(`/users/${id}/government-ids`, formData);
+  },
+
+
+  // /users/:id/government-ids
 
 
 }; 

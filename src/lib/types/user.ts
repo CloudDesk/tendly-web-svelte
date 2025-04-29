@@ -17,11 +17,26 @@ interface IBankDetails {
 }
 
 interface IGovernmentIds {
-  panNumber?: string;
-  aadhaarNumber?: string;
-  passportNumber?: string;
-  voterId?: string;
-  drivingLicense?: string;
+  pan: { number?: string; documentUrl?: string };
+  aadhaar: { number?: string; documentUrl?: string };
+  passport: { number?: string; documentUrl?: string };
+  voterId: { number?: string; documentUrl?: string };
+  drivingLicense: { number?: string; documentUrl?: string };
+  pf: { number?: string; uan?: string };
+}
+
+interface IAcademicDetails {
+
+  instituteName: string;
+  grade?: string;
+  documentUrl?: string;
+  yearOfPassing?: string;
+
+}
+interface IExperienceDetails {
+  companyName: string;
+  period?: string;
+  documentUrl?: string;
 }
 
 // interface IResignation {
@@ -65,7 +80,9 @@ export type User = {
   governmentIds?: IGovernmentIds; // Separate section for identity documents
   holidayCalendarId?: string;
   weekendId?: string;
-  resignation?: IResignation
+  resignation?: IResignation;
+  academicDetails?: IAcademicDetails[];
+  experienceDetails?: IExperienceDetails[];
 };
 
 export type UserProfile = Omit<User, 'role' | 'isActive' | 'createdAt' | 'updatedAt'> & {
