@@ -6,10 +6,10 @@ import { toUTCDate, toUTCTime, fromUTCTime, fromUTCDate } from '$lib/utils/date'
 function convertShiftTimesToUTC<T extends { startTime?: string; endTime?: string; shiftWindowStart?: string; shiftWindowEnd?: string; validFrom?: string; validTill?: string }>(shift: T): T {
   return {
     ...shift,
-    startTime: toUTCTime(shift.startTime),
-    endTime: toUTCTime(shift.endTime),
-    shiftWindowStart: toUTCTime(shift.shiftWindowStart),
-    shiftWindowEnd: toUTCTime(shift.shiftWindowEnd),
+    startTime: (shift.startTime),
+    endTime: (shift.endTime),
+    shiftWindowStart: (shift.shiftWindowStart),
+    shiftWindowEnd: (shift.shiftWindowEnd),
     validFrom: toUTCDate(shift.validFrom),
     validTill: toUTCDate(shift.validTill)
   };
@@ -18,10 +18,10 @@ function convertShiftTimesToUTC<T extends { startTime?: string; endTime?: string
 function convertShiftTimesFromUTC<T extends { startTime?: string; endTime?: string; shiftWindowStart?: string; shiftWindowEnd?: string; validFrom?: string; validTill?: string }>(shift: T): T {
   return {
     ...shift,
-    startTime: fromUTCTime(shift.startTime),
-    endTime: fromUTCTime(shift.endTime),
-    shiftWindowStart: fromUTCTime(shift.shiftWindowStart),
-    shiftWindowEnd: fromUTCTime(shift.shiftWindowEnd),
+    startTime: (shift.startTime),
+    endTime: (shift.endTime),
+    shiftWindowStart: (shift.shiftWindowStart),
+    shiftWindowEnd: (shift.shiftWindowEnd),
     validFrom: fromUTCDate(shift.validFrom),
     validTill: fromUTCDate(shift.validTill)
   };
@@ -176,6 +176,12 @@ export const shiftsApi = {
     return fetchApi<void>(`/shifts/shift-assignment/${shiftAssignmentId}`, {
       method: 'DELETE'
     });
+  },
+
+  getAssignmentByUser: async (userId: string, startDate: string, endDate: string) => {
+    let response: any = await fetchApi<Shift[]>(`/shifts/shift-assignments/${userId}?startDate=${startDate}&endDate=${endDate}`);
+    console.log(response, "getAssignmentByUser")
+    return response;
   }
 
 };

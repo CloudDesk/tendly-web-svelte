@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { page } from "$app/stores";
   import LeaveDetails from "$lib/components/leave/LeaveDetails.svelte";
+  import { leavesApi } from "$lib/services/api";
 
   interface LeaveDetails {
     id: string;
@@ -25,9 +26,13 @@
     try {
       // Fetch leave details using ID from URL params
       const { id } = $page.params;
-      // Replace with your actual API call
-      const response = await fetch(`/api/leaves/${id}`);
-      leave = await response.json();
+      let result: any = await leavesApi.getById(id);
+      console.log(result, "result");
+      if (result.success) {
+        leave = result.data;
+      } else {
+        error = "Failed to load leave details";
+      }
     } catch (err) {
       error = "Failed to load leave details";
       console.error(err);

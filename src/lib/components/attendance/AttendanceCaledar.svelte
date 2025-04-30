@@ -23,7 +23,7 @@
     status: string;
     needsRegularization: boolean;
   }
-
+  export let showStatus: boolean = true;
   export let selectedDate: Date;
   export let weekendDays: number[] = [0, 6];
   export let attendanceRecords: AttendanceRecord[] = [];
@@ -34,6 +34,7 @@
   const dispatch = createEventDispatcher<{
     dateSelect: { date: Date };
     monthChange: { year: number; month: number };
+    openRegularization: { date: Date };
   }>();
 
   const currentDate = writable(selectedDate || new Date());
@@ -64,6 +65,8 @@
   }
 
   function getAttendanceStatus(date: Date) {
+    if (!showStatus) return null;
+
     if (!isBefore(date, new Date())) {
       return null;
     }
@@ -116,9 +119,9 @@
   }
 
   function handleDateSelect(date: Date) {
-    if (!isSameMonth(date, $currentDate)) {
-      return;
-    }
+    // if (!isSameMonth(date, $currentDate)) {
+    //   return;
+    // }
     selectedDate = date;
     dispatch("dateSelect", { date });
   }
@@ -190,30 +193,40 @@
             class="day-cell {getDateStyles(
               day
             )} hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-            disabled={!isSameMonth(day, $currentDate)}
             on:click={() => handleDateSelect(day)}
           >
             <div class="flex flex-col h-full">
               <div class="text-sm font-medium text-left">
                 {format(day, "dd")}
               </div>
+              {#if showStatus}
+                {#if isPastDay(day)}
+                  {#if attendance}
+                    <div class="flex-grow flex items-center justify-center">
+                      <span
+                        class="text-lg font-medium {attendance.className} px-2 py-1 rounded"
+                      >
+                        {attendance.status}
+                      </span>
+                    </div>
+                  {/if}
 
-              {#if isPastDay(day)}
-                {#if attendance}
-                  <div class="flex-grow flex items-center justify-center">
-                    <span
-                      class="text-lg font-medium {attendance.className} px-2 py-1 rounded"
-                    >
-                      {attendance.status}
-                    </span>
-                  </div>
+                  {#if shiftCode}
+                    <div class="text-right text-xs text-gray-600">
+                      {shiftCode}
+                    </div>
+                  {/if}
                 {/if}
-
-                {#if shiftCode}
-                  <div class="text-right text-xs text-gray-600">
-                    {shiftCode}
-                  </div>
-                {/if}
+              {:else}
+                <div class="text-right text-xs">
+                  <!-- <button
+                    class="text-blue-600 hover:text-blue-800"
+                    on:click|stopPropagation={() =>
+                      dispatch("openRegularization", { date: day })}
+                  >
+                    Regularize
+                  </button> -->
+                </div>
               {/if}
             </div>
           </button>

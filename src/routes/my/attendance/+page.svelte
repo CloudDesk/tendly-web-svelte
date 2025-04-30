@@ -1,7 +1,6 @@
 <script lang="ts">
   import ToggleView from "$lib/components/attendance/ToggleView.svelte";
   import ListView from "$lib/components/attendance/ListView.svelte";
-  import SwipesTracking from "$lib/components/attendance/SwipesTracking.svelte";
   import AttendanceHeatmap from "$lib/components/attendance/AttendanceHeatmap.svelte";
   import FiltersSearch from "$lib/components/attendance/FiltersSearch.svelte";
   import { writable } from "svelte/store";

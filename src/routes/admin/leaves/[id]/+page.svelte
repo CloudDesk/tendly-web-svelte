@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { page } from '$app/stores';
-  import LeaveDetails from '$lib/components/leave/LeaveDetails.svelte';
+  import { onMount } from "svelte";
+  import { page } from "$app/stores";
+  import LeaveDetails from "$lib/components/leave/LeaveDetails.svelte";
+  import { leavesApi } from "$lib/services/api";
 
   interface LeaveDetails {
     id: string;
@@ -25,11 +26,15 @@
     try {
       // Fetch leave details using ID from URL params
       const { id } = $page.params;
-      // Replace with your actual API call
-      const response = await fetch(`/api/leaves/${id}`);
-      leave = await response.json();
+      let result: any = await leavesApi.getById(id);
+      console.log(result, "result");
+      if (result.success) {
+        leave = result.data;
+      } else {
+        error = "Failed to load leave details";
+      }
     } catch (err) {
-      error = 'Failed to load leave details';
+      error = "Failed to load leave details";
       console.error(err);
     } finally {
       isLoading = false;
@@ -37,10 +42,10 @@
   });
 
   function formatDate(date: string): string {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   }
 
@@ -58,9 +63,9 @@
   {:else if error}
     <div class="error">{error}</div>
   {:else if leave}
-   <div class="card-body">
-   <LeaveDetails {leaveId}/>
-   </div>
+    <div class="card-body">
+      <LeaveDetails {leaveId} />
+    </div>
   {/if}
 </div>
 
