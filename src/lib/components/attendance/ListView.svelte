@@ -1,9 +1,9 @@
 <script lang="ts">
-  // Import necessary libraries and stores
+  import Regularixation from "./Regularization.svelte";
 </script>
 
 <div class="list-view">
-  <!-- Table implementation for employee attendance records -->
+  <Regularixation />
 </div>
 
 <style>

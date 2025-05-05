@@ -10,7 +10,6 @@
   import AttendanceDashboard from "$lib/components/attendance/AttendanceDashboard.svelte";
   import { attendanceApi } from "$lib/services/api";
   import type { AttendanceRecord } from "$lib/types";
-  import Loader from "$lib/components/common/Loader.svelte";
 
   const viewMode = writable<"calendar" | "list" | "heat">("calendar");
   const userId: string = $auth.user?._id ?? "";

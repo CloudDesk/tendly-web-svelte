@@ -4,7 +4,7 @@
   import RegularizationForm from "../attendance-Regularization/RegularizationForm.svelte";
   import Loader from "../common/Loader.svelte";
   import { attendanceApi } from "$lib/services/api";
-  import AttendanceCaledar from "./AttendanceCaledar.svelte";
+  import AttendanceCaledar from "./AttendanceCalendar.svelte";
   import type { AttendanceRecord } from "$lib/types";
   import { createEventDispatcher } from "svelte";
   import { toast } from "../common/stores/toast.store";
@@ -66,7 +66,6 @@
       weekendDays={weekEndDays}
       bind:attendanceRecords
       bind:isLoading
-      showStatus={false}
       on:dateSelect={handleDateSelect}
       on:monthChange={handleMonthChange}
     />
