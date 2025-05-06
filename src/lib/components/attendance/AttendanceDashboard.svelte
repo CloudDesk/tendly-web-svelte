@@ -11,6 +11,7 @@
 
   const dispatch = createEventDispatcher();
   export let attendanceRecords: AttendanceRecord[] = [];
+  console.log(attendanceRecords, "attendanceRecords");
   export let isLoading: boolean;
 
   let selectedDate = new Date();

@@ -178,8 +178,14 @@ export const shiftsApi = {
     });
   },
 
-  getAssignmentByUser: async (userId: string, startDate: string, endDate: string) => {
-    let response: any = await fetchApi<Shift[]>(`/shifts/shift-assignments/${userId}?startDate=${startDate}&endDate=${endDate}`);
+  getAssignmentByUser: async (userId: string, startDate: string, endDate?: string) => {
+
+    let url = `/shifts/shift-assignments/${userId}?startDate=${startDate}`
+    if (endDate) {
+      url += `&endDate=${endDate}`
+    }
+    console.log(url, "getAssignmentByUser")
+    let response: any = await fetchApi<Shift[]>(url);
     console.log(response, "getAssignmentByUser")
     return response;
   }

@@ -66,17 +66,36 @@ export const attendanceApi = {
     });
   },
 
+  getAttendanceStatusByUserId: async (userId: string, date?: string): Promise<ApiResponse<AttendanceRecord>> => {
+    let url = `/attendance/status/${userId}`;
+    if (date) {
+      url += `?date=${date}`;
+    }
+
+    return await fetchApi<ApiResponse<AttendanceRecord>>(
+      url, { method: 'GET' }
+    );
+  }
+  ,
   regularize: async (AttendanceRegularization: Omit<AttendanceRegularization, '_id'>): Promise<ApiResponse<AttendanceRegularization>> => {
-    return await fetchApi<ApiResponse<AttendanceRegularization>>('/attendance/regularize', {
+    return await fetchApi<ApiResponse<AttendanceRegularization>>('/attendance/regularizations', {
       method: 'POST',
       body: JSON.stringify(AttendanceRegularization)
     });
   },
   updateRegularizationStatus: async (id: string, status: string): Promise<ApiResponse<AttendanceRegularization>> => {
-    return await fetchApi<ApiResponse<AttendanceRegularization>>(`/attendance/regularize/${id}/status`, {
+    return await fetchApi<ApiResponse<AttendanceRegularization>>(`/attendance/regularizations/${id}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status })
     });
+  },
+  getRegularizationByUserAndDate: async (userId: string, date?: string): Promise<ApiResponse<AttendanceRegularization>> => {
+
+    let url = `/attendance/regularizations/${userId}`;
+    if (date) {
+      url += `?date=${date}`;
+    }
+    return await fetchApi<ApiResponse<AttendanceRegularization>>(url, { method: 'GET' });
   },
 
 

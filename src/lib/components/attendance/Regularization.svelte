@@ -3,13 +3,13 @@
   import Modal from "../common/Modal.svelte";
   import RegularizationForm from "../attendance-Regularization/RegularizationForm.svelte";
   import Loader from "../common/Loader.svelte";
-  import { attendanceApi } from "$lib/services/api";
+  import { attendanceApi, shiftsApi } from "$lib/services/api";
   import { auth } from "$lib/stores/auth";
   import { toast } from "../common/stores/toast.store";
   import { writable } from "svelte/store";
   import type { AttendanceRecord } from "$lib/types";
   import { onMount } from "svelte";
-  import { getMonthStartEnd } from "$lib/utils/date";
+  import { formatDate, getMonthStartEnd } from "$lib/utils/date";
 
   const userId: string = $auth.user?._id ?? "";
   const attendanceRecords = writable<AttendanceRecord[]>([]);
@@ -48,9 +48,35 @@
   }
 
   // Handle date selection
-  function handleDateSelect(event: CustomEvent<{ date: Date }>) {
-    selectedDate = event.detail.date;
-    isShowModal = true;
+  async function handleDateSelect(event: CustomEvent<{ date: Date }>) {
+    const date = event.detail.date;
+    // Create a new date object with UTC values to avoid timezone issues
+    const utcDate = new Date(
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+    );
+
+    const formattedDate = formatDate(utcDate);
+    console.log(formattedDate, "formattedDate handleDateSelect");
+
+    //make api call get the if attendnce reguralization is already applied
+    let result = await attendanceApi.getRegularizationByUserAndDate(
+      userId,
+      formattedDate
+    );
+    console.log(result, "result handleDateSelect");
+
+    let resultAttendance = await attendanceApi.getAttendanceStatusByUserId(
+      userId,
+      formattedDate
+    );
+
+    console.log(resultAttendance, "resultAttendance handleDateSelect");
+
+    let resultShift = await shiftsApi.getAssignmentByUser(
+      userId,
+      formattedDate
+    );
+    console.log(resultShift, "resultShift handleDateSelect");
   }
 
   // Handle month change

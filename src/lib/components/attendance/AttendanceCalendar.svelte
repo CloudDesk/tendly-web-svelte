@@ -28,7 +28,7 @@
   export let weekendDays: number[] = [0, 6];
   export let attendanceRecords: AttendanceRecord[] = [];
   export let isLoading: boolean = false;
-
+  console.log(attendanceRecords, "attendancerecord");
   $: records = attendanceRecords;
 
   const dispatch = createEventDispatcher<{
@@ -122,6 +122,7 @@
     // if (!isSameMonth(date, $currentDate)) {
     //   return;
     // }
+    console.log(date, "handleDateSelect");
     selectedDate = date;
     dispatch("dateSelect", { date });
   }
