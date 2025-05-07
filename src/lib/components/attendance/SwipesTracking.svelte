@@ -12,24 +12,20 @@
   const biometricId = $auth.user?.biometricId || "";
   const userId = $auth.user?._id || "";
 
-  let record;
+  let record: any;
   let showCheckIn = true;
   let showCheckOut = false;
   let error = { isShow: false, message: "" };
   let workingHours = { start: "09:00", end: "18:00" };
-  let attendanceHistory = [];
+  let attendanceHistory: { date: string; checkIn: string; checkOut: string; status: string }[] = [];
 
   function updateButtonStates(attendance: any) {
     console.log("updateButtonStates", attendance);
     const swipesCount = attendance?.swipes?.length || 0;
     const outOfWindowSwipes = attendance?.outOfWindowSwipes?.length || 0;
 
-    if (outOfWindowSwipes >= 1) {
-      showCheckIn = false;
-      showCheckOut = false;
-      error.isShow = true;
-      error.message = attendance.outOfWindowSwipes[0].reason;
-    } else if (swipesCount === 0) {
+    // Allow check-in/check-out based on swipe count, ignoring out-of-window status
+    if (swipesCount === 0) {
       showCheckIn = true;
       showCheckOut = false;
     } else if (swipesCount === 1) {
@@ -39,8 +35,16 @@
       showCheckIn = false;
       showCheckOut = false;
     }
-    
-    // Set the record for displaying time details
+
+    // Show warning for out-of-window swipes but don't block actions
+    if (outOfWindowSwipes >= 1) {
+      error.isShow = true;
+      error.message = `Swipe recorded outside window: ${attendance.outOfWindowSwipes[0].reason}. Regularization required.`;
+    } else {
+      error.isShow = false;
+      error.message = "";
+    }
+
     record = attendance;
   }
 
@@ -53,10 +57,9 @@
         toast.success(
           `${swipeType === "check-in" ? "Check-in" : "Check-out"} recorded at ${time} ✅`
         );
-        // dispatch('swipeSuccess');
         await getAttendanceData();
       } else {
-        toast.error("Swipe not allowed! Please check shift timings ❌");
+        toast.error(response.message || "Failed to record swipe ❌");
       }
     } catch (error) {
       console.error("Swipe error:", error);
@@ -105,7 +108,7 @@
   $: formattedTime = format($currentTime, 'hh:mm:ss a');
   $: formattedDate = format($currentTime, 'EEEE, MMMM dd, yyyy');
   
-  // Calculate if current time is outside working hours
+  // Calculate if current time is outside working hours (for display purposes only)
   $: {
     const now = $currentTime;
     const hours = now.getHours();
@@ -184,23 +187,23 @@
   </div>
 
   {#if error.isShow}
-    <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg shadow-sm">
+    <div class="bg-yellow-50 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-lg shadow-sm">
       <div class="flex">
         <div class="flex-shrink-0">
-          <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          <svg class="h-5 w-5 text-yellow-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M10 2C5.58 2 1.5 6.08 1.5 11v.01C1.5 15.41 5.59 19.5 10 19.5s8.5-4.09 8.5-8.49V11c0-4.42-4.08-8.5-8.5-8.5zm0 .01C14.42 2.01 18.5 6.09 18.5 10.5c0 4.41-4.09 8.5-8.5 8.5S1.5 14.91 1.5 10.5C1.5 6.09 5.58 2.01 10 2.01z" />
           </svg>
         </div>
         <div class="ml-3">
           <p class="text-sm font-medium">{error.message}</p>
-          <div class="mt-2">
+          <!-- <div class="mt-2">
             <button
-              class="inline-flex items-center px-3 py-1.5 border border-red-500 text-xs font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              class="inline-flex items-center px-3 py-1.5 border border-yellow-500 text-xs font-medium rounded-md text-yellow-700 bg-yellow-50 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
               on:click={handleContactHR}
             >
               Contact HR for Regularization
             </button>
-          </div>
+          </div> -->
         </div>
       </div>
     </div>
@@ -261,53 +264,4 @@
       </div>
     </div>
   </div>
-
-
-
 </div>
-
-
-<!--  
- Recent Attendance History 
-    <div class="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-    <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
-      <h3 class="font-medium text-gray-700">Recent Attendance</h3>
-      <button class="text-xs text-indigo-600 hover:text-indigo-800">View All</button>
-    </div>
-    
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          {#each attendanceHistory as record}
-            <tr>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.date}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{record.checkIn}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{record.checkOut}</td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full
-                  {record.status === 'Present' ? 'bg-green-100 text-green-800' : 
-                   record.status === 'Late' ? 'bg-yellow-100 text-yellow-800' : 
-                   'bg-red-100 text-red-800'}">
-                  {record.status}
-                </span>
-              </td>
-            </tr>
-          {/each}
-          {#if attendanceHistory.length === 0}
-            <tr>
-              <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">No recent attendance records found</td>
-            </tr>
-          {/if}
-        </tbody>
-      </table>
-    </div>
-  </div>
-   -->
