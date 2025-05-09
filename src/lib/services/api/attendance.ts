@@ -98,6 +98,38 @@ export const attendanceApi = {
     return await fetchApi<ApiResponse<AttendanceRegularization>>(url, { method: 'GET' });
   },
 
-
+  // fetching attendance and shift records for regularization
+  getAttendanceAndShiftRecords: (params: {
+    userId: string;
+    dates: string[]; // Array of dates in YYYY-MM-DD format
+  }) => {
+    const payload = {
+      userId: params.userId,
+      dates: params.dates,
+    };
+    return fetchApi<{
+      success: boolean;
+      data: {
+        attendanceRecords: {
+          userId: string;
+          shiftDay: string;
+          shiftCode: string;
+          swipes: { timestamp: string; direction: 'IN' | 'OUT' }[];
+          attendanceStatus: string[];
+        }[];
+        shiftAssignments: {
+          userId: string;
+          shiftId: string;
+          shiftCode: string;
+          startDate: string;
+          endDate: string | null;
+          weekendDays: number[];
+        }[];
+      };
+    }>('/attendance-shift-records', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
 
 }; 
