@@ -3,7 +3,6 @@
   import { writable } from "svelte/store";
   import { auth } from "$lib/stores/auth";
   import { attendanceApi, shiftsApi } from "$lib/services/api";
-  import type { AttendanceRecord } from "$lib/types";
   import { ChevronLeft, ChevronRight } from "lucide-svelte";
 
   interface User {
@@ -63,75 +62,6 @@
     }
 
     daysInMonth.set(days);
-    fetchShiftData(days);
-  }
-
-  // Fetch shift data for all days in the month
-  async function fetchShiftData(days: Date[]) {
-    if (!user._id) return;
-
-    try {
-      const firstDay = days[0];
-      const lastDay = days[days.length - 1];
-
-      const startDate = `${firstDay.getFullYear()}-${String(firstDay.getMonth() + 1).padStart(2, "0")}-${String(firstDay.getDate()).padStart(2, "0")}`;
-      const endDate = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, "0")}-${String(lastDay.getDate()).padStart(2, "0")}`;
-
-      // Fetch shifts and attendance data
-      const shiftsResponse = await shiftsApi.getAssignmentByUser(
-        user._id,
-        startDate,
-        endDate
-      );
-      const attendanceResponse = await attendanceApi.search({
-        userIds: [user._id],
-        startDate: startDate,
-        endDate: endDate,
-      });
-
-      // Process and store the shift data
-      const shifts: Record<string, ShiftInfo> = {};
-
-      if (shiftsResponse && shiftsResponse.data) {
-        shiftsResponse.data.forEach((shift: any) => {
-          const date = new Date(shift.date).toISOString().split("T")[0];
-          shifts[date] = {
-            shiftCode: shift.shiftCode || "-",
-            shiftName: shift.shiftName || "Regular Shift",
-            startTime: shift.startTime || "09:00",
-            endTime: shift.endTime || "18:00",
-          };
-        });
-      }
-
-      // Add attendance data
-      if (
-        attendanceResponse &&
-        Array.isArray(attendanceResponse) &&
-        attendanceResponse.length > 0
-      ) {
-        // Using a generic any approach to avoid type issues with the API response
-        const userData = attendanceResponse[0] as any;
-        if (userData && Array.isArray(userData.records)) {
-          userData.records.forEach((record: any) => {
-            if (!record.shiftDay) return;
-
-            const date = new Date(record.shiftDay).toISOString().split("T")[0];
-            if (shifts[date]) {
-              shifts[date].attendance = {
-                status: record.status || "unknown",
-                needsRegularization: Boolean(record.needsRegularization),
-                swipes: Array.isArray(record.swipes) ? record.swipes : [],
-              };
-            }
-          });
-        }
-      }
-
-      userShifts.set(shifts);
-    } catch (error) {
-      console.error("Error fetching shift data:", error);
-    }
   }
 
   // Handle month navigation
@@ -156,6 +86,16 @@
     dispatch("monthChange", { year, month: month + 1 }); // Month is 1-indexed in the event
   }
 
+  // Check if a date is selected
+  $: isSelected = (date: Date) => {
+    return selectedDates.some(
+      (selectedDate) =>
+        selectedDate.getFullYear() === date.getFullYear() &&
+        selectedDate.getMonth() === date.getMonth() &&
+        selectedDate.getDate() === date.getDate()
+    );
+  };
+
   // Handle date selection
   function toggleDateSelection(date: Date) {
     // Check if the date is selectable
@@ -173,6 +113,8 @@
       );
     }
 
+    // Force a UI update by reassigning selectedDates
+    selectedDates = [...selectedDates];
     dispatch("dateSelect", { selectedDates });
   }
 
@@ -195,13 +137,6 @@
     }
 
     return true;
-  }
-
-  // Check if a date is selected
-  function isSelected(date: Date): boolean {
-    return selectedDates.some(
-      (selectedDate) => selectedDate.toDateString() === date.toDateString()
-    );
   }
 
   // Check if a date is a weekend
@@ -286,25 +221,20 @@
       {/each}
 
       {#each $daysInMonth as day}
-        {@const shiftInfo = getShiftInfo(day)}
         {@const selectable = isDateSelectable(day)}
+        {@const selected = isSelected(day)}
         <div
-          class="calendar-day p-1 text-center cursor-pointer hover:bg-blue-50 transition-colors"
-          class:selected={isSelected(day)}
+          class="calendar-day p-1 text-center cursor-pointer transition-colors"
+          class:selected
           class:weekend={isWeekend(day)}
           class:today={isToday(day)}
           class:past={isPast(day)}
           class:future={isFuture(day)}
           class:disabled={!selectable}
-          class:has-shift={Boolean(shiftInfo)}
+          class:hover-effect={selectable && !selected}
           on:click={() => toggleDateSelection(day)}
         >
           <div class="day-number text-sm font-medium">{day.getDate()}</div>
-          {#if shiftInfo}
-            <div class="shift-code text-xs text-blue-600">
-              {shiftInfo.shiftCode}
-            </div>
-          {/if}
         </div>
       {/each}
 
@@ -322,7 +252,7 @@
       <div class="selected-dates">
         {#each selectedDates.slice(0, 5) as date}
           <div
-            class="selected-date text-sm py-1 border-l-2 border-blue-500 pl-2 mb-1"
+            class="selected-date text-sm py-1 border-l-2 border-blue-500 pl-2 mb-1 bg-blue-50"
           >
             {date.getDate()}
             {formatDateForJump(date)}
@@ -375,10 +305,15 @@
     flex-direction: column;
     align-items: center;
     border: 1px solid transparent;
+    position: relative;
+    transition: all 0.2s ease-in-out;
   }
 
-  .calendar-day:hover:not(.disabled) {
-    border-color: #e2e8f0;
+  /* Enhanced hover effect */
+  .calendar-day.hover-effect:hover {
+    border-color: #bfdbfe;
+    background-color: #f0f9ff;
+    z-index: 1;
   }
 
   .empty-day {
@@ -389,13 +324,32 @@
     margin-bottom: 2px;
   }
 
+  /* Enhanced selected styling */
   .calendar-day.selected {
-    background-color: rgba(59, 130, 246, 0.1);
-    border-color: #3b82f6;
+    background-color: #3b82f6;
+    border-color: #2563eb;
+    color: white;
+    font-weight: 600;
+    transform: scale(1.05);
+    z-index: 2;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  }
+
+  .calendar-day.selected .day-number {
+    font-weight: 600;
+  }
+
+  .calendar-day.selected:hover {
+    background-color: #2563eb;
   }
 
   .calendar-day.today {
+    border: 2px solid #3b82f6;
+  }
+
+  .calendar-day.today:not(.selected) {
     border-color: #3b82f6;
+    background-color: #eff6ff;
   }
 
   .calendar-day.weekend {
@@ -427,7 +381,14 @@
     font-size: 0.875rem;
   }
 
+  /* Enhanced selected date in the list */
   .selected-date {
-    background-color: rgba(59, 130, 246, 0.05);
+    background-color: #eff6ff;
+    border-left: 3px solid #3b82f6;
+    transition: all 0.2s ease;
+  }
+
+  .selected-date:hover {
+    background-color: #dbeafe;
   }
 </style>

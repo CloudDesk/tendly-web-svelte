@@ -32,23 +32,26 @@
   }
   async function handleApplyRegularization(record: any) {
     console.log("Applying regularization", record);
-    isRegularizationLoading = true;
-    try {
-      let result = await attendanceApi.regularize(record);
-      console.log(result, "result");
-      if (result.success) {
-        toast.success("Regularization applied successfully");
-        isShowModal = false;
-        dispatch("refresh");
-      } else {
-        toast.error("Failed to apply regularization");
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      isRegularizationLoading = false;
-      isShowModal = false;
-    }
+
+    //regularizations/bulk
+
+    // isRegularizationLoading = true;
+    // try {
+    //   let result = await attendanceApi.regularize(record);
+    //   console.log(result, "result");
+    //   if (result.success) {
+    //     toast.success("Regularization applied successfully");
+    //     isShowModal = false;
+    //     dispatch("refresh");
+    //   } else {
+    //     toast.error("Failed to apply regularization");
+    //   }
+    // } catch (e) {
+    //   console.error(e);
+    // } finally {
+    //   isRegularizationLoading = false;
+    //   isShowModal = false;
+    // }
   }
 
   function handleMonthChange(

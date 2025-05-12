@@ -3,13 +3,55 @@
   import { attendanceApi } from "$lib/services/api";
   import { auth } from "$lib/stores/auth";
   import { toast } from "../common/stores/toast.store";
-  import { onMount } from "svelte";
+  import { X, Calendar } from "lucide-svelte";
 
   interface User {
     _id?: string;
     name?: string;
     biometricId?: string;
     avatar?: string;
+    managerId?: string;
+    managerName?: string;
+  }
+
+  interface ShiftId {
+    _id: string;
+    code: string;
+    startTime: string;
+    endTime: string;
+    shiftWindowStart: string;
+    shiftWindowEnd: string;
+  }
+
+  interface ShiftAssignment {
+    userId: string;
+    shiftId: string | ShiftId; // Can be either string or ShiftId object
+    shiftCode: string;
+    startDate: string;
+    endDate: string | null;
+    weekendDays: number[];
+  }
+
+  interface Swipe {
+    timestamp: string;
+    direction: "IN" | "OUT";
+  }
+
+  interface AttendanceRecord {
+    _id?: string;
+    userId: string;
+    shiftDay: string;
+    shiftCode?: string;
+    swipes: Swipe[];
+    attendanceStatus: string[];
+  }
+
+  interface ApiResponse {
+    success: boolean;
+    data: {
+      attendanceRecords: AttendanceRecord[];
+      shiftAssignments: ShiftAssignment[];
+    };
   }
 
   interface RecordData {
@@ -17,21 +59,31 @@
     dayStr: string;
     fromTime: string;
     toTime: string;
+    windowFromTime: string;
+    windowToTime: string;
     actualFromTime: string | null;
     actualToTime: string | null;
     reason: string;
-    shiftType: string;
     shiftCode: string;
+    hasSwipes: boolean;
+    attendanceId?: string | null;
+    approver: {
+      id: string;
+      name: string;
+    };
   }
 
   const dispatch = createEventDispatcher();
 
   // User info
   const user = ($auth.user as User) || {};
+  console.log(user, "AuthUser");
   const userId: string = user._id ?? "";
   const userName = user.name || "User Name";
   const userCode = user.biometricId || "#EMP001";
   const userAvatar = user.avatar;
+  const managerId = user.managerId || userId; // Default to self if no manager
+  const managerName = user.managerName || userName; // Default to self if no manager
 
   // Props
   export let selectedDates: Date[] = [];
@@ -40,6 +92,15 @@
   let isLoading = false;
   let remarks = "";
   let recordsData: Record<string, RecordData> = {};
+
+  // Add validation state
+  interface ValidationErrors {
+    fromTime: string;
+    toTime: string;
+    reason: string;
+  }
+
+  let validationErrors: Record<string, ValidationErrors> = {};
 
   // Format date for display
   function formatHeaderDate(date: Date): string {
@@ -50,6 +111,25 @@
   // Format date as numeric for display
   function formatNumericDate(date: Date): string {
     return date.getDate().toString().padStart(2, "0");
+  }
+
+  // Format month for display
+  function formatMonth(date: Date): string {
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    return months[date.getMonth()];
   }
 
   // Format date as YYYY-MM-DD for API calls
@@ -89,11 +169,11 @@
       );
 
       // Call the API to get both attendance and shift data
-      const response = await attendanceApi.getAttendanceAndShiftRecords({
+      const response = (await attendanceApi.getAttendanceAndShiftRecords({
         userId,
         dates: formattedDates,
-      });
-
+      })) as unknown as ApiResponse;
+      console.log(response, "response for GetAtteance");
       if (response.success && response.data) {
         // Process the response data
         const { attendanceRecords, shiftAssignments } = response.data;
@@ -111,7 +191,7 @@
               new Date(rec.shiftDay).toISOString().split("T")[0] === dateStr
           );
 
-          // Find matching shift assignment
+          // Find matching shift assignment for this date
           const shiftAssignment = shiftAssignments.find((shift) => {
             const shiftStart = new Date(shift.startDate);
             const shiftEnd = shift.endDate
@@ -124,12 +204,14 @@
           // Get first and last swipe if available
           let firstSwipe = null;
           let lastSwipe = null;
+          let hasSwipes = false;
 
           if (
             attendanceRecord &&
             attendanceRecord.swipes &&
             attendanceRecord.swipes.length > 0
           ) {
+            hasSwipes = true;
             const inSwipes = attendanceRecord.swipes
               .filter((swipe) => swipe.direction === "IN")
               .sort(
@@ -150,21 +232,51 @@
             if (outSwipes.length > 0) lastSwipe = outSwipes[0].timestamp;
           }
 
+          // Get shift times from assignment
+          const shiftStartTime =
+            typeof shiftAssignment?.shiftId === "object"
+              ? shiftAssignment.shiftId.startTime
+              : "09:00";
+          const shiftEndTime =
+            typeof shiftAssignment?.shiftId === "object"
+              ? shiftAssignment.shiftId.endTime
+              : "18:00";
+          const shiftCode =
+            typeof shiftAssignment?.shiftId === "object"
+              ? shiftAssignment.shiftId.code
+              : shiftAssignment?.shiftCode || "GEN";
+          const windowshiftStartTime =
+            typeof shiftAssignment?.shiftId === "object"
+              ? shiftAssignment.shiftId.shiftWindowStart
+              : "08:30";
+          const windowshiftEndTime =
+            typeof shiftAssignment?.shiftId === "object"
+              ? shiftAssignment.shiftId.shiftWindowEnd
+              : "18:30";
+
           newRecordsData[dateStr] = {
             date,
             dayStr,
-            fromTime: "09:00", // Default values that can be overridden
-            toTime: "18:00",
+            fromTime: shiftStartTime,
+            toTime: shiftEndTime,
+            windowFromTime: windowshiftStartTime,
+            windowToTime: windowshiftEndTime,
             actualFromTime: firstSwipe
               ? formatTimeFromTimestamp(firstSwipe)
               : null,
             actualToTime: lastSwipe ? formatTimeFromTimestamp(lastSwipe) : null,
             reason: "",
-            shiftType: shiftAssignment?.shiftCode || "General Shift",
-            shiftCode: shiftAssignment?.shiftCode || "GS",
+            shiftCode: shiftCode,
+            hasSwipes,
+            attendanceId: attendanceRecord?._id || null,
+            approver: {
+              id: managerId,
+              name: managerName,
+            },
           };
         });
 
+        console.log(newRecordsData, "newRecordData");
         recordsData = newRecordsData;
       } else {
         toast.error("Failed to fetch attendance and shift data");
@@ -177,18 +289,104 @@
     }
   }
 
-  // Update a field for a specific date
-  function updateRecordField(dateStr: string, field: string, value: string) {
+  // Validate a single time field
+  function validateTime(time: string): boolean {
+    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    return timeRegex.test(time);
+  }
+
+  // Validate from and to times
+  function validateTimeRange(fromTime: string, toTime: string): boolean {
+    if (!validateTime(fromTime) || !validateTime(toTime)) return false;
+
+    const [fromHour, fromMinute] = fromTime.split(":").map(Number);
+    const [toHour, toMinute] = toTime.split(":").map(Number);
+
+    const fromMinutes = fromHour * 60 + fromMinute;
+    const toMinutes = toHour * 60 + toMinute;
+
+    return toMinutes > fromMinutes;
+  }
+
+  // Update record field with validation
+  function updateRecordField(
+    dateStr: string,
+    field: keyof ValidationErrors,
+    value: string
+  ) {
     if (recordsData[dateStr]) {
       recordsData[dateStr] = {
         ...recordsData[dateStr],
         [field]: value,
       };
+
+      // Initialize validation errors for this date if not exists
+      if (!validationErrors[dateStr]) {
+        validationErrors[dateStr] = { fromTime: "", toTime: "", reason: "" };
+      }
+
+      // Clear the specific field error when user starts typing
+      validationErrors[dateStr][field] = "";
+
+      // Validate time fields immediately
+      if (field === "fromTime" || field === "toTime") {
+        const record = recordsData[dateStr];
+        if (!validateTime(value)) {
+          validationErrors[dateStr][field] =
+            "Please enter a valid time (HH:MM)";
+        } else if (
+          field === "toTime" &&
+          !validateTimeRange(record.fromTime, record.toTime)
+        ) {
+          validationErrors[dateStr].toTime =
+            "End time must be after start time";
+        }
+      }
+
+      // Force update of validation errors
+      validationErrors = { ...validationErrors };
     }
   }
 
-  // Submit handler
+  // Submit handler with enhanced validation
   function handleSubmit() {
+    let hasErrors = false;
+    validationErrors = {};
+
+    // Validate all records
+    Object.entries(recordsData).forEach(([dateStr, record]) => {
+      validationErrors[dateStr] = { fromTime: "", toTime: "", reason: "" };
+
+      // Validate times
+      if (!validateTime(record.fromTime)) {
+        validationErrors[dateStr].fromTime =
+          "Please enter a valid time (HH:MM)";
+        hasErrors = true;
+      }
+      if (!validateTime(record.toTime)) {
+        validationErrors[dateStr].toTime = "Please enter a valid time (HH:MM)";
+        hasErrors = true;
+      }
+      if (!validateTimeRange(record.fromTime, record.toTime)) {
+        validationErrors[dateStr].toTime = "End time must be after start time";
+        hasErrors = true;
+      }
+
+      // Validate reason
+      if (!record.reason && !remarks) {
+        validationErrors[dateStr].reason = "Please provide a reason";
+        hasErrors = true;
+      }
+    });
+
+    // Force update of validation errors
+    validationErrors = { ...validationErrors };
+
+    // if (hasErrors) {
+    //   toast.error("Please correct the validation errors");
+    //   return;
+    // }
+
     // Prepare data for submission
     const regularizationData = Object.entries(recordsData).map(
       ([dateStr, record]) => ({
@@ -197,17 +395,26 @@
         fromTime: record.fromTime,
         toTime: record.toTime,
         reason: record.reason || remarks,
-        shiftType: record.shiftType,
+        shiftType: record.shiftCode,
+        attendanceId: record.attendanceId,
+        approver: record.approver,
       })
     );
-
-    // Dispatch the data to the parent component
+    console.log(regularizationData, "regularizationData");
     dispatch("submit", regularizationData);
   }
 
   // Cancel handler
   function handleCancel() {
     dispatch("cancel");
+  }
+
+  // Add function to remove a date
+  function removeDate(dateStr: string) {
+    const date = selectedDates.find((d) => formatDateForApi(d) === dateStr);
+    if (date) {
+      dispatch("removeDate", { date });
+    }
   }
 
   // Watch for changes to selectedDates and refresh data
@@ -224,95 +431,62 @@
   </div>
 {:else if selectedDates.length === 0}
   <div class="p-6 text-center text-gray-500">
-    <p>Please select a date to apply regularization</p>
+    <div class="flex flex-col items-center justify-center py-10">
+      <Calendar class="h-16 w-16 text-blue-300 mb-4" />
+      <p class="text-lg font-medium text-gray-600">
+        Please select dates from the calendar
+      </p>
+      <p class="text-sm text-gray-500 mt-2">
+        Click on dates to add them for regularization
+      </p>
+    </div>
   </div>
 {:else}
   <div class="p-4">
+    <!-- Header with selected count -->
+    <div
+      class="bg-blue-50 p-3 rounded-lg mb-4 flex justify-between items-center"
+    >
+      <div>
+        <h2 class="font-medium text-blue-800">
+          {selectedDates.length}
+          {selectedDates.length === 1 ? "date" : "dates"} selected
+        </h2>
+        <p class="text-sm text-blue-400">
+          Fill in regularization details below
+        </p>
+      </div>
+    </div>
+
     <!-- User Profile -->
-    <div class="user-profile mb-4 flex items-center">
-      <div
-        class="avatar mr-3 bg-blue-100 text-blue-800 w-10 h-10 rounded-full flex items-center justify-center"
-      >
-        {#if userAvatar}
-          <img
-            src={userAvatar}
-            alt={userName}
-            class="rounded-full w-full h-full object-cover"
-          />
-        {:else}
-          <span class="text-xl font-bold">{userName.charAt(0)}</span>
-        {/if}
-      </div>
-      <div class="user-info">
-        <div class="user-name text-sm font-medium">{userName}</div>
-        <div class="user-code text-xs text-gray-500">{userCode}</div>
-      </div>
-      <div class="dropdown-icon ml-auto">
-        <button class="text-gray-400">▼</button>
+    <div class="bg-white rounded-lg shadow p-4 mb-4">
+      <div class="flex items-center justify-between">
+        <!-- Approver Info -->
+        <div class="flex items-center">
+          <div
+            class="avatar bg-green-100 text-green-800 w-10 h-10 rounded-full flex items-center justify-center"
+          >
+            <span class="text-xl font-bold">{managerName.charAt(0)}</span>
+          </div>
+          <div class="text-right ml-2">
+            <div class=" text-sm font-medium text-gray-600">{managerName}</div>
+            <!-- <div class="text-sm text-gray-500">Approver</div> -->
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Remarks field -->
     <div class="remarks-field mb-4">
+      <label class="block text-sm font-medium text-gray-700 mb-1"
+        >Common Remarks (applies to all dates)</label
+      >
       <div class="border rounded p-2">
         <textarea
           bind:value={remarks}
           class="w-full min-h-[80px] resize-none border-none focus:outline-none"
-          placeholder="Remarks"
+          placeholder="Enter common remarks for all selected dates"
         ></textarea>
-        <div class="flex justify-end">
-          <button class="text-green-500 mr-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-          </button>
-          <button class="text-green-500">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </button>
-        </div>
-      </div>
-      <div class="mt-2">
-        <button class="flex items-center text-gray-500">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-6 w-6 mr-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-            />
-          </svg>
-          Add
-        </button>
       </div>
     </div>
 
@@ -320,51 +494,43 @@
     {#each selectedDates as date}
       {#if recordsData[formatDateForApi(date)]}
         {@const dateStr = formatDateForApi(date)}
-        <div class="date-section mb-4 border rounded">
+        <div
+          class="date-section mb-4 border rounded shadow-sm transition-all hover:shadow"
+        >
           <div
-            class="date-header p-3 flex justify-between items-center bg-gray-50"
+            class="date-header p-3 flex justify-between items-center bg-blue-50"
           >
             <div class="flex items-center">
-              <div class="date-number font-medium pr-2 text-lg">
-                {formatNumericDate(date)}
+              <div
+                class="date-display flex flex-col items-center justify-center bg-blue-500 text-white h-10 w-10 rounded-full mr-3"
+              >
+                <div class="date-number font-medium text-lg leading-none">
+                  {formatNumericDate(date)}
+                </div>
+                <div class="month-name text-xs leading-none">
+                  {formatMonth(date)}
+                </div>
               </div>
-              <div class="day-name text-sm">{recordsData[dateStr].dayStr}</div>
+              <div>
+                <div class="day-name font-medium">
+                  {recordsData[dateStr].dayStr}
+                </div>
+                <div class="text-xs text-gray-600">
+                  {recordsData[dateStr].shiftCode}
+                  {`(${recordsData[dateStr].windowFromTime} - ${recordsData[dateStr].windowToTime})`}
+                </div>
+              </div>
             </div>
-            <div class="flex items-center">
-              <button class="text-gray-400 hover:text-gray-600">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"
-                  />
-                </svg>
-              </button>
-            </div>
+            <button
+              class="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-100 transition-colors"
+              title="Remove this date"
+              on:click={() => removeDate(dateStr)}
+            >
+              <X class="h-5 w-5" />
+            </button>
           </div>
 
           <div class="p-4">
-            <!-- Shift Type -->
-            <div class="mb-3">
-              <select
-                value={recordsData[dateStr].shiftType}
-                on:change={(e) =>
-                  updateRecordField(
-                    dateStr,
-                    "shiftType",
-                    e.currentTarget?.value || ""
-                  )}
-                class="w-full p-2 border rounded text-gray-700 bg-white"
-              >
-                <option value="General Shift">General Shift</option>
-                <option value="Morning Shift">Morning Shift</option>
-                <option value="Evening Shift">Evening Shift</option>
-              </select>
-            </div>
-
             <!-- Time Inputs -->
             <div class="grid grid-cols-3 gap-4 mb-3">
               <div>
@@ -378,15 +544,22 @@
                       "fromTime",
                       e.currentTarget?.value || ""
                     )}
-                  class="w-full p-2 border rounded"
+                  class="w-full p-2 border rounded {validationErrors[dateStr]
+                    ?.fromTime
+                    ? 'border-red-500'
+                    : ''}"
                   placeholder="HH:MM"
                 />
+                {#if validationErrors[dateStr]?.fromTime}
+                  <div class="text-xs text-red-500 mt-1">
+                    {validationErrors[dateStr].fromTime}
+                  </div>
+                {/if}
                 {#if recordsData[dateStr].actualFromTime}
                   <div class="text-xs text-gray-500 mt-1">
                     {recordsData[dateStr].actualFromTime}
                   </div>
                 {/if}
-                <div class="text-center text-gray-500 mt-1">?</div>
               </div>
 
               <div>
@@ -400,15 +573,22 @@
                       "toTime",
                       e.currentTarget?.value || ""
                     )}
-                  class="w-full p-2 border rounded"
+                  class="w-full p-2 border rounded {validationErrors[dateStr]
+                    ?.toTime
+                    ? 'border-red-500'
+                    : ''}"
                   placeholder="HH:MM"
                 />
+                {#if validationErrors[dateStr]?.toTime}
+                  <div class="text-xs text-red-500 mt-1">
+                    {validationErrors[dateStr].toTime}
+                  </div>
+                {/if}
                 {#if recordsData[dateStr].actualToTime}
                   <div class="text-xs text-gray-500 mt-1">
                     {recordsData[dateStr].actualToTime}
                   </div>
                 {/if}
-                <div class="text-center text-gray-500 mt-1">?</div>
               </div>
 
               <div>
@@ -422,9 +602,17 @@
                       "reason",
                       e.currentTarget?.value || ""
                     )}
-                  class="w-full p-2 border rounded"
+                  class="w-full p-2 border rounded {validationErrors[dateStr]
+                    ?.reason
+                    ? 'border-red-500'
+                    : ''}"
                   placeholder="Please enter a reason."
                 />
+                {#if validationErrors[dateStr]?.reason}
+                  <div class="text-xs text-red-500 mt-1">
+                    {validationErrors[dateStr].reason}
+                  </div>
+                {/if}
               </div>
             </div>
           </div>

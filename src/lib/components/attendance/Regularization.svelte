@@ -1,21 +1,16 @@
 <script lang="ts">
   import { attendanceApi, shiftsApi } from "$lib/services/api";
-  import { auth } from "$lib/stores/auth";
   import { toast } from "../common/stores/toast.store";
   import { writable } from "svelte/store";
-  import type { AttendanceRecord } from "$lib/types";
   import { onMount } from "svelte";
   import RegularizationCalendar from "./RegularizationCalendar.svelte";
   import RegularizationForm from "./RegularizationForm.svelte";
   import { formatDate } from "$lib/utils/date";
 
-  const userId: string = $auth.user?._id ?? "";
-  const attendanceRecords = writable<AttendanceRecord[]>([]);
   const isLoading = writable(false);
   let selectedDates: Date[] = [];
   let expandedDates: Record<string, boolean> = {};
   let isRegularizationLoading = false;
-  let remarks = "";
 
   // Form data for regularization
   let shiftData: Record<
@@ -32,33 +27,11 @@
     }
   > = {};
 
-  // Format date for display
-  function formatDisplayDate(date: Date): string {
-    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const day = days[date.getDay()];
-    const dateNum = date.getDate().toString().padStart(2, "0");
-    const month = date.toLocaleString("default", { month: "short" });
-    return `${dateNum} ${day}`;
-  }
-
   // Format date with day for header
   function formatHeaderDate(date: Date): string {
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const day = days[date.getDay()];
     return `${day}`;
-  }
-
-  // Format date as numeric for display
-  function formatNumericDate(date: Date): string {
-    return date.getDate().toString().padStart(2, "0");
-  }
-
-  // Toggle expanded state for a date
-  function toggleDateExpanded(dateStr: string) {
-    expandedDates = {
-      ...expandedDates,
-      [dateStr]: !expandedDates[dateStr],
-    };
   }
 
   // Fetch attendance records for the selected month
@@ -96,8 +69,9 @@
 
   // Handle date selection
   function handleDateSelect(event: CustomEvent<{ selectedDates: Date[] }>) {
+    // Create a new array to ensure reactivity
     selectedDates = [...event.detail.selectedDates];
-    console.log(selectedDates, "selectedDates");
+
     // Initialize data for each selected date
     selectedDates.forEach((date) => {
       const dateStr = date.toISOString().split("T")[0];
@@ -127,8 +101,18 @@
       );
       if (!stillSelected) {
         delete shiftData[dateStr];
+        delete expandedDates[dateStr];
       }
     });
+
+    // Force a UI update by reassigning shiftData
+    shiftData = { ...shiftData };
+  }
+
+  // Handle remove date from form
+  function handleRemoveDate(event: CustomEvent<{ date: Date }>) {
+    const dateToRemove = event.detail.date;
+    selectedDates = selectedDates.filter((d) => d !== dateToRemove);
   }
 
   // Handle month change
@@ -155,28 +139,12 @@
     try {
       // The form component has already prepared the data in the correct format
       const regularizationData = event.detail;
+      console.log(regularizationData, "handleFormSubmit");
 
-      // Make API call for each date
-      const results = await Promise.all(
-        regularizationData.map(async (data: any) => {
-          return await attendanceApi.regularize(data);
-        })
-      );
-
-      // Check if all requests were successful
-      const allSuccessful = results.every((result) => result.success);
-
-      if (allSuccessful) {
-        toast.success("Regularization applied successfully");
-        selectedDates = []; // Clear selected dates after successful submission
-      } else {
-        toast.error("Some regularization requests failed");
-      }
-    } catch (error) {
-      console.error("Failed to apply regularization:", error);
-      toast.error("Failed to apply regularization");
-    } finally {
-      isRegularizationLoading = false;
+      let result = await attendanceApi.bulkRegularize(regularizationData);
+      console.log(result, "result handleFormSubmit");
+    } catch (e) {
+      console.log(e, "error handleFormSubmit");
     }
   }
 
@@ -214,6 +182,7 @@
         bind:selectedDates
         on:submit={handleFormSubmit}
         on:cancel={handleFormCancel}
+        on:removeDate={handleRemoveDate}
       />
     </div>
   </div>

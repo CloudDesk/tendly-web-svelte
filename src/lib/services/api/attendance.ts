@@ -28,6 +28,42 @@ type AttendanceResponse = {
   records: AttendanceRecord[];
   summary: AttendanceSummary;
 };
+type AttendanceRegularizationBulk = {
+  attendanceId?: string | null;
+  userId: string;
+  date: string;
+  fromTime: string;
+  toTime: string;
+  reason: string;
+  shiftType: string;
+  approver: { id: string; name: string; };
+}
+
+type RegularizationResponse = {
+  success: boolean;
+  data: {
+    success: boolean;
+    regularization: {
+      _id: string;
+      attendanceId: string;
+      from: string;
+      to: string;
+      reason: string;
+      status: string;
+      approver: { id: string; name: string };
+      approvedDate?: string | null;
+      comments?: string | null;
+    };
+    attendance: {
+      _id: string;
+      shiftDay: string;
+      shiftCode: string;
+      attendanceStatus: string[];
+      needsRegularization: boolean;
+    };
+  }[];
+};
+
 
 export const attendanceApi = {
   search: (params: {
@@ -126,10 +162,17 @@ export const attendanceApi = {
           weekendDays: number[];
         }[];
       };
-    }>('/attendance-shift-records', {
+    }>('/attendance/shift-records', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
   },
+  bulkRegularize: async (data: Omit<AttendanceRegularizationBulk, '_id'>): Promise<RegularizationResponse> => {
+    const response = await fetchApi<ApiResponse<RegularizationResponse>>('/attendance/regularizations/bulk', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return response.data as RegularizationResponse;
+  }
 
 }; 
