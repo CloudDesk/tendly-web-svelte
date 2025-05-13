@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { attendanceApi, shiftsApi } from "$lib/services/api";
+  import { attendanceRegularizeApi } from "$lib/services/api";
   import { toast } from "../common/stores/toast.store";
   import { writable } from "svelte/store";
   import { onMount } from "svelte";
   import RegularizationCalendar from "./RegularizationCalendar.svelte";
-  import RegularizationForm from "./RegularizationForm.svelte";
+  import RegularizationForm from "./RegularizationFormBulk.svelte";
   import { formatDate } from "$lib/utils/date";
 
   const isLoading = writable(false);
@@ -141,10 +141,35 @@
       const regularizationData = event.detail;
       console.log(regularizationData, "handleFormSubmit");
 
-      let result = await attendanceApi.bulkRegularize(regularizationData);
+      let result =
+        await attendanceRegularizeApi.bulkRegularize(regularizationData);
       console.log(result, "result handleFormSubmit");
+
+      // Check if the response has data array
+      if (result?.data && Array.isArray(result.data)) {
+        // Check if all regularizations were successful
+        const allSuccessful = result.data.every((item) => item.success);
+
+        if (allSuccessful) {
+          // All regularizations were successful
+          toast.success("Regularization requests submitted successfully");
+          // Clear selected dates
+          selectedDates = [];
+        } else {
+          // Some regularizations failed
+          toast.error("Some regularization requests failed. Please try again.");
+        }
+      } else {
+        // Invalid response format
+        throw new Error("Invalid response format");
+      }
     } catch (e) {
-      console.log(e, "error handleFormSubmit");
+      console.error(e, "error handleFormSubmit");
+      toast.error(
+        "Unable to submit regularization requests. Please try again later."
+      );
+    } finally {
+      isRegularizationLoading = false;
     }
   }
 

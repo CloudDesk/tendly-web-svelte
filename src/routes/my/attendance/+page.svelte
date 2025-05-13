@@ -1,7 +1,6 @@
 <script lang="ts">
   import ToggleView from "$lib/components/attendance/ToggleView.svelte";
-  import ListView from "$lib/components/attendance/ListView.svelte";
-  import AttendanceHeatmap from "$lib/components/attendance/AttendanceHeatmap.svelte";
+  import RegularizationList from "$lib/components/attendance-Regularization/RegularizationList.svelte";
   import FiltersSearch from "$lib/components/attendance/FiltersSearch.svelte";
   import { writable } from "svelte/store";
   import { onMount } from "svelte";
@@ -10,6 +9,7 @@
   import AttendanceDashboard from "$lib/components/attendance/AttendanceDashboard.svelte";
   import { attendanceApi } from "$lib/services/api";
   import type { AttendanceRecord } from "$lib/types";
+  import Regularization from "$lib/components/attendance-Regularization/Regularization.svelte";
 
   const viewMode = writable<"calendar" | "list" | "heat">("calendar");
   const userId: string = $auth.user?._id ?? "";
@@ -115,9 +115,9 @@
         on:monthChange={handleMonthChange}
       />
     {:else if $viewMode === "list"}
-      <ListView />
+      <Regularization />
     {:else}
-      <AttendanceHeatmap />
+      <RegularizationList viewType="user" />
     {/if}
   </div>
 </div>
