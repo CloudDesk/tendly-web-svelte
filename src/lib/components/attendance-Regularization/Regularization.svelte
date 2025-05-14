@@ -135,6 +135,8 @@
 
   // Handle form submission
   async function handleFormSubmit(event: CustomEvent<any>) {
+    if (isRegularizationLoading) return; // Prevent multiple submissions
+
     isRegularizationLoading = true;
     try {
       // The form component has already prepared the data in the correct format

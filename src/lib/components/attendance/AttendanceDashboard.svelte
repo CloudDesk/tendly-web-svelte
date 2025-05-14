@@ -7,6 +7,7 @@
   import type { AttendanceRecord } from "$lib/types";
   import { createEventDispatcher } from "svelte";
   import { toast } from "../common/stores/toast.store";
+  import { attendanceRegularizeApi } from "$lib/services/api";
 
   const dispatch = createEventDispatcher();
   export let attendanceRecords: AttendanceRecord[] = [];
@@ -34,7 +35,7 @@
 
     isRegularizationLoading = true;
     try {
-      let result = await atte.regularize(record);
+      let result = await attendanceRegularizeApi.regularize(record);
       console.log(result, "result");
       if (result.success) {
         toast.success("Regularization applied successfully");
