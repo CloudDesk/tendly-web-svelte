@@ -1,13 +1,14 @@
 <script lang="ts">
+  // Ensure ES module compatibility for SvelteKit/Vite
   import { createEventDispatcher } from "svelte";
   import { employeesApi } from "$lib/services/api";
 
   interface IGovernmentIds {
-    pan: { number?: string; documentUrl?: string };
-    aadhaar: { number?: string; documentUrl?: string };
-    passport: { number?: string; documentUrl?: string };
-    voterId: { number?: string; documentUrl?: string };
-    drivingLicense: { number?: string; documentUrl?: string };
+    pan: { number?: string; file?: File };
+    aadhaar: { number?: string; file?: File };
+    passport: { number?: string; file?: File };
+    voterId: { number?: string; file?: File };
+    drivingLicense: { number?: string; file?: File };
     pf: { number?: string; uan?: string };
   }
 
@@ -56,15 +57,15 @@
     {
       key: "voterId",
       label: "Voter ID",
-      pattern: /^[A-Z]{2}[0-9]{7}$/,
-      errorMsg: "Voter ID should be in format AB1234567",
+      pattern: /^[A-Z]{2,3}[0-9]{7,10}$/, // Matches ABC1234567 or AB1234567890
+      errorMsg: "Voter ID should be 2-3 letters followed by 7-10 digits (e.g., ABC1234567)",
       hasDocument: true,
     },
     {
       key: "drivingLicense",
       label: "Driving License",
-      pattern: /^[A-Z]{2}[0-9]{2}[A-Z]?[0-9]{7}$/,
-      errorMsg: "Invalid driving license format",
+      pattern: /^[A-Z]{2}-?[0-9]{2}-?[0-9]{4}-?[0-9]{7,9}$/, // Matches MH-02-2009-1234567 or MH022009123456789
+      errorMsg: "Driving License should be in format MH-02-2009-1234567",
       hasDocument: true,
     },
     {
@@ -80,7 +81,7 @@
     formErrors = {};
     fileErrors = {};
 
-    // Validate ID numbers
+    // Validate ID numbers (only if provided)
     fields.forEach((field) => {
       const value = governmentIds[field.key]?.number;
       if (value && field.pattern && !field.pattern.test(value)) {
@@ -89,7 +90,7 @@
       }
     });
 
-    // Validate PF UAN
+    // Validate PF UAN (only if provided)
     if (governmentIds.pf?.uan && !/^\d{12}$/.test(governmentIds.pf.uan)) {
       formErrors["pf-uan"] = "UAN should be 12 digits";
       isValid = false;
@@ -97,12 +98,7 @@
 
     // Validate selected files (excludes pf)
     for (const [field, file] of selectedFiles) {
-      const validTypes = [
-        "application/pdf",
-        "image/jpeg",
-        "image/png",
-        "image/jpg",
-      ];
+      const validTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
       if (!validTypes.includes(file.type)) {
         fileErrors[field] = "File must be a PDF or image (JPEG/PNG)";
         isValid = false;
@@ -112,75 +108,93 @@
       }
     }
 
+    console.log("Form Errors:", formErrors); // Debug: Log validation errors
     return isValid;
   }
 
   function handleFileChange(field: string, event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    console.log(`handleFileChange for ${field}:`, file);
     if (!file) {
       selectedFiles.delete(field);
-      selectedFiles = new Map(selectedFiles); // Trigger reactivity
-      console.log(
-        "selectedFiles after delete:",
-        Object.fromEntries(selectedFiles)
-      );
-      return;
+      governmentIds[field].file = undefined; // Clear file
+    } else {
+      selectedFiles.set(field, file);
+      governmentIds[field].file = file; // Set file
     }
-
-    // Store file locally
-    selectedFiles.set(field, file);
     selectedFiles = new Map(selectedFiles); // Trigger reactivity
     fileErrors[field] = "";
-    console.log("selectedFiles after set:", Object.fromEntries(selectedFiles));
     validateAndUpdate();
   }
 
   function handleChange(field: string, value: string) {
+    console.log(`Updating ${field} with value:`, value); // Debug: Log input value
+    if (!governmentIds[field]) {
+      governmentIds[field] = {};
+    }
     governmentIds[field].number = field === "pan" ? value.toUpperCase() : value;
+    governmentIds = { ...governmentIds }; // Trigger reactivity
+    console.log(`Updated governmentIds[${field}]:`, governmentIds[field]); // Debug: Log updated field
     validateAndUpdate();
   }
 
   function handleUanChange(value: string) {
+    console.log("Updating pf.uan with value:", value); // Debug: Log UAN value
     governmentIds.pf.uan = value;
+    governmentIds = { ...governmentIds }; // Trigger reactivity
+    console.log("Updated governmentIds.pf:", governmentIds.pf); // Debug: Log updated pf
     validateAndUpdate();
   }
 
   function validateAndUpdate() {
-    if (validateForm()) {
-      dispatch("update", {
-        type: "governmentIds",
-        data: governmentIds,
-      });
-    }
+    // Always dispatch update to ensure parent component receives latest data
+    dispatch("update", {
+      type: "governmentIds",
+      data: governmentIds,
+    });
+    validateForm(); // Run validation but don't block updates
   }
 
   async function handleSubmit() {
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      console.log("Validation failed, but proceeding with submission"); // Debug: Log validation status
+    }
 
-    // Prepare files and numbers
-    const files: Record<string, File> = Object.fromEntries(selectedFiles);
-    const numbers: Record<string, { number?: string; uan?: string }> = {};
+    console.log("governmentIds before submit:", governmentIds); // Debug: Log full governmentIds
+
+    // Prepare FormData for API
+    const formData = new FormData();
+
+    // Append all fields (files and numbers), including empty ones
     fields.forEach((field) => {
-      numbers[field.key] = {
-        number: governmentIds[field.key]?.number,
-        ...(field.pfUan ? { uan: governmentIds.pf.uan } : {}),
-      };
+      const key = field.key;
+      // Append file (if present)
+      if (field.hasDocument) {
+        const file = selectedFiles.get(key);
+        if (file) {
+          formData.append(`${key}_file`, file);
+        }
+      }
+      // Append number (empty string if not present)
+      const number = governmentIds[key]?.number || "";
+      formData.append(`${key}_number`, number);
+      console.log(`${key}_number:`, number); // Debug: Log each field value
+      // Append UAN for pf
+      if (field.pfUan) {
+        const uan = governmentIds.pf?.uan || "";
+        formData.append("pf_uan", uan);
+        console.log("pf_uan:", uan); // Debug: Log UAN
+      }
     });
 
-    console.log("Files to send:", files);
-    console.log("Numbers to send:", numbers);
+    console.log("formData entries:", [...formData.entries()]); // Debug: Log FormData
 
     loading = true;
     formErrors = {};
     fileErrors = {};
 
     try {
-      const response = await employeesApi.updateGovernmentId(employeeId, {
-        files,
-        numbers,
-      });
+      const response = await employeesApi.updateGovernmentId(employeeId, formData);
       console.log("Backend response:", response);
 
       // Update governmentIds with response data
@@ -214,66 +228,41 @@
               ? 'input-error'
               : ''}"
             value={governmentIds[field.key]?.number || ""}
-            on:input={(e) => handleChange(field.key, e.currentTarget.value)}
+            on:input={(e) => {
+              console.log(`Input event for ${field.key}:`, e.currentTarget.value); // Debug: Log input event
+              handleChange(field.key, e.currentTarget.value);
+            }}
             on:blur={validateAndUpdate}
           />
           {#if formErrors[field.key]}
             <label class="label">
-              <span class="label-text-alt text-error"
-                >{formErrors[field.key]}</span
-              >
+              <span class="label-text-alt text-error">{formErrors[field.key]}</span>
             </label>
           {/if}
 
-          <!-- Document Upload or Display (excludes pf) -->
+          <!-- File Upload -->
           {#if field.hasDocument}
-            {#if governmentIds[field.key]?.documentUrl}
-              <div class="mt-2">
-                <label class="label">
-                  <span class="label-text">Uploaded Document</span>
-                </label>
-                <a
-                  href={governmentIds[field.key].documentUrl}
-                  target="_blank"
-                  class="link link-primary"
+            <div class="mt-2">
+              <label class="label">
+                <span class="label-text">Upload Document</span>
+              </label>
+              <input
+                type="file"
+                id="file-upload-{field.key}"
+                accept="application/pdf,image/jpeg,image/png"
+                class="input input-bordered w-full"
+                on:change={(e) => handleFileChange(field.key, e)}
+                disabled={loading}
+              />
+              {#if selectedFiles.has(field.key)}
+                <span class="text-sm mt-1"
+                  >Selected: {selectedFiles.get(field.key)?.name}</span
                 >
-                  View Document
-                </a>
-                <!-- Option to replace document -->
-                <div class="mt-2">
-                  <label class="label">
-                    <span class="label-text">Replace Document</span>
-                  </label>
-                  <input
-                    type="file"
-                    id="file-upload-{field.key}"
-                    accept="application/pdf,image/jpeg,image/png"
-                    class="input input-bordered w-full"
-                    on:change={(e) => handleFileChange(field.key, e)}
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-            {:else}
-              <div class="mt-2">
-                <label class="label">
-                  <span class="label-text">Upload Document</span>
-                </label>
-                <input
-                  type="file"
-                  id="file-upload-{field.key}"
-                  accept="application/pdf,image/jpeg,image/png"
-                  class="input input-bordered w-full"
-                  on:change={(e) => handleFileChange(field.key, e)}
-                  disabled={loading}
-                />
-              </div>
-            {/if}
+              {/if}
+            </div>
             {#if fileErrors[field.key]}
               <label class="label">
-                <span class="label-text-alt text-error"
-                  >{fileErrors[field.key]}</span
-                >
+                <span class="label-text-alt text-error">{fileErrors[field.key]}</span>
               </label>
             {/if}
           {/if}
@@ -296,9 +285,7 @@
               />
               {#if formErrors["pf-uan"]}
                 <label class="label">
-                  <span class="label-text-alt text-error"
-                    >{formErrors["pf-uan"]}</span
-                  >
+                  <span class="label-text-alt text-error">{formErrors["pf-uan"]}</span>
                 </label>
               {/if}
             </div>

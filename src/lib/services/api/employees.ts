@@ -1,6 +1,6 @@
-import { fetchApi, uploadFiles } from './base';
-import type { ApiResponse } from '$lib/types/api';
-import type { User } from '$lib/types/user';
+import { fetchApi, uploadFiles } from "./base";
+import type { ApiResponse } from "$lib/types/api";
+import type { User } from "$lib/types/user";
 
 export type EmployeeFilters = {
   role?: string;
@@ -15,7 +15,7 @@ export type Employee = {
   _id: string;
   name: string;
   email: string;
-}
+};
 export type EmployeeListResponse = {
   items: User[];
   total: number;
@@ -25,7 +25,7 @@ export type EmployeeListResponse = {
 
 export const employeesApi = {
   me: async (): Promise<ApiResponse<User>> => {
-    return await fetchApi<ApiResponse<User>>('/users/me');
+    return await fetchApi<ApiResponse<User>>("/users/me");
   },
 
   list: async (filters: EmployeeFilters): Promise<ApiResponse<Employee[]>> => {
@@ -41,75 +41,57 @@ export const employeesApi = {
     return await fetchApi<ApiResponse<User>>(`/users/${id}`);
   },
 
-  create: async (employee: Omit<User, 'id'>): Promise<ApiResponse<User>> => {
-    return await fetchApi<ApiResponse<User>>('/users', {
-      method: 'POST',
-      body: JSON.stringify(employee)
+  create: async (employee: Omit<User, "id">): Promise<ApiResponse<User>> => {
+    return await fetchApi<ApiResponse<User>>("/users", {
+      method: "POST",
+      body: JSON.stringify(employee),
     });
   },
 
-  update: async (id: string, updates: Partial<User>): Promise<ApiResponse<User>> => {
+  update: async (
+    id: string,
+    updates: Partial<User>
+  ): Promise<ApiResponse<User>> => {
     return await fetchApi<ApiResponse<User>>(`/users/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates)
+      method: "PUT",
+      body: JSON.stringify(updates),
     });
   },
 
   delete: async (id: string): Promise<ApiResponse<void>> => {
     return await fetchApi<ApiResponse<void>>(`/users/${id}`, {
-      method: 'DELETE'
+      method: "DELETE",
     });
   },
 
   getRoles: async (role: string): Promise<ApiResponse<User>> => {
     return await fetchApi<ApiResponse<User>>(`/users/role/${role}`);
-  }
-  ,
+  },
   search: async (query: string): Promise<ApiResponse<User[]>> => {
     return await fetchApi<ApiResponse<User[]>>(`/users/search?q=${query}`);
-  }
-  ,
-  getUserByRoleDepartment: async (role: string, department: string): Promise<ApiResponse<User[]>> => {
-    return await fetchApi<ApiResponse<User[]>>(`/users/filter?role=${role}&departmentId=${department}`);
+  },
+  getUserByRoleDepartment: async (
+    role: string,
+    department: string
+  ): Promise<ApiResponse<User[]>> => {
+    return await fetchApi<ApiResponse<User[]>>(
+      `/users/filter?role=${role}&departmentId=${department}`
+    );
   },
   filesUpload: async (id: string, file: File): Promise<ApiResponse<User>> => {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     return await fetchApi<ApiResponse<User>>(`/users/${id}/upload-info`, {
-      method: 'POST',
-      body: formData
+      method: "POST",
+      body: formData,
     });
-  }
-  ,
-  updateGovernmentId: async (id: string,
-    data: { files: Record<string, File>; numbers: Record<string, { number?: string; uan?: string }> }
-  ) => {
-
-    const formData = new FormData();
-
-    // Add files with fieldname like pan_document
-    Object.entries(data.files).forEach(([sectionKey, file]) => {
-      formData.append(`${sectionKey}_document`, file);
-    });
-
-    // Add numbers
-    Object.entries(data.numbers).forEach(([key, value]) => {
-      if (value.number) {
-        formData.append(`${key}[number]`, value.number);
-      }
-      if (key === "pf" && value.uan) {
-        formData.append("pf[uan]", value.uan);
-      }
-    });
-
+  },
+  updateGovernmentId: async (id: string, formData: FormData) => {
     console.log("formData entries:", [...formData.entries()]); // Debug: Log FormData
 
     return await uploadFiles(`/users/${id}/government-ids`, formData);
   },
 
-
   // /users/:id/government-ids
-
-
-}; 
+};
