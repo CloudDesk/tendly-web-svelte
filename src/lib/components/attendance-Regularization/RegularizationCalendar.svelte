@@ -2,7 +2,6 @@
   import { createEventDispatcher } from "svelte";
   import { writable } from "svelte/store";
   import { auth } from "$lib/stores/auth";
-  import { attendanceApi, shiftsApi } from "$lib/services/api";
   import { ChevronLeft, ChevronRight } from "lucide-svelte";
 
   interface User {

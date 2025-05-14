@@ -3,7 +3,6 @@
   import Modal from "../common/Modal.svelte";
   import RegularizationForm from "../attendance-Regularization/RegularizationForm.svelte";
   import Loader from "../common/Loader.svelte";
-  import { attendanceApi } from "$lib/services/api";
   import AttendanceCaledar from "./AttendanceCalendar.svelte";
   import type { AttendanceRecord } from "$lib/types";
   import { createEventDispatcher } from "svelte";
@@ -33,25 +32,23 @@
   async function handleApplyRegularization(record: any) {
     console.log("Applying regularization", record);
 
-    //regularizations/bulk
-
-    // isRegularizationLoading = true;
-    // try {
-    //   let result = await attendanceApi.regularize(record);
-    //   console.log(result, "result");
-    //   if (result.success) {
-    //     toast.success("Regularization applied successfully");
-    //     isShowModal = false;
-    //     dispatch("refresh");
-    //   } else {
-    //     toast.error("Failed to apply regularization");
-    //   }
-    // } catch (e) {
-    //   console.error(e);
-    // } finally {
-    //   isRegularizationLoading = false;
-    //   isShowModal = false;
-    // }
+    isRegularizationLoading = true;
+    try {
+      let result = await atte.regularize(record);
+      console.log(result, "result");
+      if (result.success) {
+        toast.success("Regularization applied successfully");
+        isShowModal = false;
+        dispatch("refresh");
+      } else {
+        toast.error("Failed to apply regularization");
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      isRegularizationLoading = false;
+      isShowModal = false;
+    }
   }
 
   function handleMonthChange(

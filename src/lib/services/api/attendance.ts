@@ -1,6 +1,5 @@
 import { fetchApi } from './base';
 import type { ApiResponse } from '$lib/types/api';
-import type { AttendanceRegularization } from '$lib/types';
 
 type AttendanceRecord = {
   shiftDay: string;
@@ -27,41 +26,6 @@ type AttendanceResponse = {
   userName: string;
   records: AttendanceRecord[];
   summary: AttendanceSummary;
-};
-type AttendanceRegularizationBulk = {
-  attendanceId?: string | null;
-  userId: string;
-  date: string;
-  fromTime: string;
-  toTime: string;
-  reason: string;
-  shiftType: string;
-  approver: { id: string; name: string; };
-}
-
-type RegularizationResponse = {
-  success: boolean;
-  data: {
-    success: boolean;
-    regularization: {
-      _id: string;
-      attendanceId: string;
-      from: string;
-      to: string;
-      reason: string;
-      status: string;
-      approver: { id: string; name: string };
-      approvedDate?: string | null;
-      comments?: string | null;
-    };
-    attendance: {
-      _id: string;
-      shiftDay: string;
-      shiftCode: string;
-      attendanceStatus: string[];
-      needsRegularization: boolean;
-    };
-  }[];
 };
 
 
@@ -113,26 +77,7 @@ export const attendanceApi = {
     );
   }
   ,
-  regularize: async (AttendanceRegularization: Omit<AttendanceRegularization, '_id'>): Promise<ApiResponse<AttendanceRegularization>> => {
-    return await fetchApi<ApiResponse<AttendanceRegularization>>('/attendance/regularizations', {
-      method: 'POST',
-      body: JSON.stringify(AttendanceRegularization)
-    });
-  },
-  updateRegularizationStatus: async (id: string, status: string): Promise<ApiResponse<AttendanceRegularization>> => {
-    return await fetchApi<ApiResponse<AttendanceRegularization>>(`/attendance/regularizations/${id}/status`, {
-      method: 'PUT',
-      body: JSON.stringify({ status })
-    });
-  },
-  getRegularizationByUserAndDate: async (userId: string, date?: string): Promise<ApiResponse<AttendanceRegularization>> => {
 
-    let url = `/attendance/regularizations/${userId}`;
-    if (date) {
-      url += `?date=${date}`;
-    }
-    return await fetchApi<ApiResponse<AttendanceRegularization>>(url, { method: 'GET' });
-  },
 
   // fetching attendance and shift records for regularization
   getAttendanceAndShiftRecords: (params: {
@@ -167,12 +112,6 @@ export const attendanceApi = {
       body: JSON.stringify(payload),
     });
   },
-  bulkRegularize: async (data: Omit<AttendanceRegularizationBulk, '_id'>): Promise<RegularizationResponse> => {
-    const response = await fetchApi<ApiResponse<RegularizationResponse>>('/attendance/regularizations/bulk', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-    return response.data as RegularizationResponse;
-  }
+
 
 }; 

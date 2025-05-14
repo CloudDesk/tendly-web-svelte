@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { auth } from "$lib/stores/auth";
   import Tabs from "$lib/components/common/Tabs.svelte";
   import AssignedLeaves from "$lib/components/managerActions/AssignedLeaves.svelte";
   import Regularization from "$lib/components/managerActions/Regularization.svelte";
   import { page } from "$app/stores";
   import Resignation from "$lib/components/employee/resignation/Resignation.svelte";
+  import RegularizationList from "$lib/components/attendance-Regularization/RegularizationList.svelte";
   const tabs = [
     { id: "leave", label: "Leave" },
     { id: "regularization", label: "Regularization" },
@@ -26,7 +26,7 @@
         {#if activeTab === "leave"}
           <AssignedLeaves />
         {:else if activeTab === "regularization"}
-          <Regularization />
+          <RegularizationList viewType="manager" />
         {:else if activeTab === "resignation"}
           <Resignation viewMode="manager" />
         {:else if activeTab === "admin-resignation"}
