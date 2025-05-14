@@ -145,23 +145,17 @@
         await attendanceRegularizeApi.bulkRegularize(regularizationData);
       console.log(result, "result handleFormSubmit");
 
-      // Check if the response has data array
-      if (result?.data && Array.isArray(result.data)) {
-        // Check if all regularizations were successful
-        const allSuccessful = result.data.every((item) => item.success);
-
-        if (allSuccessful) {
-          // All regularizations were successful
+      if (result.success) {
+        if (Array.isArray(result.data)) {
           toast.success("Regularization requests submitted successfully");
-          // Clear selected dates
           selectedDates = [];
         } else {
-          // Some regularizations failed
-          toast.error("Some regularization requests failed. Please try again.");
+          throw new Error("Invalid response format: data is not an array");
         }
       } else {
-        // Invalid response format
-        throw new Error("Invalid response format");
+        toast.error(
+          result.error.message || "Failed to submit regularization requests"
+        );
       }
     } catch (e) {
       console.error(e, "error handleFormSubmit");

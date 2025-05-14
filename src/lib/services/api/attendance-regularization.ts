@@ -16,7 +16,7 @@ type AttendanceRegularizationBulk = {
 }
 
 type RegularizationResponse = {
-    success: boolean;
+    success: true;
     data: {
         success: boolean;
         regularization: {
@@ -38,8 +38,12 @@ type RegularizationResponse = {
             needsRegularization: boolean;
         };
     }[];
+} | {
+    success: false;
+    error: {
+        message: string;
+    };
 };
-
 interface ApprovalStatus {
     status: "Approved" | "Rejected";
     approver: {
@@ -68,7 +72,7 @@ export const attendanceRegularizeApi = {
     // Fetch regularization records for the authenticated user
     getMyRegularizationRecords: async (
         userId: string,
-        status: 'Pending' | 'Approved' | 'Rejected' | 'Rejected-Absent' | 'Rejected-Leave' = 'Pending',
+        status: 'Pending' | 'Approved' | 'Rejected' | 'Rejected-Absent' | 'Rejected-Leave' | 'Withdrawn' = 'Pending',
         date?: string
     ): Promise<ApiResponse<AttendanceRegularization[]>> => {
         let url = `/attendance-regularizations/${userId}?status=${status}`;
@@ -81,7 +85,7 @@ export const attendanceRegularizeApi = {
     // Fetch assigned regularization records for an approver
     getAssignedRegularizationRecords: async (
         approverId: string,
-        status: 'Pending' | 'Approved' | 'Rejected' | 'Rejected-Absent' | 'Rejected-Leave' = 'Pending',
+        status: 'Pending' | 'Approved' | 'Rejected' | 'Rejected-Absent' | 'Rejected-Leave' | 'Withdrawn' = 'Pending',
         isAdmin: boolean = false,
         date?: string
     ): Promise<ApiResponse<AttendanceRegularization[]>> => {
@@ -93,11 +97,18 @@ export const attendanceRegularizeApi = {
     },
 
     bulkRegularize: async (data: Omit<AttendanceRegularizationBulk, '_id'>): Promise<RegularizationResponse> => {
-        const response = await fetchApi<ApiResponse<RegularizationResponse>>('/attendance-regularizations/bulk', {
+        const response = await fetchApi<RegularizationResponse>('/attendance-regularizations/bulk', {
             method: 'POST',
             body: JSON.stringify(data)
         });
         console.log(response, "bulkRegularizeAttendanceAPI")
-        return response.data as RegularizationResponse;
+        return response
+    },
+    withdraw: async (id: string): Promise<{ success: boolean; message?: string }> => {
+        const response = await fetchApi<{ success: boolean; message?: string }>(
+            `/attendance-regularizations/${id}/withdraw`,
+            { method: 'PUT', body: JSON.stringify({}) }
+        );
+        return response;
     }
 }

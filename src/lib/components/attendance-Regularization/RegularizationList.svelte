@@ -20,7 +20,9 @@
   import { slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import Modal from "../common/Modal.svelte";
+  import ConfirmDialog from "../common/ConfirmDialog.svelte";
   import { toast } from "../common/stores/toast.store";
+  import type { DialogConfig } from "$lib/types";
 
   export let viewType: "user" | "manager" | "admin" = "user";
   export let isAdmin: boolean = false;
@@ -59,7 +61,8 @@
       | "Rejected"
       | "Pending"
       | "Rejected-Absent"
-      | "Rejected-Leave";
+      | "Rejected-Leave"
+      | "Withdrawn";
     approver: {
       id: string;
       name: string;
@@ -81,7 +84,8 @@
     | "Approved"
     | "Rejected"
     | "Rejected-Absent"
-    | "Rejected-Leave" = "Pending";
+    | "Rejected-Leave"
+    | "Withdrawn" = "Pending";
   let filterDate: string | null = null;
   let comments: string = "";
   let activeRecord: string | null = null;
@@ -89,6 +93,18 @@
   let actionType: "approve" | "reject" | null = null;
   let showFilters = false;
   let processing = false;
+  let showWithdrawConfirm = false;
+  let withdrawRecordId: string | null = null;
+
+  // Add dialog config
+  let dialogConfig: DialogConfig = {
+    title: "Withdraw Regularization",
+    message:
+      "Are you sure you want to withdraw this regularization request? This action cannot be undone.",
+    type: "warning",
+    confirmText: "Withdraw",
+    cancelText: "Cancel",
+  };
 
   // Format date to display
   function formatDateTime(date: string | Date | undefined): string {
@@ -118,6 +134,8 @@
         return "bg-red-100 text-red-800 border border-red-200";
       case "Pending":
         return "bg-amber-100 text-amber-800 border border-amber-200";
+      case "Withdrawn":
+        return "bg-gray-100 text-gray-500 border border-gray-200";
       default:
         return "bg-gray-100 text-gray-800 border border-gray-200";
     }
@@ -130,6 +148,8 @@
       case "Rejected":
       case "Rejected-Absent":
       case "Rejected-Leave":
+        return XCircle;
+      case "Withdrawn":
         return XCircle;
       default:
         return Clock;
@@ -162,7 +182,7 @@
             filterDate || undefined
           );
       }
-
+      console.log(response, "response getAssignedRegularizationRecords");
       if (response.success && response.data) {
         const apiData = Array.isArray(response.data)
           ? response.data
@@ -227,13 +247,15 @@
     | "Rejected"
     | "Pending"
     | "Rejected-Absent"
-    | "Rejected-Leave" {
+    | "Rejected-Leave"
+    | "Withdrawn" {
     const validStatuses = [
       "Approved",
       "Rejected",
       "Pending",
       "Rejected-Absent",
       "Rejected-Leave",
+      "Withdrawn",
     ];
 
     // Handle array status by taking the first status
@@ -287,6 +309,45 @@
     filterDate = null;
     fetchRegularizations();
     showFilters = false;
+  }
+
+  async function handleWithdraw(recordId: string) {
+    if (!recordId) return;
+    processing = true;
+    try {
+      let result = await attendanceRegularizeApi.withdraw(recordId);
+      if (result.success) {
+        toast.success(
+          result.message ?? "Regularization request withdrawn successfully"
+        );
+      } else {
+        toast.error("Failed to withdraw regularization request");
+      }
+      await fetchRegularizations();
+    } catch (e) {
+      console.error("Error withdrawing request:", e);
+      toast.error("Failed to withdraw regularization request");
+    } finally {
+      processing = false;
+      showWithdrawConfirm = false;
+      withdrawRecordId = null;
+    }
+  }
+
+  function openWithdrawConfirm(recordId: string) {
+    withdrawRecordId = recordId;
+    showWithdrawConfirm = true;
+  }
+
+  function closeWithdrawConfirm() {
+    withdrawRecordId = null;
+    showWithdrawConfirm = false;
+  }
+
+  function handleWithdrawConfirm() {
+    if (withdrawRecordId) {
+      handleWithdraw(withdrawRecordId);
+    }
   }
 
   onMount(() => {
@@ -363,6 +424,7 @@
             <option value="Rejected">Rejected</option>
             <option value="Rejected-Absent">Rejected (Absent)</option>
             <option value="Rejected-Leave">Rejected (Leave)</option>
+            <option value="Withdrawn">Withdrawn</option>
           </select>
         </div>
 
@@ -497,22 +559,51 @@
                 {record.status}
               </span>
 
-              {#if (viewType === "manager" || viewType === "admin") && record.status === "Pending"}
+              <!-- User View: Show Withdraw only for Pending status -->
+              {#if viewType === "user" && record.status === "Pending"}
+                <button
+                  on:click={() => openWithdrawConfirm(record._id)}
+                  class="flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700 transition-colors"
+                >
+                  <XCircle class="w-4 h-4 mr-1" />
+                  Withdraw
+                </button>
+              {/if}
+
+              <!-- Manager/Admin View: Show active or disabled Approve/Reject buttons based on status -->
+              {#if viewType === "manager" || viewType === "admin"}
                 <div class="flex space-x-2">
-                  <button
-                    on:click={() => openModal(record, "approve")}
-                    class="flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors"
-                  >
-                    <CheckCircle class="w-4 h-4 mr-1" />
-                    Approve
-                  </button>
-                  <button
-                    on:click={() => openModal(record, "reject")}
-                    class="flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors"
-                  >
-                    <XCircle class="w-4 h-4 mr-1" />
-                    Reject
-                  </button>
+                  {#if record.status === "Pending"}
+                    <button
+                      on:click={() => openModal(record, "approve")}
+                      class="flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors"
+                    >
+                      <CheckCircle class="w-4 h-4 mr-1" />
+                      Approve
+                    </button>
+                    <button
+                      on:click={() => openModal(record, "reject")}
+                      class="flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors"
+                    >
+                      <XCircle class="w-4 h-4 mr-1" />
+                      Reject
+                    </button>
+                  {:else}
+                    <button
+                      disabled
+                      class="flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-gray-300 cursor-not-allowed opacity-50"
+                    >
+                      <CheckCircle class="w-4 h-4 mr-1" />
+                      Approve
+                    </button>
+                    <button
+                      disabled
+                      class="flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-gray-300 cursor-not-allowed opacity-50"
+                    >
+                      <XCircle class="w-4 h-4 mr-1" />
+                      Reject
+                    </button>
+                  {/if}
                 </div>
               {/if}
             </div>
@@ -582,10 +673,10 @@
   >
     <div class="sm:flex sm:items-start">
       <div
-        class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-{actionType ===
+        class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full {actionType ===
         'approve'
-          ? 'green'
-          : 'red'}-100 sm:mx-0 sm:h-10 sm:w-10"
+          ? 'bg-green-100'
+          : 'bg-red-100'} sm:mx-0 sm:h-10 sm:w-10"
       >
         {#if actionType === "approve"}
           <CheckCircle class="h-6 w-6 text-green-600" />
@@ -599,7 +690,7 @@
             Are you sure you want to {actionType === "approve"
               ? "approve"
               : "reject"}
-            this regularization request ?
+            this regularization request?
           </p>
           <div class="mt-4">
             <label
@@ -625,16 +716,10 @@
         type="button"
         on:click={handleSubmitAction}
         disabled={processing}
-        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-{actionType ===
+        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 {actionType ===
         'approve'
-          ? 'green'
-          : 'red'}-600 text-base font-medium text-white hover:bg-{actionType ===
-        'approve'
-          ? 'green'
-          : 'red'}-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{actionType ===
-        'approve'
-          ? 'green'
-          : 'red'}-500 sm:ml-3 sm:w-auto sm:text-sm"
+          ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
+          : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'} text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
       >
         {#if processing}
           <Loader class="animate-spin h-5 w-5 text-white mr-3" />
@@ -652,4 +737,13 @@
       </button>
     </div>
   </Modal>
+{/if}
+
+{#if showWithdrawConfirm}
+  <ConfirmDialog
+    show={showWithdrawConfirm}
+    config={dialogConfig}
+    on:confirm={handleWithdrawConfirm}
+    on:cancel={closeWithdrawConfirm}
+  />
 {/if}
