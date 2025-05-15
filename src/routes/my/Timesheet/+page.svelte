@@ -4,8 +4,9 @@
   import {
     holidayCalendarApi,
     timesheetApi,
-    weekendCalendarApi,
+    shiftsApi,
     type Timesheet,
+    weekendCalendarApi,
   } from "$lib/services/api";
   import CalendarWrapper from "$lib/components/timesheet/CalendarWrapper.svelte";
   import TimesheetEntries from "$lib/components/timesheet/TimesheetEntries.svelte";
@@ -159,18 +160,27 @@
 
   async function getWeekends() {
     try {
-      const response: any = await weekendCalendarApi.getByUserId(employeeId);
-      console.log(response, " response getWeekends);");
-      if (response.success && response.data) {
-        console.log(
-          response.data.weekends.map((w: any) => w.weekday),
-          "******"
-        );
-        weekendDays = response.data.weekends.map((w: any) => w.weekday);
-        initializeWeek(); // Reinitialize to apply weekend markers
+      // Format dates to ISO string format (YYYY-MM-DD) for API consumption
+      const startDateStr = selectedWeekStart.toISOString().split("T")[0];
+      const endDateStr = selectedWeekEnd.toISOString().split("T")[0];
+      console.log(startDateStr, endDateStr, "getWeekends");
+      // Make API call to fetch weekend data for the selected date range
+      const response: any = await shiftsApi.getAssignmentByUser(
+        employeeId,
+        startDateStr,
+        endDateStr
+      );
+      console.log(response, "responsegetWeekends");
+
+      if (response.success && response.data.length > 0) {
+        weekendDays = response.data[0].weekendDays;
+      } else {
+        weekendDays = [];
       }
+
+      initializeWeek();
     } catch (error) {
-      console.error("Error fetching weekends:", error);
+      console.error("Error fetching weekend days:", error);
       toast.error("Failed to load weekend configuration.");
     }
   }
@@ -189,6 +199,7 @@
     initializeWeek();
     updateWeekRange();
     fetchTimesheetData();
+    getWeekends();
   }
 
   function handleRangeSelect(event: CustomEvent) {
@@ -199,6 +210,7 @@
     initializeWeek();
     updateWeekRange();
     fetchTimesheetData();
+    getWeekends();
   }
 
   function navigateWeek(direction: "prev" | "next") {
@@ -213,6 +225,7 @@
     updateWeekRange();
     initializeWeek();
     fetchTimesheetData();
+    getWeekends();
   }
 
   function checkHolidayWeekendEntries(payload: any[]) {

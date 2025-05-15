@@ -41,22 +41,25 @@
     bloodGroup?: string;
     dateOfBirth?: string;
     managerId?: string;
+    departmentId?: string;
+    password?: string; // Add password property
     [key: string]: string | undefined;
   }
 
   // Component props with default values
   export let loading = false;
-  export let mode: 'create' | 'update' = 'create';
+  export let mode: "create" | "update" = "create";
   let formValid = false;
   export let initialValues: EmployeeFormData = {
     email: "",
     role: "",
     joiningDate: "",
   };
-  
+
   let userRoles: Array<{ label: string; value: string }> = [];
   let userLocations: Array<{ label: string; value: string }> = [];
   let userBloodGroups: Array<{ label: string; value: string }> = [];
+  let userDepartments: Array<{ label: string; value: string }> = [];
 
   // Event dispatcher for form actions
   const dispatch = createEventDispatcher<{
@@ -71,8 +74,8 @@
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return "";
-      
-      return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD
+
+      return date.toISOString().split("T")[0]; // Returns YYYY-MM-DD
     } catch (error) {
       console.error("Error formatting date:", error);
       return "";
@@ -82,19 +85,19 @@
   // Process initial values for the form
   const processInitialValues = () => {
     console.log("Processing initial values:", initialValues);
-    
+
     // Create a deep copy of initialValues
     const processed = { ...initialValues };
-    
+
     // Format date fields
     if (processed.joiningDate) {
       processed.joiningDate = formatDateForInput(processed.joiningDate);
     }
-    
+
     if (processed.dateOfBirth) {
       processed.dateOfBirth = formatDateForInput(processed.dateOfBirth);
     }
-    
+
     console.log("Processed values:", processed);
     return processed;
   };
@@ -107,6 +110,8 @@
   let managers: ManagerUser[] = [];
   let managerOptions: Array<{ label: string; value: string }> = [];
   let managerLookupLoading = false;
+  let previousRole = formData.role;
+  let previousDepartmentId = formData.departmentId;
 
   // Define the fields for the employee form as a const to prevent runtime modifications
   const fields: Field[] = [
@@ -121,10 +126,17 @@
       lovType: "UserRole",
     },
     {
+      key: "departmentId",
+      label: "Department",
+      inputType: "select",
+      required: true,
+      options: [],
+    },
+    {
       key: "joiningDate",
       label: "Joining Date",
       inputType: "date",
-      required: false,
+      required: true,
     },
     { key: "phone", label: "Phone", inputType: "tel", required: false },
     {
@@ -133,6 +145,12 @@
       inputType: "select",
       options: [],
       required: false,
+    },
+    {
+      key: "biometricId",
+      label: "Biometric ID",
+      inputType: "text",
+      required: true,
     },
     {
       key: "emergencyContact",
@@ -146,6 +164,7 @@
       inputType: "textarea",
       required: false,
     },
+
     {
       key: "bloodGroup",
       label: "Blood Group",
@@ -168,19 +187,91 @@
   ];
 
   // Fetch managers based on role
-  async function fetchManagers(role: string) {
+  async function fetchManagers(role: string, departmentId: string) {
     try {
+      // If either role or departmentId is empty, reset the manager options
+      if (!role || !departmentId) {
+        managerOptions = [];
+        // Also reset the managerId in formData if it exists
+        if (formData.managerId) {
+          formData.managerId = "";
+        }
+        return;
+      }
+
       managerLookupLoading = true;
       let response;
-      if (role === "admin" || role === "manager") {
-        response = await employeesApi.getRoles("admin");
+
+      if (role === "admin") {
+        // Admin can have managers from management department
+        response = await employeesApi.getUserByRoleDepartment(
+          "admin",
+          "management"
+        );
+        managers =
+          response.success && Array.isArray(response.data)
+            ? (response.data as ManagerUser[])
+            : [];
+      } else if (role === "manager") {
+        // Try department specific admins
+        response = await employeesApi.getUserByRoleDepartment(
+          "admin",
+          departmentId
+        );
+        managers =
+          response.success && Array.isArray(response.data) ? response.data : [];
+
+        // If no department specific admins, try management department
+        if (managers.length === 0) {
+          response = await employeesApi.getUserByRoleDepartment(
+            "admin",
+            "management"
+          );
+          managers =
+            response.success && Array.isArray(response.data)
+              ? response.data
+              : [];
+        }
+
+        // If still no managers, get all admins
+        if (managers.length === 0) {
+          response = await employeesApi.getRoles("admin");
+          managers =
+            response.success && Array.isArray(response.data)
+              ? response.data
+              : [];
+        }
       } else if (role === "staff") {
-        response = await employeesApi.getRoles("manager");
+        // Try department specific managers first
+        response = await employeesApi.getUserByRoleDepartment(
+          "manager",
+          departmentId
+        );
+        managers =
+          response.success && Array.isArray(response.data) ? response.data : [];
+
+        // If no department managers, get all managers
+        if (managers.length === 0) {
+          response = await employeesApi.getRoles("manager");
+          managers =
+            response.success && Array.isArray(response.data)
+              ? response.data
+              : [];
+        }
+
+        // If still no managers, get all admins
+        if (managers.length === 0) {
+          response = await employeesApi.getRoles("admin");
+          managers =
+            response.success && Array.isArray(response.data)
+              ? response.data
+              : [];
+        }
       } else {
         managerOptions = [];
         return;
       }
-
+      console.log(response, "response**");
       managerOptions =
         response.success && Array.isArray(response.data)
           ? response.data.map((manager: ManagerUser) => ({
@@ -207,9 +298,11 @@
           ? userLocations
           : field.key === "bloodGroup"
             ? userBloodGroups
-            : field.options,
+            : field.key === "departmentId"
+              ? userDepartments
+              : field.options,
   }));
-  
+
   // Fetch list of values (LOVs) from API on component mount
   onMount(async () => {
     try {
@@ -236,17 +329,48 @@
           value: bg.value,
         }));
       }
-      // Fetch managers only if role is defined
-      if (formData.role) {
-        await fetchManagers(formData.role);
+
+      const departmentResponse: any = await lovsApi.getByType("department");
+      console.log(departmentResponse, "departmentResponse");
+      if (departmentResponse.success) {
+        userDepartments = departmentResponse.data.values.map((dept: any) => ({
+          label: dept.label,
+          value: dept.value,
+        }));
+      }
+
+      // Fetch managers only if role and departmentId are defined
+      if (formData.role && formData.departmentId) {
+        await fetchManagers(formData.role, formData.departmentId);
       }
     } catch (error) {
       console.error("Error fetching LOVs:", error);
     }
   });
 
-  // Reactive statement to watch role changes
-  $: formData.role && fetchManagers(formData.role);
+  // Reactive statement to monitor changes in role and departmentId
+  $: {
+    // Check if either value has changed
+    if (
+      formData.role !== previousRole ||
+      formData.departmentId !== previousDepartmentId
+    ) {
+      // Update previous values
+      previousRole = formData.role;
+      previousDepartmentId = formData.departmentId;
+
+      // Clear manager selection when either role or department changes
+      formData.managerId = "";
+
+      // Fetch managers only if both role and departmentId have values
+      if (formData.role && formData.departmentId) {
+        fetchManagers(formData.role, formData.departmentId);
+      } else {
+        // Clear manager options if either is empty
+        managerOptions = [];
+      }
+    }
+  }
 
   // Convert date to ISO format
   const convertToDateTimeFormat = (dateInput: string | Date): string => {
@@ -273,24 +397,26 @@
       ...formData,
       joiningDate: formData.joiningDate
         ? convertToDateTimeFormat(formData.joiningDate)
-        : "",
+        : null,
       dateOfBirth: formData.dateOfBirth
         ? convertToDateTimeFormat(formData.dateOfBirth)
-        : "",
+        : null,
+      active:
+        formData.active !== undefined ? String(formData.active) : undefined,
     };
-    
+
     // Add password only in create mode
-    if (mode === 'create') {
+    if (mode === "create") {
       payload.password = "123456";
-      payload.departmentId = "60d5f483f8d2e30db8c1a5e4";
-      payload.isActive = "true";
+      // payload.departmentId = "60d5f483f8d2e30db8c1a5e4";
+      // payload.isActive = "true";
     }
-    
+
     // Explicitly preserve _id for update operations
-    if (mode === 'update' && initialValues._id) {
+    if (mode === "update" && initialValues._id) {
       payload._id = initialValues._id;
     }
-    
+
     console.log(`Payload for ${mode}:`, payload);
     return payload;
   };
@@ -361,15 +487,18 @@
     try {
       console.log(`Submitting form in ${mode} mode with data:`, formData);
       const employeePayload = prepareEmployeePayload(formData);
-      
-      if (mode === 'create') {
+
+      if (mode === "create") {
         dispatch("submit", employeePayload);
       } else {
         dispatch("update", employeePayload);
       }
     } catch (error) {
       console.error("Submission failed:", error);
-      errors.submit = mode === 'create' ? "Failed to add employee." : "Failed to update employee.";
+      errors.submit =
+        mode === "create"
+          ? "Failed to add employee."
+          : "Failed to update employee.";
     } finally {
       // Reset loading state after form submission (whether success or failure)
       loading = false;
@@ -440,7 +569,7 @@
             id={field.key}
             class="select select-bordered w-full"
             bind:value={formData[field.key]}
-            on:input={handleChange}
+            on:change={handleChange}
             required={field.required}
             disabled={managerLookupLoading}
             class:input-error={errors[field.key]}
@@ -509,7 +638,13 @@
       class="btn btn-primary"
       disabled={!formValid || loading}
     >
-      {loading ? (mode === 'create' ? "Saving..." : "Updating...") : (mode === 'create' ? "Save" : "Update")}
+      {loading
+        ? mode === "create"
+          ? "Saving..."
+          : "Updating..."
+        : mode === "create"
+          ? "Save"
+          : "Update"}
     </button>
   </div>
 </form>

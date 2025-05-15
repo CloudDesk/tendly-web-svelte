@@ -28,5 +28,40 @@ export const authApi = {
       success: true,
       data: response
     };
+  },
+
+  forgotPassword: async (email: string): Promise<ApiResponse<any>> => {
+    const response = await fetchApi<void>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+      credentials: 'include'
+    });
+    return {
+      success: true,
+      data: response
+    }
+  },
+
+  resetPassword: async (token: string, password: string): Promise<ApiResponse<any>> => {
+    const response = await fetchApi<void>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+      credentials: 'include'
+    });
+    return {
+      success: true,
+      data: response
+    }
+  }
+  ,
+  validateResetToken: async (token: string): Promise<ApiResponse<any>> => {
+    const response = await fetchApi<void>(`/auth/reset-password/${token}`, {
+      method: 'GET',
+      credentials: 'include'
+    });
+    return {
+      success: true,
+      data: response
+    }
   }
 }; 

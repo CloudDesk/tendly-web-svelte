@@ -8,12 +8,11 @@
   import EmployeeSalary from "$lib/components/employee/EmployeeSalary.svelte";
   import ITDeclarationApproval from "$lib/components/employee/ITDeclarationApproval.svelte";
   import EmployeeShiftAssignment from "$lib/components/employee/EmployeeShiftAssignment.svelte";
-  import Bankingcomponent from "$lib/components/employee/Banking-Identity/Bankingcomponent.svelte";
   import { employeesApi } from "$lib/services/api/employees";
   import EmployeeInfo from "$lib/components/employee/EmployeeInfo.svelte";
-    import { toast } from "$lib/components/common/stores/toast.store.js";
-    import Modal from "$lib/components/common/Modal.svelte";
-    import EmployeeForm from "$lib/components/employee/EmployeeForm.svelte";
+  import { toast } from "$lib/components/common/stores/toast.store.js";
+  import Modal from "$lib/components/common/Modal.svelte";
+  import EmployeeForm from "$lib/components/employee/EmployeeForm.svelte";
   export let data;
   $: ({ employee } = data);
   console.log(data.employee, "employeeemployee");
@@ -31,7 +30,6 @@
     { id: "training", label: "Training" },
     { id: "salary", label: "Employee Salary" },
     { id: "it-declaration", label: "IT Declaration" },
-    // { id: "Banking-Identity", label: "Banking Identity" },
   ];
 
   $: activeTab = $page.url.searchParams.get("tab") || tabs[0]?.id;
@@ -73,18 +71,17 @@
   }
 
   async function handleEditSubmit(event: CustomEvent) {
-
     let data = event.detail;
 
     //remove dates createdAt and updatedAt
     delete data.createdAt;
     delete data.updatedAt;
     delete data.currentShiftAssignmentData;
-    delete data.upcomingShiftAssignmentData
+    delete data.upcomingShiftAssignmentData;
     // Remove dateOfBirth if it is false, empty, or null
-if (!data.dateOfBirth) {
-    delete data.dateOfBirth;
-}
+    if (!data.dateOfBirth) {
+      delete data.dateOfBirth;
+    }
 
     try {
       loading = true;
@@ -104,7 +101,6 @@ if (!data.dateOfBirth) {
       loading = false;
     }
   }
-
 </script>
 
 <div class="p-8 bg-surface-muted min-h-screen">
@@ -123,7 +119,7 @@ if (!data.dateOfBirth) {
         <i class="fas fa-envelope"></i>
         Message
       </button>
-      <button class="btn btn-primary"  on:click={() => (showEditForm = true)}>
+      <button class="btn btn-primary" on:click={() => (showEditForm = true)}>
         <i class="fas fa-pencil"></i>
         Edit Profile
       </button>
@@ -144,43 +140,6 @@ if (!data.dateOfBirth) {
       <Tabs {tabs}>
         {#if activeTab === "overview"}
           <EmployeeInfo employeeId={employee._id} {employee} />
-          <!-- <div class="info-grid">
-            <div class="info-card">
-              <h3 class="text-base font-medium text-text mb-6">
-                Contact Information
-              </h3>
-              <div class="space-y-4">
-                <div>
-                  <div class="info-label">Email</div>
-                  <div class="info-value">{employee.email}</div>
-                </div>
-                <div>
-                  <div class="info-label">Last Login</div>
-                  <div class="info-value">
-                    {employee.lastLoginAt
-                      ? formatDate(employee.lastLoginAt)
-                      : "Never"}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="info-card">
-              <h3 class="text-base font-medium text-text mb-6">
-                Employment Details
-              </h3>
-              <div class="space-y-4">
-                <div>
-                  <div class="info-label">Role</div>
-                  <div class="info-value">{employee.role}</div>
-                </div>
-                <div>
-                  <div class="info-label">Joined</div>
-                  <div class="info-value">{formatDate(employee.createdAt)}</div>
-                </div>
-              </div>
-            </div>
-          </div> -->
         {:else if activeTab === "leaves"}
           <EmployeeLeaves employeeId={employee._id} />
         {:else if activeTab === "attendance"}
@@ -193,122 +152,25 @@ if (!data.dateOfBirth) {
           <ITDeclarationApproval employeeId={employee._id} />
         {:else if activeTab === "shifts"}
           <EmployeeShiftAssignment employeeId={employee._id} />
-        {:else if activeTab === "Banking-Identity"}
-          <Bankingcomponent
-            employeeId={employee._id}
-            {employee}
-            on:refresh={handleRefresh}
-          />
         {/if}
       </Tabs>
     </div>
     {#if showEditForm}
-    <Modal
-      show={showEditForm}
-      title="Edit Employee Profile"
-      onClose={() => (showEditForm = false)}
-    >
-      <EmployeeForm
-        mode="update"
-        {loading}
-        initialValues={data.employee}
-        on:update={handleEditSubmit}
-        on:cancel={() => (showEditForm = false)}
-      />
-    </Modal>
-  {/if}
-
-    <!-- 
-    <div class="tab-container">
-      <nav class="tabs">
-        <button
-          class="tab-item"
-          class:active={activeTab === "overview"}
-          on:click={() => setActiveTab("overview")}>Overview</button
-        >
-        <button
-          class="tab-item"
-          class:active={activeTab === "leaves"}
-          on:click={() => setActiveTab("leaves")}>Leaves Summary</button
-        >
-        <button
-          class="tab-item"
-          class:active={activeTab === "attendance"}
-          on:click={() => setActiveTab("attendance")}>Attendance</button
-        >
-        <button
-          class="tab-item"
-          class:active={activeTab === "training"}
-          on:click={() => setActiveTab("training")}>Training</button
-        >
-        <button
-          class="tab-item"
-          class:active={activeTab === "salary"}
-          on:click={() => setActiveTab("salary")}>Salary Structure</button
-        >
-      </nav>
-    </div>
-
-    <div class="tab-content">
-      {#if activeTab === "overview"}
-        <div class="info-grid">
-          <div class="info-card">
-            <h3 class="text-base font-medium text-text mb-6">
-              Contact Information
-            </h3>
-            <div class="space-y-4">
-              <div>
-                <div class="info-label">Email</div>
-                <div class="info-value">{employee.email}</div>
-              </div>
-              <div>
-                <div class="info-label">Last Login</div>
-                <div class="info-value">
-                  {employee.lastLoginAt
-                    ? formatDate(employee.lastLoginAt)
-                    : "Never"}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="info-card">
-            <h3 class="text-base font-medium text-text mb-6">
-              Employment Details
-            </h3>
-            <div class="space-y-4">
-              <div>
-                <div class="info-label">Role</div>
-                <div class="info-value">{employee.role}</div>
-              </div>
-              <div>
-                <div class="info-label">Joined</div>
-                <div class="info-value">{formatDate(employee.createdAt)}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      {:else if activeTab === "leaves"}
-        <div class="card">
-          <EmployeeLeaves employeeId={employee._id} />
-        </div>
-      {:else if activeTab === "attendance"}
-        <div class="card">
-          <EmployeeAttendance employeeId={employee._id} />
-        </div>
-      {:else if activeTab === "training"}
-        <div class="card">
-          <EmployeeTrainingAttendance employeeId={employee._id} />
-        </div>
-      {:else if activeTab === "salary"}
-        <div class="card">
-          <SalaryStructureIndex employeeId={employee._id} />
-        </div>
-      {/if}
-    </div> -->
+      <Modal
+        show={showEditForm}
+        title="Edit Employee Profile"
+        onClose={() => (showEditForm = false)}
+      >
+        <EmployeeForm
+          mode="update"
+          {loading}
+          initialValues={data.employee}
+          on:update={handleEditSubmit}
+          on:cancel={() => (showEditForm = false)}
+        />
+      </Modal>
+    {/if}
   </div>
-
-  
 </div>
 
 <style>

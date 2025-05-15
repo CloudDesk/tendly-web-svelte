@@ -161,6 +161,7 @@
       {loading}
       meta={pagination}
       variant="transparent"
+      searchable={false}
       on:action={handleTableAction}
       on:page={handlePage}
     />

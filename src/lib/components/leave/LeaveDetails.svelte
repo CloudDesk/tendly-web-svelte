@@ -17,7 +17,7 @@
   import { writable } from "svelte/store";
 
   export let leaveId: string;
-
+  console.log(leaveId, "leaveId");
   const buttonVisibility = writable({
     canApprove: false,
     canReject: false,

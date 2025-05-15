@@ -17,3 +17,4 @@ export * from './payroll';
 export * from './holidayCalendar';
 export * from './weekendCalendar';
 export * from './user-resignation';
+export * from './attendance-regularization';

@@ -24,7 +24,7 @@
     Clock,
     GraduationCap,
     CalendarRange,
-    Menu, // Import hamburger menu icon
+    Menu,
   } from "lucide-svelte";
   import PayrollIcon from "./icon/PayrollIcon.svelte";
   import { fly } from "svelte/transition";
@@ -36,14 +36,13 @@
 
   const isCollapsed = writable(false);
   const isLoggingOut = writable(false);
-  const isSidebarOpen = writable(false); // State to control sidebar visibility
+  const isSidebarOpen = writable(false);
   const dispatch = createEventDispatcher();
 
-  // Initialize collapsedSections based on navigation sections
   function initializeCollapsedSections(sections: NavigationSection[]) {
     const initialState: { [key: string]: boolean } = {};
     sections.forEach((section, index) => {
-      initialState[section.label] = index !== 0; // Only first section is expanded (false)
+      initialState[section.label] = index !== 0;
     });
     collapsedSections.set(initialState);
   }
@@ -72,7 +71,6 @@
     items: NavItem[];
   };
 
-  // Admin navigation items
   const adminItems: NavItem[] = [
     {
       label: $t('dashboard'),
@@ -142,7 +140,6 @@
     },
   ];
 
-  // Manager navigation items
   const managerItems: NavItem[] = [
     {
       label: "Dashboard",
@@ -171,7 +168,6 @@
     },
   ];
 
-  // My Items navigation
   const myItems: NavItem[] = [
     {
       label: "Dashboard",
@@ -220,12 +216,10 @@
     },
   ];
 
-  // Determine which navigation sections to show based on user role
   $: userRole = $auth.user?.role;
   $: isAdmin = userRole?.toUpperCase() === "ADMIN";
   $: isManager = userRole?.toUpperCase() === "MANAGER";
 
-  // Build navigation sections based on role
   const navigationSections = writable<NavigationSection[]>([]);
 
   $: {
@@ -259,15 +253,12 @@
       return currentPath === "/";
     }
 
-    // Handle configuration tabs
     if (href.includes("?tab=")) {
       const [path, search] = href.split("?");
       const params = new URLSearchParams(search);
       return currentPath.startsWith(path) && currentTab === params.get("tab");
     }
 
-    // For dynamic routes, check if the current path starts with the href
-    // This ensures that /admin/employees is considered active when viewing /admin/employees/123
     return currentPath.startsWith(href);
   };
 
@@ -291,9 +282,10 @@
       return newValuev2;
     });
   }
+
   async function handleLogout() {
     isLoggingOut.set(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate logging off delay
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     localStorage.clear();
     window.location.href = "/login";
   }
@@ -424,57 +416,60 @@
       </div>
     {/each}
   </nav>
+
   <!-- User Card -->
   <div
-    class="absolute bottom-0 w-full p-4 bg-white border-t border-surface-border/50"
+    class="absolute bottom-0 w-full p-3 bg-white border-t border-surface-border/50 flex items-center justify-between gap-2"
   >
-    <div class="flex items-center gap-4">
+    <a
+      href="/my/profile"
+      class="flex items-center gap-2 p-2 rounded-md hover:bg-blue-50 transition-colors flex-1"
+    >
       <div
-        class="w-10 h-10 flex items-center justify-center bg-blue-500 text-white rounded-full text-lg font-semibold"
+        class="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full text-base font-semibold"
       >
         {$auth.user?.name[0]}
       </div>
-      <div class="flex-1">
-        <div class="text-sm font-medium text-gray-900">{$auth.user?.name}</div>
-        <div class="text-xs text-gray-500">{$auth.user?.role}</div>
-      </div>
-      <button
-        class="group relative w-32 h-8 overflow-hidden rounded-md transition-all duration-300 hover:bg-blue-50"
-        on:click={handleLogout}
-        aria-label="Logout"
-        disabled={$isLoggingOut}
-      >
-        {#if $isLoggingOut}
+      {#if !$isCollapsed}
+        <div>
+          <div class="text-sm font-medium text-gray-900">{$auth.user?.name}</div>
+          <div class="text-xs text-gray-500">{$auth.user?.role}</div>
+        </div>
+      {/if}
+    </a>
+    <button
+      class="group relative w-8 h-8 flex items-center justify-center rounded-md transition-all duration-300 hover:bg-blue-50"
+      on:click={handleLogout}
+      aria-label="Logout"
+      disabled={$isLoggingOut}
+    >
+      {#if $isLoggingOut}
+        <div
+          class="w-full h-full flex items-center justify-center text-sm text-gray-700"
+          in:fly={{ x: 20, duration: 200 }}
+        >
+          <LogOut size={16} />
+        </div>
+      {:else}
+        <div class="relative w-full h-full">
           <div
-            class="w-full h-full flex items-center justify-center text-sm text-gray-700"
-            in:fly={{ x: 20, duration: 200 }}
+            class="absolute inset-y-0 left-0 flex items-center justify-center w-8 h-8 transition-all duration-300 group-hover:text-blue-600"
           >
-            Logging off...
+            <LogOut size={16} />
           </div>
-        {:else}
-          <div class="relative w-full h-full">
-            <!-- Icon container with transition -->
+          {#if !$isCollapsed}
             <div
-              class="absolute inset-y-0 left-0 flex items-center justify-center w-8 h-8 transition-all duration-300 group-hover:translate-x-12 group-hover:text-blue-600"
-            >
-              <LogOut size={20} />
-            </div>
-
-            <!-- Text that appears on hover -->
-            <div
-              class="absolute inset-0 flex items-center justify-center text-sm font-medium opacity-0 transition-all duration-300 group-hover:opacity-100 text-blue-600"
+              class="absolute inset-0 flex items-center justify-center text-xs font-medium opacity-0 transition-all duration-300 group-hover:opacity-100 text-blue-600"
             >
               Log Out
             </div>
-
-            <!-- Hover fill effect -->
-            <div
-              class="absolute inset-0 w-0 bg-blue-50/50 transition-all duration-300 group-hover:w-full"
-            />
-          </div>
-        {/if}
-      </button>
-    </div>
+          {/if}
+          <div
+            class="absolute inset-0 w-0 bg-blue-50/50 transition-all duration-300 group-hover:w-full"
+          />
+        </div>
+      {/if}
+    </button>
   </div>
 </aside>
 

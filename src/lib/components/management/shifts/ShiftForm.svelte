@@ -1,7 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import type { Shift } from "$lib/types";
-  import { shiftsApi } from "$lib/services/api/";
 
   export let shift: Partial<Shift> = {};
 
@@ -10,20 +9,21 @@
   let error: string | null = null;
 
   async function handleSubmit() {
-    try {
-      loading = true;
-      if (shift._id) {
-        await shiftsApi.update(shift._id, shift);
-      } else {
-        await shiftsApi.create(shift as Omit<Shift, "_id">);
-      }
-      dispatch("submit");
-    } catch (err) {
-      error = "Failed to save shift";
-      console.error(err);
-    } finally {
-      loading = false;
-    }
+    dispatch("submit");
+    // try {
+    //   loading = true;
+    //   if (shift._id) {
+    //     await shiftsApi.update(shift._id, shift);
+    //   } else {
+    //     await shiftsApi.create(shift as Omit<Shift, "_id">);
+    //   }
+    //   dispatch("submit");
+    // } catch (err) {
+    //   error = "Failed to save shift";
+    //   console.error(err);
+    // } finally {
+    //   loading = false;
+    // }
   }
 </script>
 

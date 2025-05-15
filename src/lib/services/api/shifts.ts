@@ -6,10 +6,10 @@ import { toUTCDate, toUTCTime, fromUTCTime, fromUTCDate } from '$lib/utils/date'
 function convertShiftTimesToUTC<T extends { startTime?: string; endTime?: string; shiftWindowStart?: string; shiftWindowEnd?: string; validFrom?: string; validTill?: string }>(shift: T): T {
   return {
     ...shift,
-    startTime: toUTCTime(shift.startTime),
-    endTime: toUTCTime(shift.endTime),
-    shiftWindowStart: toUTCTime(shift.shiftWindowStart),
-    shiftWindowEnd: toUTCTime(shift.shiftWindowEnd),
+    startTime: (shift.startTime),
+    endTime: (shift.endTime),
+    shiftWindowStart: (shift.shiftWindowStart),
+    shiftWindowEnd: (shift.shiftWindowEnd),
     validFrom: toUTCDate(shift.validFrom),
     validTill: toUTCDate(shift.validTill)
   };
@@ -18,10 +18,10 @@ function convertShiftTimesToUTC<T extends { startTime?: string; endTime?: string
 function convertShiftTimesFromUTC<T extends { startTime?: string; endTime?: string; shiftWindowStart?: string; shiftWindowEnd?: string; validFrom?: string; validTill?: string }>(shift: T): T {
   return {
     ...shift,
-    startTime: fromUTCTime(shift.startTime),
-    endTime: fromUTCTime(shift.endTime),
-    shiftWindowStart: fromUTCTime(shift.shiftWindowStart),
-    shiftWindowEnd: fromUTCTime(shift.shiftWindowEnd),
+    startTime: (shift.startTime),
+    endTime: (shift.endTime),
+    shiftWindowStart: (shift.shiftWindowStart),
+    shiftWindowEnd: (shift.shiftWindowEnd),
     validFrom: fromUTCDate(shift.validFrom),
     validTill: fromUTCDate(shift.validTill)
   };
@@ -69,7 +69,8 @@ export const shiftsApi = {
     shiftId: string,
     shiftCode: string,
     employeeIds: string[],
-    validity: { validFrom: string; validTill?: string }
+    validity: { validFrom: string; validTill?: string },
+    weekends: number[]
   ) => {
 
     console.log(validity.validFrom, "1 validFrom")
@@ -87,7 +88,7 @@ export const shiftsApi = {
     }
     console.log(utcValidFrom, "2 validFrom")
     console.log(utcValidTill, "2 validityTill")
-
+    console.log(weekends, "weekends")
     /* console.log(validity.validFrom, "1 validFrom")
      console.log(validity.validTill, "1 validityTill")
      const utcValidFrom = toISTISOString(validity.validFrom);
@@ -102,7 +103,8 @@ export const shiftsApi = {
         removeUserIds: [],
         shiftCode,
         startDate: utcValidFrom,
-        endDate: utcValidTill
+        endDate: utcValidTill,
+        weekends
       })
     });
   },
@@ -124,9 +126,67 @@ export const shiftsApi = {
     };
   },
 
-  current: async () => {
-    const response: any = await fetchApi<Shift[]>(`/shifts/current`);
+  current: async (employeeId: string) => {
+    const response: any = await fetchApi<Shift[]>(`/shifts/current/${employeeId}`);
     console.log(response, "response")
+    return response;
+  },
+
+  upcoming: async (employeeId: string) => {
+    const response: any = await fetchApi<Shift>(`/shifts/upcoming-shifts/${employeeId}`);
+    console.log(response, "response")
+    return response;
+
+  },
+  updateAssignment: async (shiftAssignmentId: string,
+    shiftId: string, shiftCode: string, validity: { validFrom: string, validTill?: string },
+    weekends: number[], createNew: boolean = false
+  ) => {
+    console.log(validity.validFrom, "1 validFrom")
+    console.log(validity.validTill, "1 validityTill")
+    // Convert dates to UTC at midnight
+    const validFromDate = new Date(validity.validFrom);
+    validFromDate.setHours(0, 0, 0, 0);
+    const utcValidFrom = validFromDate.toISOString();
+
+    let utcValidTill: string | undefined;
+    if (validity.validTill) {
+      const validTillDate = new Date(validity.validTill);
+      validTillDate.setHours(23, 59, 59, 999);
+      utcValidTill = validTillDate.toISOString();
+    }
+    console.log(utcValidFrom, "2 validFrom")
+    console.log(utcValidTill, "2 validityTill")
+
+    return fetchApi<void>(`/shifts/shift-assignment/${shiftAssignmentId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        shiftAssignmentId,
+        shiftId,
+        shiftCode,
+        startDate: utcValidFrom,
+        endDate: utcValidTill,
+        weekends,
+        createNew
+      })
+    });
+
+  },
+  deleteAssignment: (shiftAssignmentId: string) => {
+    return fetchApi<void>(`/shifts/shift-assignment/${shiftAssignmentId}`, {
+      method: 'DELETE'
+    });
+  },
+
+  getAssignmentByUser: async (userId: string, startDate: string, endDate?: string) => {
+
+    let url = `/shifts/shift-assignments/${userId}?startDate=${startDate}`
+    if (endDate) {
+      url += `&endDate=${endDate}`
+    }
+    console.log(url, "getAssignmentByUser")
+    let response: any = await fetchApi<Shift[]>(url);
+    console.log(response, "getAssignmentByUser")
     return response;
   }
 

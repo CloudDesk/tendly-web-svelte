@@ -76,6 +76,7 @@
         limit: pagination.limit,
         search: searchQuery,
       });
+      console.log(response, "0.shifts");
       (pagination = {
         total: response.meta?.total || 0,
         page: response.meta?.page || 1,
@@ -109,6 +110,7 @@
   }
 
   async function handleSubmit() {
+    console.log(editingShift, "editingShift");
     try {
       loading = true;
       if (editingShift._id) {
@@ -137,10 +139,17 @@
   // }
 
   async function handleAssignmentSubmit(event: CustomEvent) {
-    const { shiftId, shiftCode, employees, dates } = event.detail;
+    const { shiftId, shiftCode, employees, dates, weekends } = event.detail;
+
     try {
       loading = true;
-      await shiftsApi.assignEmployees(shiftId, shiftCode, employees, dates);
+      await shiftsApi.assignEmployees(
+        shiftId,
+        shiftCode,
+        employees,
+        dates,
+        weekends
+      );
       showAssignModal = false;
       assignmentStep = 1;
       selectedEmployees.clear();

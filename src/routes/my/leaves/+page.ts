@@ -29,7 +29,7 @@ export const load: PageLoad = async ({ url, params }) => {
         ...filters,
         ...(sortBy && sortOrder && { sortBy, sortOrder })
       }),
-      lovsApi.getByType('leaveType')
+      lovsApi.getByType('leavetype')
     ]);
 
     console.log(leavesResponse, "leavesResponse");
@@ -74,18 +74,21 @@ export const load: PageLoad = async ({ url, params }) => {
       summaryResponse = await leavesApi.getSummary(user._id);
     } catch (summaryError) {
       console.error('Failed to load summary:', summaryError);
-        
-          const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user') || '{}') : null;
-      let sampleSummary ={alloted:0,availed:0,remaining:0,leaveRequests:[]}
-      summaryResponse = { data: {userId:user._id,
-        year: new Date().getFullYear,
-        annual: sampleSummary,
-        sick: sampleSummary,
-        compOff:sampleSummary,
-        lossOfPay: sampleSummary,
-        otherPaid:sampleSummary,
-        otherUnpaid:sampleSummary
-      } };
+
+      const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user') || '{}') : null;
+      let sampleSummary = { alloted: 0, availed: 0, remaining: 0, leaveRequests: [] }
+      summaryResponse = {
+        data: {
+          userId: user._id,
+          year: new Date().getFullYear,
+          annual: sampleSummary,
+          sick: sampleSummary,
+          compOff: sampleSummary,
+          lossOfPay: sampleSummary,
+          otherPaid: sampleSummary,
+          otherUnpaid: sampleSummary
+        }
+      };
     }
 
     return {
