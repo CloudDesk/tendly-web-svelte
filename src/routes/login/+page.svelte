@@ -7,8 +7,6 @@
   import { onMount } from "svelte";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import { fade, fly } from "svelte/transition";
-  import { loginController } from "./controller";
 
   // View states
   type View = "login" | "forgot-password" | "reset-password";
@@ -72,6 +70,7 @@
 
   // Subscribe to language preference changes
   $: locale.set($languagePreference);
+
   onMount(() => {
     // Check for view parameter
     const view = $page.url.searchParams.get("view") as View;
@@ -220,54 +219,29 @@
           {/if}
         </div>
       {/if}
-
-      <form on:submit={handleLogin}>
-        <div class="form-group">
-          <label for="language">Language</label>
-          <select id="language" on:change={changeLanguage} bind:value={$languagePreference}>
-            <option value="en">English</option>
-            <option value="ta">Tamil</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="email">{$t('email')}</label>
-          <div class="input-wrapper">
-            <input
-              type="email"
-              id="email"
-              bind:value={email}
-              required
-              disabled={loading}
-              placeholder={$t('enter_email')}
-              class:loading
-            />
-          </div>
       {#if success}
-        <div
-          class="success-alert"
-          role="alert"
-          in:fly={{ y: -10, duration: 300 }}
-        >
-          {success}
-        </div>
-      {/if}
+      <div
+        class="success-alert"
+        role="alert"
+        in:fly={{ y: -10, duration: 300 }}
+      >
+        {success}
+      </div>
+    {/if}
 
-        <div class="form-group">
-          <label for="password">{$t('password')}</label>
-          <div class="input-wrapper">
-            <input
-              type="password"
-              id="password"
-              bind:value={password}
-              required
-              disabled={loading}
-              placeholder={$t('enter_password')}
-              class:loading
-            />
+
       {#if currentView === "login"}
         <!-- Login Form -->
+       
+
         <form on:submit={handleLogin}>
+          <div class="form-group">
+            <label for="language">Language</label>
+            <select id="language" on:change={changeLanguage} bind:value={$languagePreference}>
+              <option value="en">English</option>
+              <option value="ta">Tamil</option>
+            </select>
+          </div>
           <div class="form-group">
             <label for="email">Email</label>
             <div class="input-wrapper">
@@ -282,15 +256,6 @@
               />
             </div>
           </div>
-
-        <button type="submit" class="btn-login" disabled={loading}>
-          {#if loading}
-            <span class="loader"></span>
-          {:else}
-            {$t('sign_in')}
-          {/if}
-        </button>
-      </form>
           <div class="form-group">
             <label for="password">Password</label>
             <div class="input-wrapper">
