@@ -90,6 +90,7 @@
 
   // Component state
   let isLoading = false;
+  let isSubmitting = false;
   let remarks = "";
   let recordsData: Record<string, RecordData> = {};
 
@@ -350,6 +351,8 @@
 
   // Submit handler with enhanced validation
   function handleSubmit() {
+    if (isSubmitting) return;
+
     let hasErrors = false;
     validationErrors = {};
 
@@ -382,10 +385,12 @@
     // Force update of validation errors
     validationErrors = { ...validationErrors };
 
-    // if (hasErrors) {
-    //   toast.error("Please correct the validation errors");
-    //   return;
-    // }
+    if (hasErrors) {
+      toast.error("Please correct the validation errors");
+      return;
+    }
+
+    isSubmitting = true;
 
     // Prepare data for submission
     const regularizationData = Object.entries(recordsData).map(
@@ -402,6 +407,11 @@
     );
     console.log(regularizationData, "regularizationData");
     dispatch("submit", regularizationData);
+
+    // Reset submit state after a short delay to ensure the parent component has time to process
+    setTimeout(() => {
+      isSubmitting = false;
+    }, 100);
   }
 
   // Cancel handler
@@ -625,14 +635,21 @@
       <button
         on:click={handleCancel}
         class="px-6 py-2 mr-2 border rounded text-gray-600 hover:bg-gray-50"
+        disabled={isSubmitting}
       >
         Cancel
       </button>
       <button
         on:click={handleSubmit}
-        class="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        disabled={isSubmitting}
+        class="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
       >
-        Submit
+        {#if isSubmitting}
+          <div
+            class="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"
+          ></div>
+        {/if}
+        <span>Submit</span>
       </button>
     </div>
   </div>
