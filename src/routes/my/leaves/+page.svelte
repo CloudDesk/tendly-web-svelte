@@ -15,8 +15,8 @@
   import Filter from "$lib/components/common/Filter.svelte";
   import { writable, derived } from "svelte/store";
   import type { LeaveFilterSchema } from "$lib/types";
+  import { t } from "svelte-i18n"; // Import svelte-i18n
 
-  // Constants for default form values
   const DEFAULT_FORM_VALUES = {
     leaveType: "",
     startDate: "",
@@ -26,7 +26,6 @@
     leaveTypeId: "678dec1789f768e0b1877aae",
   };
 
-  // Initialize stores
   let isLoading = false;
   let showApplyForm = false;
   let loading = false;
@@ -35,83 +34,87 @@
   let appliedFilterValues = writable({});
   let formValues = { ...DEFAULT_FORM_VALUES };
 
-  // Extract data from props
   export let data;
   $: ({ leaves, summary, pagination, filters, sort, leaveTypeId } = data);
 
-  // Define table columns
   const columns = [
     {
       key: "leaveType",
-      label: "Leave Type",
+      label: $t("leaves.table_columns.leave_type"),
       sortable: true,
       render: (leave: LeaveRequest) => getLeaveTypeLabel(leave.leaveType || ""),
     },
     {
       key: "startDate",
-      label: "Start Date",
+      label: $t("leaves.table_columns.start_date"),
       sortable: true,
       render: (leave: LeaveRequest) =>
         new Date(leave.startDate).toLocaleDateString(),
     },
     {
       key: "endDate",
-      label: "End Date",
+      label: $t("leaves.table_columns.end_date"),
       sortable: true,
       render: (leave: LeaveRequest) =>
         new Date(leave.endDate).toLocaleDateString(),
     },
     {
       key: "status",
-      label: "Status",
+      label: $t("leaves.table_columns.status"),
       sortable: true,
       render: (leave: LeaveRequest) => `
         <span class="status ${leave.status.toLowerCase()}">
-          ${leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
+          ${leave.status.toLowerCase()}
         </span>
       `,
     },
     {
       key: "_id",
-      label: "Actions",
+      label: $t("leaves.table_columns.actions"),
       render: (leave: LeaveRequest) => `
         <a href="/my/leaves/${leave._id}" class="btn btn-sm btn-ghost" data-sveltekit-preload>
-          View
+          ${$t("leaves.table_columns.action_view")}
         </a>
       `,
     },
   ];
 
-  // Define filter schema
   const filtersSchema: LeaveFilterSchema[] = [
     {
       key: "status",
-      label: "Status",
+      label: $t("leaves.my_leaves.filters.status"),
       type: "select",
       options: [
-        ...leaveStatusOptions,
-        { label: "Cancelled", value: "Cancelled" },
+        ...leaveStatusOptions.map((option) => ({
+          ...option,
+          label: $t(
+            `leaves.leave_details.status.${option.value.toLowerCase()}`
+          ),
+        })),
+        {
+          label: $t("leaves.leave_details.status.cancelled"),
+          value: "Cancelled",
+        },
       ],
     },
     {
       key: "leaveType",
-      label: "Leave Type",
+      label: $t("leaves.my_leaves.filters.leave_type"),
       type: "select",
       options: leaveTypeOptions,
     },
     {
       key: "fromDate",
-      label: "From Date",
+      label: $t("leaves.my_leaves.filters.from_date"),
       type: "date",
     },
     {
       key: "toDate",
-      label: "To Date",
+      label: $t("leaves.my_leaves.filters.to_date"),
       type: "date",
     },
   ];
 
-  // Derived store to calculate the count of selected filters
   const selectedFilterCount = derived(filterValues, ($filterValues) => {
     return Object.values($filterValues).reduce((count: number, value: any) => {
       if (Array.isArray(value)) {
@@ -123,7 +126,6 @@
     }, 0);
   });
 
-  // Handle search event
   function handleSearch(event: CustomEvent) {
     const { query } = event.detail;
     const url = new URL($page.url);
@@ -132,7 +134,6 @@
     goto(url, { replaceState: true });
   }
 
-  // Handle sort event
   function handleSort(event: CustomEvent) {
     const { key, direction } = event.detail;
     const url = new URL($page.url);
@@ -141,7 +142,6 @@
     goto(url, { replaceState: true });
   }
 
-  // Handle page change event
   async function handlePage(event: CustomEvent) {
     isLoading = true;
     try {
@@ -154,19 +154,16 @@
     }
   }
 
-  // Open apply form
   function openApplyForm() {
     formValues = { ...DEFAULT_FORM_VALUES };
     showApplyForm = true;
   }
 
-  // Close apply form
   function closeApplyForm() {
     formValues = { ...DEFAULT_FORM_VALUES };
     showApplyForm = false;
   }
 
-  // Handle leave form submission
   async function handleLeaveSubmit(event: CustomEvent) {
     loading = true;
     const submittedData = event.detail;
@@ -183,7 +180,6 @@
       toast.success("Leave applied successfully");
       showApplyForm = false;
 
-      // Refresh the page data by invalidating current URL
       const currentUrl = new URL($page.url);
       currentUrl.searchParams.set("t", Date.now().toString());
 
@@ -202,24 +198,20 @@
     }
   }
 
-  // Handle form update
   function handleFormUpdate(event: CustomEvent) {
     formValues = event.detail;
   }
 
-  // Toggle filter panel
   function toggleFilter() {
     isFilterOpen = !isFilterOpen;
   }
 
-  // Handle filter change
   function handleFilterChange(event: CustomEvent) {
     const { values } = event.detail;
     console.log("Filter values changed:", values);
     filterValues.set(values);
   }
 
-  // Handle filter apply
   async function handleFilterApply(event: CustomEvent) {
     const values = event.detail;
     appliedFilterValues.set(values);
@@ -250,7 +242,6 @@
     }
   }
 
-  // Handle filter reset
   async function handleFilterReset() {
     filterValues.set({});
     appliedFilterValues.set({});
@@ -284,7 +275,7 @@
 <div class="leaves-page">
   <header>
     <div class="header-left">
-      <h1>Leave Management</h1>
+      <h1>{$t("leaves.page_title")}</h1>
       <div class="header-actions">
         <button
           class="btn-filter"
@@ -295,22 +286,22 @@
           {#if $selectedFilterCount > 0}
             <span class="filter-badge">{$selectedFilterCount}</span>
           {/if}
-          Filter
+          {$t("leaves.buttons.filter")}
         </button>
         <button class="btn-view">
           <i class="fas fa-table-list"></i>
-          View
+          {$t("leaves.buttons.view")}
         </button>
       </div>
     </div>
     <div class="header-right">
       <button class="btn-secondary">
         <i class="fas fa-file-export"></i>
-        Export
+        {$t("leaves.buttons.export")}
       </button>
       <button class="btn-primary" on:click={openApplyForm}>
         <i class="fas fa-plus"></i>
-        Apply Leave
+        {$t("leaves.buttons.apply_leave")}
       </button>
     </div>
   </header>
@@ -318,7 +309,7 @@
   {#if showApplyForm}
     <Modal
       show={showApplyForm}
-      title="Leave Details"
+      title={$t("leaves.leave_details.page_title")}
       onClose={() => (showApplyForm = false)}
     >
       <LeaveForm

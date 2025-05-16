@@ -3,6 +3,7 @@
   import { page } from "$app/stores";
   import LeaveDetails from "$lib/components/leave/LeaveDetails.svelte";
   import { leavesApi } from "$lib/services/api";
+  import LoaderNew from "$lib/components/common/LoaderNew.svelte";
 
   interface LeaveDetails {
     id: string;
@@ -40,26 +41,11 @@
       isLoading = false;
     }
   });
-
-  function formatDate(date: string): string {
-    return new Date(date).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  }
-
-  function calculateDuration(start: string, end: string): number {
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-  }
 </script>
 
 <div class="page-container">
   {#if isLoading}
-    <div class="loading">Loading...</div>
+    <LoaderNew />
   {:else if error}
     <div class="error">{error}</div>
   {:else if leave}

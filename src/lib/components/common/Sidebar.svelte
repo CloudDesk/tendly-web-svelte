@@ -1,7 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { auth } from "$lib/stores/auth";
-  import { navigationContext } from "$lib/stores/navigation";
   import type { ComponentType } from "svelte";
   import logo from "$lib/assets/Tendly_logo_Full.png";
   import logoSmall from "$lib/assets/Tendly_T_logo.png";
@@ -30,6 +29,8 @@
   import { fly } from "svelte/transition";
   import { writable } from "svelte/store";
   import { createEventDispatcher } from "svelte";
+  import { t, locale } from "svelte-i18n"; // Import svelte-i18n
+
   export const ssr = false;
 
   const isCollapsed = writable(false);
@@ -69,146 +70,147 @@
     items: NavItem[];
   };
 
-  const adminItems: NavItem[] = [
+  // Reactive navigation items
+  $: adminItems = [
     {
-      label: "Dashboard",
+      label: $t("sidebar.nav_items.dashboard"),
       href: "/admin/dashboard",
       icon: LayoutDashboard,
     },
     {
-      label: "Employee",
+      label: $t("sidebar.nav_items.employee"),
       href: "/admin/employees",
       icon: Users,
     },
     {
-      label: "Attendance",
+      label: $t("sidebar.nav_items.attendance"),
       href: "/admin/attendance",
       icon: Clock,
     },
     {
-      label: "Trainings",
+      label: $t("sidebar.nav_items.trainings"),
       href: "/admin/trainings",
       icon: GraduationCap,
     },
     {
-      label: "Leaves",
+      label: $t("sidebar.nav_items.leaves"),
       href: "/admin/leaves",
       icon: CalendarRange,
     },
     {
-      label: "Payroll",
+      label: $t("sidebar.nav_items.payroll"),
       href: "/admin/payroll",
       icon: PayrollIcon,
     },
     {
-      label: "Reports",
+      label: $t("sidebar.nav_items.reports"),
       href: "/admin/reports",
       icon: ChartArea,
     },
     {
-      label: "Configurations",
+      label: $t("sidebar.nav_items.configurations"),
       href: "/admin/configurations",
       icon: Settings,
       children: [
         {
-          label: "LOVs",
+          label: $t("sidebar.nav_items.lovs"),
           href: "/admin/configurations?tab=lovs",
         },
         {
-          label: "Shifts",
+          label: $t("sidebar.nav_items.shifts"),
           href: "/admin/configurations?tab=shifts",
         },
         {
-          label: "Trainings",
+          label: $t("sidebar.nav_items.trainings"),
           href: "/admin/configurations?tab=trainings",
         },
         {
-          label: "Salary Structure",
+          label: $t("sidebar.nav_items.salary_structure"),
           href: "/admin/configurations?tab=salary",
         },
         {
-          label: "Tax Slab",
+          label: $t("sidebar.nav_items.tax_slab"),
           href: "/admin/configurations?tab=taxslab",
         },
         {
-          label: "Org Chart",
+          label: $t("sidebar.nav_items.org_chart"),
           href: "/admin/configurations?tab=org",
         },
       ],
     },
   ];
 
-  const managerItems: NavItem[] = [
+  $: managerItems = [
     {
-      label: "Dashboard",
+      label: $t("sidebar.nav_items.dashboard"),
       href: "/manager/dashboard",
       icon: LayoutDashboard,
     },
     {
-      label: "Actions",
+      label: $t("sidebar.nav_items.actions"),
       href: "/manager/actions",
       icon: Bell,
     },
     {
-      label: "Employees",
+      label: $t("sidebar.nav_items.employees"),
       href: "/manager/employees",
       icon: Users,
     },
     {
-      label: "Attendance",
+      label: $t("sidebar.nav_items.attendance"),
       href: "/manager/attendance",
       icon: Clock,
     },
     {
-      label: "Leaves",
+      label: $t("sidebar.nav_items.leaves"),
       href: "/manager/leaves",
       icon: CalendarRange,
     },
   ];
 
-  const myItems: NavItem[] = [
+  $: myItems = [
     {
-      label: "Dashboard",
+      label: $t("sidebar.nav_items.dashboard"),
       href: "/my/dashboard",
       icon: LayoutDashboard,
     },
     {
-      label: "Profile",
+      label: $t("sidebar.nav_items.profile"),
       href: "/my/profile",
       icon: UserCircle,
     },
     {
-      label: "Requests",
+      label: $t("sidebar.nav_items.requests"),
       href: "/my/requests",
       icon: ClipboardList,
     },
     {
-      label: "Attendance",
+      label: $t("sidebar.nav_items.attendance"),
       href: "/my/attendance",
       icon: CalendarCheck,
     },
     {
-      label: "Leaves",
+      label: $t("sidebar.nav_items.leaves"),
       href: "/my/leaves",
       icon: CalendarRange,
     },
     {
-      label: "Tax Declaration",
+      label: $t("sidebar.nav_items.tax_declaration"),
       href: "/my/tax-declaration",
       icon: FileCheck,
     },
     {
-      label: "Assignments",
+      label: $t("sidebar.nav_items.assignments"),
       href: "/my/assignments",
       icon: Briefcase,
     },
     {
-      label: "Payslips",
+      label: $t("sidebar.nav_items.payslips"),
       href: "/my/payslips",
       icon: PayrollIcon,
     },
     {
-      label: "Timesheet",
+      label: $t("sidebar.nav_items.timesheet"),
       href: "/my/Timesheet",
       icon: CalendarRange,
     },
@@ -223,21 +225,23 @@
   $: {
     if (isAdmin) {
       const sections = [
-        { label: "Admin", items: adminItems },
-        { label: "Manager", items: managerItems },
-        { label: "My Items", items: myItems },
+        { label: $t("sidebar.sections.admin"), items: adminItems },
+        { label: $t("sidebar.sections.manager"), items: managerItems },
+        { label: $t("sidebar.sections.my_items"), items: myItems },
       ];
       navigationSections.set(sections);
       initializeCollapsedSections(sections);
     } else if (isManager) {
       const sections = [
-        { label: "Manager", items: managerItems },
-        { label: "My Items", items: myItems },
+        { label: $t("sidebar.sections.manager"), items: managerItems },
+        { label: $t("sidebar.sections.my_items"), items: myItems },
       ];
       navigationSections.set(sections);
       initializeCollapsedSections(sections);
     } else {
-      const sections = [{ label: "My Items", items: myItems }];
+      const sections = [
+        { label: $t("sidebar.sections.my_items"), items: myItems },
+      ];
       navigationSections.set(sections);
       initializeCollapsedSections(sections);
     }
@@ -293,7 +297,7 @@
 <button
   class="hamburger-menu lg:hidden"
   on:click={toggleSidebar}
-  aria-label="Toggle Sidebar"
+  aria-label={$t("sidebar.aria_labels.toggle_sidebar")}
 >
   <Menu />
 </button>
@@ -331,7 +335,9 @@
     <button
       class="w-8 h-8 flex items-center justify-center text-text-muted hover:text-text rounded-lg hover:bg-white/50 transition-colors"
       on:click={toggleSidebar}
-      aria-label={$isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+      aria-label={$isCollapsed
+        ? $t("sidebar.aria_labels.expand_sidebar")
+        : $t("sidebar.aria_labels.collapse_sidebar")}
     >
       {#if $isCollapsed}
         <ChevronRight size={20} />
@@ -430,7 +436,9 @@
       </div>
       {#if !$isCollapsed}
         <div>
-          <div class="text-sm font-medium text-gray-900">{$auth.user?.name}</div>
+          <div class="text-sm font-medium text-gray-900">
+            {$auth.user?.name}
+          </div>
           <div class="text-xs text-gray-500">{$auth.user?.role}</div>
         </div>
       {/if}
@@ -438,7 +446,7 @@
     <button
       class="group relative w-8 h-8 flex items-center justify-center rounded-md transition-all duration-300 hover:bg-blue-50"
       on:click={handleLogout}
-      aria-label="Logout"
+      aria-label={$t("sidebar.aria_labels.logout")}
       disabled={$isLoggingOut}
     >
       {#if $isLoggingOut}
@@ -459,7 +467,7 @@
             <div
               class="absolute inset-0 flex items-center justify-center text-xs font-medium opacity-0 transition-all duration-300 group-hover:opacity-100 text-blue-600"
             >
-              Log Out
+              {$t("sidebar.logout")}
             </div>
           {/if}
           <div

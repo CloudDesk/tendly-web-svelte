@@ -7,16 +7,18 @@
   import EmployeeForm from "$lib/components/employee/EmployeeForm.svelte";
   import { employeesApi } from "$lib/services/api/employees.js";
   import { toast } from "$lib/components/common/stores/toast.store.js";
-  // import "../../../Mobileview.css"; // Import responsive styles
+  import { t } from "svelte-i18n"; // Import svelte-i18n
 
   export let data;
 
   $: ({ employees, pagination, filters, sort } = data);
   console.log(pagination, "pagination");
-  const columns = [
+
+  // Update columns to use translations
+  $: columns = [
     {
       key: "name",
-      label: "Name",
+      label: $t("employees.table_columns.name"),
       sortable: true,
       render: (user: User) => `
         <div class="name-cell">
@@ -30,7 +32,7 @@
     },
     {
       key: "role",
-      label: "Role",
+      label: $t("employees.table_columns.role"),
       sortable: true,
       render: (user: User) => `
         <div class="role-badge ${user.role}">${user.role}</div>
@@ -38,7 +40,7 @@
     },
     {
       key: "isActive",
-      label: "Status",
+      label: $t("employees.table_columns.status"),
       sortable: true,
       render: (user: User) => `
         <div class="status-badge ${user.active ? "active" : "inactive"}">
@@ -48,16 +50,16 @@
     },
     {
       key: "_id",
-      label: "Actions",
+      label: $t("employees.table_columns.actions"),
       render: (user: User) => `
         <div class="actions">
-          <button class="btn-action view" title="View Details">
+          <button class="btn-action view" title="${$t("employees.table_columns.actions_view")}">
             <i class="fas fa-eye"></i>
           </button>
-          <button class="btn-action edit" title="Edit">
+          <button class="btn-action edit" title="${$t("employees.table_columns.actions_edit")}">
             <i class="fas fa-pencil"></i>
           </button>
-          <button class="btn-action more" title="More">
+          <button class="btn-action more" title="${$t("employees.table_columns.actions_more")}">
             <i class="fas fa-ellipsis-h"></i>
           </button>
         </div>
@@ -105,7 +107,6 @@
     bloodGroup: "",
     dateOfBirth: "",
     managerId: "",
-    // isActive: true
   };
 
   let formValues = { ...defaultFormValues };
@@ -113,32 +114,30 @@
   let loading = false;
 
   function openApplyForm() {
-    // Reset form values when opening the form
     formValues = { ...defaultFormValues };
     showApplyForm = true;
   }
 
   async function handleFormSubmit(event: CustomEvent) {
     console.log("submitting form with data:", event.detail);
-    // showApplyForm=false;
     try {
       loading = true;
       const response: any = await employeesApi.create(event.detail);
       console.log(response, "createResponse");
       if (response.success) {
-        toast.success("Employee added successfully");
-        // Redirect to the new employee page
+        toast.success($t("employees.toasts.add_success")); // Use translation for toast
         await goto(`/admin/employees/${response.data._id}`);
       } else {
-        toast.error("Failed to add employee");
+        toast.error($t("employees.toasts.add_failure")); // Use translation for toast
       }
     } catch (error) {
-      toast.error("Failed to add employee");
+      toast.error($t("employees.toasts.add_failure")); // Use translation for toast
       console.error("Error submitting form:", error);
     } finally {
       showApplyForm = false;
     }
   }
+
   function handleFormUpdate(event: CustomEvent) {
     formValues = event.detail;
   }
@@ -154,26 +153,26 @@
 <div class="employees-page">
   <header>
     <div class="header-left">
-      <h1>Employees</h1>
+      <h1>{$t("employees.page_title")}</h1>
       <div class="header-actions">
         <button class="btn-filter">
           <i class="fas fa-filter"></i>
-          Filter
+          {$t("employees.filter_button")}
         </button>
         <button class="btn-view">
           <i class="fas fa-table-list"></i>
-          View
+          {$t("employees.view_button")}
         </button>
       </div>
     </div>
     <div class="header-right">
       <button class="btn-secondary">
         <i class="fas fa-file-export"></i>
-        Export
+        {$t("employees.export_button")}
       </button>
       <button class="btn-primary" on:click={openApplyForm}>
         <i class="fas fa-plus"></i>
-        Add Employee
+        {$t("employees.add_employee_button")}
       </button>
     </div>
   </header>
@@ -181,24 +180,17 @@
   {#if showApplyForm}
     <Modal
       show={showApplyForm}
-      title="New Employee"
+      title={$t("employees.modal_title")}
       onClose={() => (showApplyForm = false)}
+      wide
     >
-    <EmployeeForm
-    mode="create"
-    {loading}
-    initialValues={formValues}
-    on:submit={handleFormSubmit}
-    on:cancel={() => (showApplyForm = false)}
-  />
-
-      <!-- <LeaveForm
+      <EmployeeForm
+        mode="create"
         {loading}
         initialValues={formValues}
-        on:submit={handleLeaveSubmit}
-        on:update={handleFormUpdate}
+        on:submit={handleFormSubmit}
         on:cancel={() => (showApplyForm = false)}
-      /> -->
+      />
     </Modal>
   {/if}
 
@@ -215,7 +207,6 @@
       on:page={handlePage}
       on:rowClick={handleRowClick}
     />
-    <!-- currentSort={sort} is removed  -->
   </div>
 </div>
 

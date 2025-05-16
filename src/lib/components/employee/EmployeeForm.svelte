@@ -3,11 +3,11 @@
   import "../../styles/form.css";
   import { lovsApi } from "$lib/services/api/lovs";
   import { employeesApi } from "$lib/services/api";
+  import { t } from "svelte-i18n";
 
-  // Field interface defines the structure of form fields
   interface Field {
     key: string;
-    label: string;
+    labelKey: string; // Store the translation key instead of the resolved label
     inputType:
       | "text"
       | "email"
@@ -21,16 +21,14 @@
     lovType?: string;
   }
 
-  // Interface for Manager User
   interface ManagerUser {
     _id: string;
     name: string;
     email: string;
   }
 
-  // Employee form data interface
   interface EmployeeFormData {
-    _id?: string; // Make _id explicitly part of the interface
+    _id?: string;
     email: string;
     role: string;
     joiningDate: string;
@@ -42,11 +40,10 @@
     dateOfBirth?: string;
     managerId?: string;
     departmentId?: string;
-    password?: string; // Add password property
+    password?: string;
     [key: string]: string | undefined;
   }
 
-  // Component props with default values
   export let loading = false;
   export let mode: "create" | "update" = "create";
   let formValid = false;
@@ -61,65 +58,63 @@
   let userBloodGroups: Array<{ label: string; value: string }> = [];
   let userDepartments: Array<{ label: string; value: string }> = [];
 
-  // Event dispatcher for form actions
   const dispatch = createEventDispatcher<{
     submit: EmployeeFormData;
     update: EmployeeFormData;
     cancel: void;
   }>();
 
-  // Format date from ISO to YYYY-MM-DD for form inputs
   const formatDateForInput = (dateString: string | undefined): string => {
     if (!dateString) return "";
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return "";
-
-      return date.toISOString().split("T")[0]; // Returns YYYY-MM-DD
+      return date.toISOString().split("T")[0];
     } catch (error) {
       console.error("Error formatting date:", error);
       return "";
     }
   };
 
-  // Process initial values for the form
   const processInitialValues = () => {
     console.log("Processing initial values:", initialValues);
-
-    // Create a deep copy of initialValues
     const processed = { ...initialValues };
-
-    // Format date fields
     if (processed.joiningDate) {
       processed.joiningDate = formatDateForInput(processed.joiningDate);
     }
-
     if (processed.dateOfBirth) {
       processed.dateOfBirth = formatDateForInput(processed.dateOfBirth);
     }
-
     console.log("Processed values:", processed);
     return processed;
   };
 
-  // Process initial values and set up form data
   let formData = processInitialValues();
   let errors: { [key: string]: string } = {};
 
-  // Managers lookup state
   let managers: ManagerUser[] = [];
   let managerOptions: Array<{ label: string; value: string }> = [];
   let managerLookupLoading = false;
   let previousRole = formData.role;
   let previousDepartmentId = formData.departmentId;
 
-  // Define the fields for the employee form as a const to prevent runtime modifications
-  const fields: Field[] = [
-    { key: "name", label: "Name", inputType: "text", required: true },
-    { key: "email", label: "Email", inputType: "email", required: true },
+  // Define fields with translation keys instead of resolved labels
+  const fieldsDefinition: Field[] = [
+    {
+      key: "name",
+      labelKey: "employees.form.name_label",
+      inputType: "text",
+      required: true,
+    },
+    {
+      key: "email",
+      labelKey: "employees.form.email_label",
+      inputType: "email",
+      required: true,
+    },
     {
       key: "role",
-      label: "Role",
+      labelKey: "employees.form.role_label",
       inputType: "select",
       required: true,
       options: [],
@@ -127,72 +122,79 @@
     },
     {
       key: "departmentId",
-      label: "Department",
+      labelKey: "employees.form.department_label",
       inputType: "select",
       required: true,
       options: [],
     },
     {
       key: "joiningDate",
-      label: "Joining Date",
+      labelKey: "employees.form.joining_date_label",
       inputType: "date",
       required: true,
     },
-    { key: "phone", label: "Phone", inputType: "tel", required: false },
+    {
+      key: "phone",
+      labelKey: "employees.form.phone_label",
+      inputType: "tel",
+      required: false,
+    },
     {
       key: "location",
-      label: "Location",
+      labelKey: "employees.form.location_label",
       inputType: "select",
       options: [],
       required: false,
     },
     {
       key: "biometricId",
-      label: "Biometric ID",
+      labelKey: "employees.form.biometric_id_label",
       inputType: "text",
       required: true,
     },
     {
       key: "emergencyContact",
-      label: "Emergency Contact",
+      labelKey: "employees.form.emergency_contact_label",
       inputType: "tel",
       required: false,
     },
     {
       key: "address",
-      label: "Address",
+      labelKey: "employees.form.address_label",
       inputType: "textarea",
       required: false,
     },
-
     {
       key: "bloodGroup",
-      label: "Blood Group",
+      labelKey: "employees.form.blood_group_label",
       inputType: "select",
       options: [],
       required: false,
     },
     {
       key: "dateOfBirth",
-      label: "Date of Birth",
+      labelKey: "employees.form.date_of_birth_label",
       inputType: "date",
       required: false,
     },
     {
       key: "managerId",
-      label: "Manager",
+      labelKey: "employees.form.manager_label",
       inputType: "manager-lookup",
       required: true,
     },
   ];
 
-  // Fetch managers based on role
+  // Make fields reactive to language changes
+  $: fields = fieldsDefinition.map((field) => ({
+    ...field,
+    label: $t(field.labelKey),
+  }));
+
   async function fetchManagers(role: string, departmentId: string) {
     try {
-      // If either role or departmentId is empty, reset the manager options
       if (!role || !departmentId) {
         managerOptions = [];
-        // Also reset the managerId in formData if it exists
         if (formData.managerId) {
           formData.managerId = "";
         }
@@ -203,17 +205,13 @@
       let response;
 
       if (role === "admin") {
-        // Admin can have managers from management department
         response = await employeesApi.getUserByRoleDepartment(
           "admin",
           "management"
         );
         managers =
-          response.success && Array.isArray(response.data)
-            ? (response.data as ManagerUser[])
-            : [];
+          response.success && Array.isArray(response.data) ? response.data : [];
       } else if (role === "manager") {
-        // Try department specific admins
         response = await employeesApi.getUserByRoleDepartment(
           "admin",
           departmentId
@@ -221,7 +219,6 @@
         managers =
           response.success && Array.isArray(response.data) ? response.data : [];
 
-        // If no department specific admins, try management department
         if (managers.length === 0) {
           response = await employeesApi.getUserByRoleDepartment(
             "admin",
@@ -233,7 +230,6 @@
               : [];
         }
 
-        // If still no managers, get all admins
         if (managers.length === 0) {
           response = await employeesApi.getRoles("admin");
           managers =
@@ -242,7 +238,6 @@
               : [];
         }
       } else if (role === "staff") {
-        // Try department specific managers first
         response = await employeesApi.getUserByRoleDepartment(
           "manager",
           departmentId
@@ -250,7 +245,6 @@
         managers =
           response.success && Array.isArray(response.data) ? response.data : [];
 
-        // If no department managers, get all managers
         if (managers.length === 0) {
           response = await employeesApi.getRoles("manager");
           managers =
@@ -259,7 +253,6 @@
               : [];
         }
 
-        // If still no managers, get all admins
         if (managers.length === 0) {
           response = await employeesApi.getRoles("admin");
           managers =
@@ -283,7 +276,7 @@
         response.success && Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       console.error("Error fetching managers:", error);
-      errors["managerId"] = "Failed to load managers";
+      errors["managerId"] = $t("employees.form.errors.manager_load_failed");
     } finally {
       managerLookupLoading = false;
     }
@@ -303,7 +296,6 @@
               : field.options,
   }));
 
-  // Fetch list of values (LOVs) from API on component mount
   onMount(async () => {
     try {
       const rolesResponse: any = await lovsApi.getByType("role");
@@ -339,7 +331,6 @@
         }));
       }
 
-      // Fetch managers only if role and departmentId are defined
       if (formData.role && formData.departmentId) {
         await fetchManagers(formData.role, formData.departmentId);
       }
@@ -348,36 +339,27 @@
     }
   });
 
-  // Reactive statement to monitor changes in role and departmentId
   $: {
-    // Check if either value has changed
     if (
       formData.role !== previousRole ||
       formData.departmentId !== previousDepartmentId
     ) {
-      // Update previous values
       previousRole = formData.role;
       previousDepartmentId = formData.departmentId;
-
-      // Clear manager selection when either role or department changes
       formData.managerId = "";
-
-      // Fetch managers only if both role and departmentId have values
       if (formData.role && formData.departmentId) {
         fetchManagers(formData.role, formData.departmentId);
       } else {
-        // Clear manager options if either is empty
         managerOptions = [];
       }
     }
   }
 
-  // Convert date to ISO format
   const convertToDateTimeFormat = (dateInput: string | Date): string => {
     const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
     if (isNaN(date.getTime())) {
       console.warn(`Invalid date input: ${dateInput}`);
-      return new Date().toISOString(); // Fallback to current date-time
+      return new Date().toISOString();
     }
     const formattedDate = new Date(
       date.getFullYear(),
@@ -391,7 +373,6 @@
     return formattedDate.toISOString();
   };
 
-  // Prepare employee payload for submission
   const prepareEmployeePayload = (formData: EmployeeFormData) => {
     const payload = {
       ...formData,
@@ -405,14 +386,10 @@
         formData.active !== undefined ? String(formData.active) : undefined,
     };
 
-    // Add password only in create mode
     if (mode === "create") {
       payload.password = "123456";
-      // payload.departmentId = "60d5f483f8d2e30db8c1a5e4";
-      // payload.isActive = "true";
     }
 
-    // Explicitly preserve _id for update operations
     if (mode === "update" && initialValues._id) {
       payload._id = initialValues._id;
     }
@@ -421,59 +398,55 @@
     return payload;
   };
 
-  // Function to validate date of birth
   function validateDOB(date: string): boolean {
     const selectedDate = new Date(date);
     const today = new Date();
     return selectedDate <= today;
   }
 
-  // Function to validate phone number
   function validatePhoneNumber(phone: string): boolean {
     const phoneRegex = /^\d{10}$/;
     return phoneRegex.test(phone);
   }
 
-  // Reactive statement to validate fields
   $: {
-    errors = {}; // Reset errors before re-validating
-
-    // Validate phone
+    errors = {};
     if (formData.phone && !validatePhoneNumber(formData.phone)) {
-      errors.phone = "Phone number must be exactly 10 digits.";
+      errors.phone = $t("employees.form.errors.invalid_phone", {
+        label: $t("employees.form.phone_label"),
+      });
     } else {
       delete errors.phone;
     }
 
-    // Validate emergency contact
     if (
       formData.emergencyContact &&
       !validatePhoneNumber(formData.emergencyContact)
     ) {
-      errors.emergencyContact = "Emergency Contact must be exactly 10 digits.";
+      errors.emergencyContact = $t("employees.form.errors.invalid_phone", {
+        label: $t("employees.form.emergency_contact_label"),
+      });
     } else {
       delete errors.emergencyContact;
     }
 
-    // Validate Date of Birth
     if (formData.dateOfBirth && !validateDOB(formData.dateOfBirth)) {
-      errors.dateOfBirth = "Date of Birth cannot be in the future.";
+      errors.dateOfBirth = $t("employees.form.errors.invalid_dob");
     } else {
       delete errors.dateOfBirth;
     }
 
-    // Check if form is valid
     formValid = Object.keys(errors).length === 0;
   }
 
-  // Handle form submission
   const handleSubmit = async () => {
     errors = {};
 
-    // Basic validation (you can expand this)
     for (const field of fields) {
       if (field.required && !formData[field.key]) {
-        errors[field.key] = `${field.label} is required`;
+        errors[field.key] = $t("employees.form.errors.required_field", {
+          label: field.label,
+        });
       }
     }
 
@@ -481,7 +454,6 @@
       return;
     }
 
-    // Set loading state to true before submitting
     loading = true;
 
     try {
@@ -497,20 +469,17 @@
       console.error("Submission failed:", error);
       errors.submit =
         mode === "create"
-          ? "Failed to add employee."
-          : "Failed to update employee.";
+          ? $t("employees.form.errors.submit_create_failed")
+          : $t("employees.form.errors.submit_update_failed");
     } finally {
-      // Reset loading state after form submission (whether success or failure)
       loading = false;
     }
   };
 
-  // Handle form cancellation
   const handleCancel = () => {
     dispatch("cancel");
   };
 
-  // Handle general form changes
   const handleChange = () => {
     console.log("Form changed:", formData);
   };
@@ -545,7 +514,11 @@
             required={field.required}
             class:input-error={errors[field.key]}
           >
-            <option value="">Select {field.label}</option>
+            <option value=""
+              >{$t("employees.form.select_placeholder", {
+                label: $t("employees.form.role_label"),
+              })}</option
+            >
             {#each field.options || [] as option}
               <option value={option.value}>{option.label}</option>
             {/each}
@@ -575,7 +548,9 @@
             class:input-error={errors[field.key]}
           >
             <option value="">
-              {managerLookupLoading ? "Loading managers..." : "Select Manager"}
+              {managerLookupLoading
+                ? $t("employees.form.loading_managers_message")
+                : $t("employees.form.select_manager_placeholder")}
             </option>
             {#each managerOptions as option}
               <option value={option.value}>{option.label}</option>
@@ -631,7 +606,7 @@
       on:click={handleCancel}
       disabled={loading}
     >
-      Cancel
+      {$t("employees.form.cancel_button")}
     </button>
     <button
       type="submit"
@@ -640,11 +615,11 @@
     >
       {loading
         ? mode === "create"
-          ? "Saving..."
-          : "Updating..."
+          ? $t("employees.form.submit_button_saving")
+          : $t("employees.form.submit_button_updating")
         : mode === "create"
-          ? "Save"
-          : "Update"}
+          ? $t("employees.form.submit_button_create")
+          : $t("employees.form.submit_button_update")}
     </button>
   </div>
 </form>

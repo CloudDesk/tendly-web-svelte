@@ -15,6 +15,7 @@
   import { getLeaveTypeLabel } from "$lib/constants/leaveTypes";
   import { getLeaveButtonVisibility } from "$lib/utils/getLeaveButtonVisibility";
   import { writable } from "svelte/store";
+  import { t } from "svelte-i18n";
 
   export let leaveId: string;
   console.log(leaveId, "leaveId");
@@ -28,31 +29,56 @@
   let loading = true;
   let error: string | null = null;
 
-  // Modal state
   let showApproveModal = false;
   let showRejectModal = false;
   let remarks = "";
 
   type FieldKey = keyof LeaveRequest | "user" | "approvedBy" | "leaveType";
 
-  // Field configuration with Lucide icons
   const fields = [
-    { key: "leaveType" as FieldKey, label: "Leave Type", icon: Calendar },
-    { key: "status" as FieldKey, label: "Status", icon: CheckCircle2 },
-    { key: "startDate" as FieldKey, label: "Start Date", icon: Calendar },
-    { key: "endDate" as FieldKey, label: "End Date", icon: Calendar },
-    { key: "noOfDays" as FieldKey, label: "Number of Days", icon: Clock },
-    { key: "reason" as FieldKey, label: "Reason", icon: MessageSquare },
-    { key: "user" as FieldKey, label: "Applied By", icon: MessageSquare },
+    {
+      key: "leaveType" as FieldKey,
+      label: $t("leaves.leave_details.fields.leave_type"),
+      icon: Calendar,
+    },
+    {
+      key: "status" as FieldKey,
+      label: $t("leaves.leave_details.fields.status"),
+      icon: CheckCircle2,
+    },
+    {
+      key: "startDate" as FieldKey,
+      label: $t("leaves.leave_details.fields.start_date"),
+      icon: Calendar,
+    },
+    {
+      key: "endDate" as FieldKey,
+      label: $t("leaves.leave_details.fields.end_date"),
+      icon: Calendar,
+    },
+    {
+      key: "noOfDays" as FieldKey,
+      label: $t("leaves.leave_details.fields.number_of_days"),
+      icon: Clock,
+    },
+    {
+      key: "reason" as FieldKey,
+      label: $t("leaves.leave_details.fields.reason"),
+      icon: MessageSquare,
+    },
+    {
+      key: "user" as FieldKey,
+      label: $t("leaves.leave_details.fields.applied_by"),
+      icon: MessageSquare,
+    },
     {
       key: "approvedBy" as FieldKey,
-      label: "Approved By",
+      label: $t("leaves.leave_details.fields.approved_by"),
       icon: UserCheck,
       condition: () => ["Approved", "Rejected"].includes(leave?.status || ""),
     },
   ];
 
-  // Fetch leave details
   onMount(async () => {
     try {
       loading = true;
@@ -77,7 +103,7 @@
   $: {
     console.log($buttonVisibility, "buttonVisibility***");
   }
-  // Status update handler
+
   async function handleStatusUpdate(
     status: "Approved" | "Rejected" | "Cancelled"
   ) {
@@ -95,7 +121,6 @@
       const updated: any = await leavesApi.getById(leaveId);
       leave = updated.data;
 
-      // Reset modal state
       showApproveModal = false;
       showRejectModal = false;
       remarks = "";
@@ -106,7 +131,6 @@
     }
   }
 
-  // Utility functions
   function formatDate(date: string): string {
     return date
       ? new Date(date).toLocaleDateString("en-US", {
@@ -114,7 +138,7 @@
           month: "long",
           day: "numeric",
         })
-      : "N/A";
+      : $t("leaves.leave_details.status.na");
   }
 
   const statusColors: Record<string, string> = {
@@ -143,7 +167,7 @@
   <div class="flex justify-between items-center mb-6">
     <h2 class="text-2xl font-bold text-gray-800 flex items-center">
       <MessageSquare class="mr-3 text-blue-500" size={24} />
-      Leave Details
+      {$t("leaves.leave_details.page_title")}
     </h2>
 
     {#if leave?.status === "Pending"}
@@ -153,13 +177,15 @@
             class="btn btn-green"
             on:click={() => (showApproveModal = true)}
           >
-            <Check class="mr-2" size={16} /> Approve
+            <Check class="mr-2" size={16} />
+            {$t("leaves.leave_details.buttons.approve")}
           </button>
         {/if}
 
         {#if $buttonVisibility.canReject}
           <button class="btn btn-red" on:click={() => (showRejectModal = true)}>
-            <Close class="mr-2" size={16} /> Reject
+            <Close class="mr-2" size={16} />
+            {$t("leaves.leave_details.buttons.reject")}
           </button>
         {/if}
 
@@ -168,7 +194,8 @@
             class="btn btn-red"
             on:click={() => handleStatusUpdate("Cancelled")}
           >
-            <Close class="mr-2" size={16} /> Withdraw
+            <Close class="mr-2" size={16} />
+            {$t("leaves.leave_details.buttons.withdraw")}
           </button>
         {/if}
       </div>
@@ -178,7 +205,9 @@
   {#if error}
     <div class="alert alert-error">{error}</div>
   {:else if loading}
-    <div class="text-center text-gray-500 py-10">Loading leave details...</div>
+    <div class="text-center text-gray-500 py-10">
+      {$t("leaves.leave_details.loading_message")}
+    </div>
   {:else if leave}
     <div class="grid grid-cols-2 gap-6">
       {#each fields as field}
@@ -200,18 +229,18 @@
                 <span
                   class={`px-2 py-1 rounded text-sm ${getStatusColor(leave[field.key])}`}
                 >
-                  {leave[field.key]}
+                  {leave[field.key].toLowerCase()}
                 </span>
               {:else if field.key === "leaveType"}
                 {getLeaveTypeLabel(leave[field.key] ?? "")}
               {:else if field.key === "startDate" || field.key === "endDate"}
                 {formatDate(leave[field.key])}
               {:else if field.key === "approvedBy"}
-                {leave[field.key]?.name || "N/A"}
+                {leave[field.key]?.name || $t("leaves.leave_details.status.na")}
               {:else if field.key === "user"}
-                {leave[field.key]?.name || "N/A"}
+                {leave[field.key]?.name || $t("leaves.leave_details.status.na")}
               {:else}
-                {leave[field.key] || "N/A"}
+                {leave[field.key] || $t("leaves.leave_details.status.na")}
               {/if}
             </div>
           </div>
@@ -221,10 +250,9 @@
   {/if}
 </div>
 
-<!-- Approve Modal -->
 <Modal
   show={showApproveModal}
-  title="Approve Leave"
+  title={$t("leaves.leave_details.modals.approve_title")}
   onClose={() => (showApproveModal = false)}
 >
   <form
@@ -232,7 +260,9 @@
     class="space-y-6"
   >
     <div class="form-control">
-      <label for="approve-remarks" class="label">Remarks (optional)</label>
+      <label for="approve-remarks" class="label"
+        >{$t("leaves.leave_details.modals.remarks_label")}</label
+      >
       <textarea
         id="approve-remarks"
         class="textarea textarea-bordered h-24"
@@ -246,19 +276,20 @@
         class="btn btn-ghost"
         on:click={() => (showApproveModal = false)}
       >
-        Cancel
+        {$t("leaves.leave_details.buttons.cancel")}
       </button>
       <button type="submit" class="btn btn-green" disabled={loading}>
-        {loading ? "Approving..." : "Approve"}
+        {loading
+          ? $t("leaves.leave_details.buttons.approving")
+          : $t("leaves.leave_details.buttons.approve")}
       </button>
     </div>
   </form>
 </Modal>
 
-<!-- Reject Modal -->
 <Modal
   show={showRejectModal}
-  title="Reject Leave"
+  title={$t("leaves.leave_details.modals.reject_title")}
   onClose={() => (showRejectModal = false)}
 >
   <form
@@ -266,7 +297,9 @@
     class="space-y-6"
   >
     <div class="form-control">
-      <label for="reject-remarks" class="label">Remarks (optional)</label>
+      <label for="reject-remarks" class="label"
+        >{$t("leaves.leave_details.modals.remarks_label")}</label
+      >
       <textarea
         id="reject-remarks"
         class="textarea textarea-bordered h-24"
@@ -280,10 +313,12 @@
         class="btn btn-ghost"
         on:click={() => (showRejectModal = false)}
       >
-        Cancel
+        {$t("leaves.leave_details.buttons.cancel")}
       </button>
       <button type="submit" class="btn btn-red" disabled={loading}>
-        {loading ? "Rejecting..." : "Reject"}
+        {loading
+          ? $t("leaves.leave_details.buttons.rejecting")
+          : $t("leaves.leave_details.buttons.reject")}
       </button>
     </div>
   </form>

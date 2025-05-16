@@ -1,0 +1,184 @@
+{
+    "login": {
+        "title": "HRMS",
+        "subtitle": "அடுத்த தலைமுறை மனிதவள மேலாண்மை",
+        "email_label": "மின்னஞ்சல்",
+        "email_placeholder": "உங்கள் மின்னஞ்சலை உள்ளிடுங்கள்",
+        "password_label": "கடவுச்சொல்",
+        "password_placeholder": "உங்கள் கடவுச்சொல்லை உள்ளிடுங்கள்",
+        "forgot_password": "கடவுச்சொல்லை மறந்துவிட்டீர்களா?",
+        "sign_in": "உள்நுழைய",
+        "loading": "ஏற்றுகிறது...",
+        "error": {
+            "invalid_credentials": "தவறான மின்னஞ்சல் அல்லது கடவுச்சொல்"
+        }
+    },
+    "forgot_password": {
+        "title": "உங்கள் கடவுச்சொல்லை மீட்டமைக்கவும்",
+        "send_reset_link": "மீட்டமைப்பு இணைப்பை அனுப்பவும்",
+        "back_to_login": "உள்நுழைவு பக்கத்திற்கு திரும்பு"
+    },
+    "reset_password": {
+        "title": "புதிய கடவுச்சொல்லை அமைக்கவும்",
+        "new_password_label": "புதிய கடவுச்சொல்",
+        "new_password_placeholder": "புதிய கடவுச்சொல்லை உள்ளிடுங்கள்",
+        "confirm_password_label": "கடவுச்சொல்லை உறுதிப்படுத்தவும்",
+        "confirm_password_placeholder": "புதிய கடவுச்சொல்லை உறுதிப்படுத்தவும்",
+        "reset_password": "கடவுச்சொல்லை மீட்டமை",
+        "back_to_login": "உள்நுழைவு பக்கத்திற்கு திரும்பு",
+        "passwords_do_not_match": "கடவுச்சொற்கள் பொருந்தவில்லை",
+        "success": "கடவுச்சொல் வெற்றிகரமாக மீட்டமைக்கப்பட்டது!"
+    },
+    "sidebar": {
+        "nav_items": {
+            "dashboard": "டாஷ்போர்டு",
+            "employee": "பணியாளர்",
+            "employees": "பணியாளர்கள்",
+            "attendance": "வருகை",
+            "trainings": "பயிற்சிகள்",
+            "leaves": "விடுப்புகள்",
+            "payroll": "ஊதியப்பட்டியல்",
+            "reports": "அறிக்கைகள்",
+            "configurations": "அமைப்புகள்",
+            "actions": "செயல்கள்",
+            "profile": "சுயவிவரம்",
+            "requests": "கோரிக்கைகள்",
+            "tax_declaration": "வரி அறிவிப்பு",
+            "assignments": "பணிகள்",
+            "payslips": "ஊதியச்சீட்டுகள்",
+            "timesheet": "நேர அட்டவணை",
+            "lovs": "LOVs",
+            "shifts": "பணி மாற்றங்கள்",
+            "salary_structure": "ஊதிய அமைப்பு",
+            "tax_slab": "வரி பிரிவு",
+            "org_chart": "நிறுவன அமைப்பு"
+        },
+        "logout": "வெளியேறு",
+        "aria_labels": {
+            "toggle_sidebar": "பக்கப்பட்டியை மாற்று",
+            "expand_sidebar": "பக்கப்பட்டியை விரிவாக்கு",
+            "collapse_sidebar": "பக்கப்பட்டியை சுருக்கு",
+            "logout": "வெளியேறு"
+        }
+    },
+    "table": {
+        "search_placeholder": "தேடு...",
+        "loading_message": "ஏற்றுகிறது...",
+        "no_data_message": "தரவு இல்லை",
+        "pagination": {
+            "previous_button": "முந்தைய",
+            "next_button": "அடுத்தது",
+            "page_info": "பக்கம் {page} / {totalPages}",
+            "total_items": "({total} பதிவுகள்)"
+        }
+    },
+    "profile": {
+        "page_title": "எனது சுயவிவரம்",
+        "preferred_language_label": "விருப்பமான மொழி",
+        "email_field_label": "மின்னஞ்சல்",
+        "department_field_label": "துறை",
+        "manager_field_label": "மேலாளர்",
+        "joining_date_field_label": "சேர்ந்த தேதி"
+    },
+    "employees": {
+        "page_title": "பணியாளர்கள்",
+        "filter_button": "வடிகட்டு",
+        "view_button": "பார்வை",
+        "export_button": "ஏற்றுமதி",
+        "add_employee_button": "பணியாளரைச் சேர்",
+        "modal_title": "புதிய பணியாளர்",
+        "table_columns": {
+            "name": "பெயர்",
+            "role": "பங்கு",
+            "status": "நிலை",
+            "actions": "செயல்கள்",
+            "actions_view": "விவரங்களைப் பார்",
+            "actions_edit": "திருத்து",
+            "actions_more": "மேலும்"
+        },
+        "form": {
+            "name_label": "பெயர்",
+            "email_label": "மின்னஞ்சல்",
+            "role_label": "பங்கு",
+            "joining_date_label": "சேர்ந்த தேதி",
+            "phone_label": "தொலைபேசி",
+            "location_label": "இடம்",
+            "emergency_contact_label": "அவசர தொடர்பு",
+            "address_label": "முகவரி",
+            "blood_group_label": "இரத்த வகை",
+            "date_of_birth_label": "பிறந்த தேதி",
+            "manager_label": "மேலாளர்",
+            "department_label": "துறை",
+            "biometric_id_label": "பயோமெட்ரிக் ஐடி",
+            "select_placeholder": "{label} தேர்ந்தெடு",
+            "select_manager_placeholder": "மேலாளரைத் தேர்ந்தெடு",
+            "loading_managers_message": "மேலாளர்களை ஏற்றுகிறது...",
+            "submit_button_create": "சேமி",
+            "submit_button_update": "புதுப்பி",
+            "submit_button_saving": "சேமிக்கிறது...",
+            "submit_button_updating": "புதுப்பிக்கிறது...",
+            "cancel_button": "ரத்து செய்",
+            "errors": {
+                "required_field": "{label} தேவை",
+                "invalid_phone": "{label} சரியாக 10 இலக்கங்களாக இருக்க வேண்டும்.",
+                "invalid_dob": "பிறந்த தேதி எதிர்காலத்தில் இருக்கக்கூடாது.",
+                "submit_create_failed": "பணியாளரைச் சேர்க்க முடியவில்லை.",
+                "submit_update_failed": "பணியாளரைப் புதுப்பிக்க முடியவில்லை.",
+                "manager_load_failed": "மேலாளர்களை ஏற்ற முடியவில்லை"
+            }
+        },
+        "toasts": {
+            "add_success": "பணியாளர் வெற்றிகரமாக சேர்க்கப்பட்டார்",
+            "add_failure": "பணியாளரைச் சேர்க்க முடியவில்லை"
+        }
+    },
+    "leaves": {
+        "page_title": "விடுப்பு மேலாண்மை",
+        "buttons": {
+            "filter": "வடிகட்டு",
+            "view": "பார்வை",
+            "export": "ஏற்றுமதி",
+            "apply_leave": "விடுப்பு விண்ணப்பிக்கவும்",
+            "cancel_leave": "விடுப்பு ரத்து செய்"
+        },
+        "table_columns": {
+            "leave_type": "விடுப்பு வகை",
+            "start_date": "தொடங்கும் தேதி",
+            "end_date": "முடியும் தேதி",
+            "status": "நிலை",
+            "actions": "செயல்கள்",
+            "action_view": "பார்வை"
+        },
+        "toasts": {
+            "apply_success": "விடுப்பு வெற்றிகரமாக பதிவு செய்யப்பட்டது",
+            "apply_failure": "விடுப்பு பதிவு செய்ய முடியவில்லை"
+        },
+        "leave_details": {
+            "page_title": "விடுப்பு விவரங்கள்",
+            "loading_message": "விடுப்பு விவரங்களை ஏற்றுகிறது...",
+            "fields": {
+                "leave_type": "விடுப்பு வகை",
+                "status": "நிலை",
+                "start_date": "தொடங்கும் தேதி",
+                "end_date": "முடியும் தேதி",
+                "number_of_days": "நாட்களின் எண்ணிக்கை",
+                "reason": "காரணம்",
+                "applied_by": "விண்ணப்பித்தவர்",
+                "approved_by": "அனுமதித்தவர்"
+            },
+            "buttons": {
+                "approve": "அனுமதி",
+                "reject": "நிராகரி",
+                "withdraw": "திரும்பப் பெறு",
+                "cancel": "ரத்து செய்",
+                "approving": "அனுமதிக்கிறது...",
+                "rejecting": "நிராகரிக்கிறது..."
+            },
+            "modals": {
+                "approve_title": "விடுப்பை அனுமதி",
+                "reject_title": "விடுப்பை நிராகரி",
+                "remarks_label": "குறிப்புகள் (விருப்பமானது)"
+            }
+        }
+    }
+}

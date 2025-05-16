@@ -1,0 +1,189 @@
+{
+    "login": {
+        "title": "HRMS",
+        "subtitle": "Next Generation HR Management",
+        "email_label": "Email",
+        "email_placeholder": "Enter your email",
+        "password_label": "Password",
+        "password_placeholder": "Enter your password",
+        "forgot_password": "Forgot password?",
+        "sign_in": "Sign In",
+        "loading": "Loading...",
+        "error": {
+            "invalid_credentials": "Invalid email or password"
+        }
+    },
+    "forgot_password": {
+        "title": "Reset Your Password",
+        "send_reset_link": "Send Reset Link",
+        "back_to_login": "Back to Login"
+    },
+    "reset_password": {
+        "title": "Set New Password",
+        "new_password_label": "New Password",
+        "new_password_placeholder": "Enter new password",
+        "confirm_password_label": "Confirm Password",
+        "confirm_password_placeholder": "Confirm new password",
+        "reset_password": "Reset Password",
+        "back_to_login": "Back to Login",
+        "passwords_do_not_match": "Passwords do not match",
+        "success": "Password reset successful!"
+    },
+    "sidebar": {
+        "sections": {
+            "admin": "Admin",
+            "manager": "Manager",
+            "my_items": "My Items"
+        },
+        "nav_items": {
+            "dashboard": "Dashboard",
+            "employee": "Employee",
+            "employees": "Employees",
+            "attendance": "Attendance",
+            "trainings": "Trainings",
+            "leaves": "Leaves",
+            "payroll": "Payroll",
+            "reports": "Reports",
+            "configurations": "Configurations",
+            "actions": "Actions",
+            "profile": "Profile",
+            "requests": "Requests",
+            "tax_declaration": "Tax Declaration",
+            "assignments": "Assignments",
+            "payslips": "Payslips",
+            "timesheet": "Timesheet",
+            "lovs": "LOVs",
+            "shifts": "Shifts",
+            "salary_structure": "Salary Structure",
+            "tax_slab": "Tax Slab",
+            "org_chart": "Org Chart"
+        },
+        "logout": "Log Out",
+        "aria_labels": {
+            "toggle_sidebar": "Toggle Sidebar",
+            "expand_sidebar": "Expand sidebar",
+            "collapse_sidebar": "Collapse sidebar",
+            "logout": "Logout"
+        }
+    },
+    "table": {
+        "search_placeholder": "Search...",
+        "loading_message": "Loading...",
+        "no_data_message": "No data available",
+        "pagination": {
+            "previous_button": "Previous",
+            "next_button": "Next",
+            "page_info": "Page {page} of {totalPages}",
+            "total_items": "({total} items)"
+        }
+    },
+    "profile": {
+        "page_title": "My Profile",
+        "preferred_language_label": "Preferred Language",
+        "email_field_label": "Email",
+        "department_field_label": "Department",
+        "manager_field_label": "Manager",
+        "joining_date_field_label": "Joining Date"
+    },
+    "employees": {
+        "page_title": "Employees",
+        "filter_button": "Filter",
+        "view_button": "View",
+        "export_button": "Export",
+        "add_employee_button": "Add Employee",
+        "modal_title": "New Employee",
+        "table_columns": {
+            "name": "Name",
+            "role": "Role",
+            "status": "Status",
+            "actions": "Actions",
+            "actions_view": "View Details",
+            "actions_edit": "Edit",
+            "actions_more": "More"
+        },
+        "form": {
+            "name_label": "Name",
+            "email_label": "Email",
+            "role_label": "Role",
+            "joining_date_label": "Joining Date",
+            "phone_label": "Phone",
+            "location_label": "Location",
+            "emergency_contact_label": "Emergency Contact",
+            "address_label": "Address",
+            "blood_group_label": "Blood Group",
+            "date_of_birth_label": "Date of Birth",
+            "manager_label": "Manager",
+            "department_label": "Department",
+            "biometric_id_label": "Biometric ID",
+            "select_placeholder": "Select {label}",
+            "select_manager_placeholder": "Select Manager",
+            "loading_managers_message": "Loading managers...",
+            "submit_button_create": "Save",
+            "submit_button_update": "Update",
+            "submit_button_saving": "Saving...",
+            "submit_button_updating": "Updating...",
+            "cancel_button": "Cancel",
+            "errors": {
+                "required_field": "{label} is required",
+                "invalid_phone": "{label} must be exactly 10 digits.",
+                "invalid_dob": "Date of Birth cannot be in the future.",
+                "submit_create_failed": "Failed to add employee.",
+                "submit_update_failed": "Failed to update employee.",
+                "manager_load_failed": "Failed to load managers"
+            }
+        },
+        "toasts": {
+            "add_success": "Employee added successfully",
+            "add_failure": "Failed to add employee"
+        }
+    },
+    "leaves": {
+        "page_title": "Leave Management",
+        "buttons": {
+            "filter": "Filter",
+            "view": "View",
+            "export": "Export",
+            "apply_leave": "Apply Leave",
+            "cancel_leave": "Cancel Leave"
+        },
+        "table_columns": {
+            "leave_type": "Leave Type",
+            "start_date": "Start Date",
+            "end_date": "End Date",
+            "status": "Status",
+            "actions": "Actions",
+            "action_view": "View"
+        },
+        "toasts": {
+            "apply_success": "Leave applied successfully",
+            "apply_failure": "Failed to apply leave"
+        },
+        "leave_details": {
+            "page_title": "Leave Details",
+            "loading_message": "Loading leave details...",
+            "fields": {
+                "leave_type": "Leave Type",
+                "status": "Status",
+                "start_date": "Start Date",
+                "end_date": "End Date",
+                "number_of_days": "Number of Days",
+                "reason": "Reason",
+                "applied_by": "Applied By",
+                "approved_by": "Approved By"
+            },
+            "buttons": {
+                "approve": "Approve",
+                "reject": "Reject",
+                "withdraw": "Withdraw",
+                "cancel": "Cancel",
+                "approving": "Approving...",
+                "rejecting": "Rejecting..."
+            },
+            "modals": {
+                "approve_title": "Approve Leave",
+                "reject_title": "Reject Leave",
+                "remarks_label": "Remarks (optional)"
+            }
+        }
+    }
+}

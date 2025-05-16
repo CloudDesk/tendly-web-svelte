@@ -1,17 +1,15 @@
-<!-- src/routes/login/+page.svelte -->
 <script lang="ts">
   import { onMount } from "svelte";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { fade, fly } from "svelte/transition";
   import { loginController } from "./controller";
+  import { t, locale } from "svelte-i18n"; // Import $t and $locale
+  import { languageStore } from "$lib/stores/language"; // Import languageStore
 
-  // View states
   type View = "login" | "forgot-password" | "reset-password";
   let currentView: View = "login";
   let token = "";
-
-  // Form fields
   let email = "";
   let password = "";
   let confirmPassword = "";
@@ -19,37 +17,46 @@
   let success = "";
   let loading = false;
 
+  // Available languages
+  const languages = [
+    { value: "en", label: "English" },
+    { value: "ta", label: "தமிழ்" },
+  ];
+
+  // Sync with languageStore
+  let selectedLanguage: string;
+  locale.subscribe((lang) => {
+    selectedLanguage = lang || "en";
+  });
+
+  function handleLanguageChange(event: Event) {
+    const lang = (event.target as HTMLSelectElement).value;
+    languageStore.set(lang);
+  }
+
   onMount(() => {
-    // Check for view parameter
     const view = $page.url.searchParams.get("view") as View;
     if (view && ["login", "forgot-password", "reset-password"].includes(view)) {
       currentView = view;
     }
 
-    // Check for token parameter (for reset password)
     const urlToken = $page.url.searchParams.get("token");
     if (urlToken && currentView === "reset-password") {
       token = urlToken;
-      // validateToken();
     }
   });
 
-  // Switch to a different view
   function switchView(view: View, params: Record<string, string> = {}) {
     const url = new URL(window.location.href);
     url.searchParams.set("view", view);
-
-    // Add any other params
     Object.entries(params).forEach(([key, value]) => {
       url.searchParams.set(key, value);
     });
-
     goto(url.toString());
     currentView = view;
     clearMessages();
   }
 
-  // Clear messages between view changes
   function clearMessages() {
     error = "";
     success = "";
@@ -62,9 +69,10 @@
 
     try {
       await loginController.login(email, password);
+      languageStore.set(selectedLanguage); // Re-apply the selected language
     } catch (err: any) {
       console.error(err);
-      error = err.message || "Invalid email or password";
+      error = err.message || $t("login.error.invalid_credentials");
     } finally {
       loading = false;
     }
@@ -83,7 +91,7 @@
       email = "";
     } catch (err: any) {
       console.error(err);
-      error = err.message || "Failed to send reset link";
+      error = err.message || "Failed to send reset link"; // Add this to translations if needed
     } finally {
       loading = false;
     }
@@ -99,7 +107,7 @@
       let result = await loginController.validateResetToken(token);
       console.log(result, "result validateToken");
     } catch (err: any) {
-      error = err.message || "Invalid or expired reset token";
+      error = err.message || "Invalid or expired reset token"; // Add this to translations if needed
     } finally {
       loading = false;
     }
@@ -109,7 +117,7 @@
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      error = "Passwords do not match";
+      error = $t("reset_password.passwords_do_not_match");
       return;
     }
 
@@ -118,15 +126,13 @@
 
     try {
       await loginController.resetPassword(token, password);
-      success = "Password reset successful!";
-
-      // Redirect to login after 2 seconds
+      success = $t("reset_password.success");
       setTimeout(() => {
         switchView("login");
       }, 2000);
     } catch (err: any) {
       console.error(err);
-      error = err.message || "Failed to reset password";
+      error = err.message || "Failed to reset password"; // Add this to translations if needed
     } finally {
       loading = false;
     }
@@ -136,14 +142,25 @@
 <div class="auth-page" in:fade={{ duration: 300 }}>
   <div class="auth-container" in:fly={{ y: 20, duration: 400, delay: 200 }}>
     <div class="auth-box">
+      <!-- Language Selector -->
+      <div
+        class="language-selector"
+        style="text-align: right; margin-bottom: 1rem;"
+      >
+        <select bind:value={selectedLanguage} on:change={handleLanguageChange}>
+          {#each languages as lang}
+            <option value={lang.value}>{lang.label}</option>
+          {/each}
+        </select>
+      </div>
       <div class="brand">
-        <h1>HRMS</h1>
+        <h1>{$t("login.title")}</h1>
         {#if currentView === "login"}
-          <p>Next Generation HR Management</p>
+          <p>{$t("login.subtitle")}</p>
         {:else if currentView === "forgot-password"}
-          <p>Reset Your Password</p>
+          <p>{$t("forgot_password.title")}</p>
         {:else if currentView === "reset-password"}
-          <p>Set New Password</p>
+          <p>{$t("reset_password.title")}</p>
         {/if}
       </div>
 
@@ -161,7 +178,7 @@
                 class="link-button"
                 on:click={() => switchView("forgot-password")}
               >
-                Request a new reset link
+                {$t("forgot_password.send_reset_link")}
               </button>
             </p>
           {/if}
@@ -179,10 +196,9 @@
       {/if}
 
       {#if currentView === "login"}
-        <!-- Login Form -->
         <form on:submit={handleLogin}>
           <div class="form-group">
-            <label for="email">Email</label>
+            <label for="email">{$t("login.email_label")}</label>
             <div class="input-wrapper">
               <input
                 type="email"
@@ -190,14 +206,14 @@
                 bind:value={email}
                 required
                 disabled={loading}
-                placeholder="Enter your email"
+                placeholder={$t("login.email_placeholder")}
                 class:loading
               />
             </div>
           </div>
 
           <div class="form-group">
-            <label for="password">Password</label>
+            <label for="password">{$t("login.password_label")}</label>
             <div class="input-wrapper">
               <input
                 type="password"
@@ -205,7 +221,7 @@
                 bind:value={password}
                 required
                 disabled={loading}
-                placeholder="Enter your password"
+                placeholder={$t("login.password_placeholder")}
                 class:loading
               />
             </div>
@@ -217,7 +233,7 @@
               class="link-button"
               on:click={() => switchView("forgot-password")}
             >
-              Forgot password?
+              {$t("login.forgot_password")}
             </button>
           </div>
 
@@ -225,15 +241,14 @@
             {#if loading}
               <span class="loader"></span>
             {:else}
-              Sign In
+              {$t("login.sign_in")}
             {/if}
           </button>
         </form>
       {:else if currentView === "forgot-password"}
-        <!-- Forgot Password Form -->
         <form on:submit={handleForgotPassword}>
           <div class="form-group">
-            <label for="email">Email</label>
+            <label for="email">{$t("login.email_label")}</label>
             <div class="input-wrapper">
               <input
                 type="email"
@@ -241,7 +256,7 @@
                 bind:value={email}
                 required
                 disabled={loading}
-                placeholder="Enter your email"
+                placeholder={$t("login.email_placeholder")}
                 class:loading
               />
             </div>
@@ -251,7 +266,7 @@
             {#if loading}
               <span class="loader"></span>
             {:else}
-              Send Reset Link
+              {$t("forgot_password.send_reset_link")}
             {/if}
           </button>
 
@@ -261,16 +276,17 @@
               class="link-button"
               on:click={() => switchView("login")}
             >
-              Back to Login
+              {$t("forgot_password.back_to_login")}
             </button>
           </div>
         </form>
       {:else if currentView === "reset-password"}
-        <!-- Reset Password Form -->
         {#if !error || !error.includes("expired")}
           <form on:submit={handleResetPassword}>
             <div class="form-group">
-              <label for="password">New Password</label>
+              <label for="password"
+                >{$t("reset_password.new_password_label")}</label
+              >
               <div class="input-wrapper">
                 <input
                   type="password"
@@ -278,7 +294,7 @@
                   bind:value={password}
                   required
                   disabled={loading}
-                  placeholder="Enter new password"
+                  placeholder={$t("reset_password.new_password_placeholder")}
                   minlength="8"
                   class:loading
                 />
@@ -286,7 +302,9 @@
             </div>
 
             <div class="form-group">
-              <label for="confirmPassword">Confirm Password</label>
+              <label for="confirmPassword"
+                >{$t("reset_password.confirm_password_label")}</label
+              >
               <div class="input-wrapper">
                 <input
                   type="password"
@@ -294,7 +312,9 @@
                   bind:value={confirmPassword}
                   required
                   disabled={loading}
-                  placeholder="Confirm new password"
+                  placeholder={$t(
+                    "reset_password.confirm_password_placeholder"
+                  )}
                   minlength="8"
                   class:loading
                 />
@@ -305,7 +325,7 @@
               {#if loading}
                 <span class="loader"></span>
               {:else}
-                Reset Password
+                {$t("reset_password.reset_password")}
               {/if}
             </button>
 
@@ -315,7 +335,7 @@
                 class="link-button"
                 on:click={() => switchView("login")}
               >
-                Back to Login
+                {$t("reset_password.back_to_login")}
               </button>
             </div>
           </form>

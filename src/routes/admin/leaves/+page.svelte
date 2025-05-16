@@ -1,43 +1,43 @@
 <script lang="ts">
   import Table from "$lib/components/common/Table.svelte";
-  import type { LeaveRequest, LeaveSummary } from "$lib/services/api/leaves";
+  import type { LeaveRequest } from "$lib/services/api/leaves";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { leavesApi } from "$lib/services/api/leaves";
-  import Modal from "$lib/components/common/Modal.svelte";
-  import LeaveForm from "$lib/components/leave/LeaveForm.svelte";
   import { getLeaveTypeLabel } from "$lib/constants/leaveTypes.js";
   import { toast } from "$lib/components/common/stores/toast.store.js";
+  import { t } from "svelte-i18n"; // Import svelte-i18n
 
   export let data;
   let isLoading = false;
   $: ({ leaves, summary, pagination, filters, sort, leaveTypeId } = data);
   console.log(pagination, "pagination");
 
-  const columns = [
+  // Update columns to use translations
+  $: columns = [
     {
       key: "leaveType",
-      label: "Leave Type",
+      label: $t("leaves.table_columns.leave_type"),
       sortable: true,
       render: (leave: LeaveRequest) => getLeaveTypeLabel(leave.leaveType || ""),
     },
     {
       key: "startDate",
-      label: "Start Date",
+      label: $t("leaves.table_columns.start_date"),
       sortable: true,
       render: (leave: LeaveRequest) =>
         new Date(leave.startDate).toLocaleDateString(),
     },
     {
       key: "endDate",
-      label: "End Date",
+      label: $t("leaves.table_columns.end_date"),
       sortable: true,
       render: (leave: LeaveRequest) =>
         new Date(leave.endDate).toLocaleDateString(),
     },
     {
       key: "status",
-      label: "Status",
+      label: $t("leaves.table_columns.status"),
       sortable: true,
       render: (leave: LeaveRequest) => `
         <span class="status ${leave.status.toLowerCase()}">
@@ -47,10 +47,10 @@
     },
     {
       key: "_id",
-      label: "Actions",
+      label: $t("leaves.table_columns.actions"),
       render: (leave: LeaveRequest) => `
         <a href="/admin/leaves/${leave._id}" class="btn btn-sm btn-ghost" data-sveltekit-preload>
-          View
+          ${$t("leaves.table_columns.action_view")}
         </a>
       `,
     },
@@ -89,7 +89,6 @@
   let showApplyForm = false;
   let loading = false;
 
-  // Initialize formValues with default values
   let defaultFormValues = {
     leaveType: "",
     startDate: "",
@@ -102,13 +101,11 @@
   let formValues = { ...defaultFormValues };
 
   function openApplyForm() {
-    // Reset form values when opening the form
     formValues = { ...defaultFormValues };
     showApplyForm = true;
   }
 
   function closeApplyForm() {
-    // Reset form values when closing the form
     formValues = { ...defaultFormValues };
     showApplyForm = false;
   }
@@ -126,23 +123,15 @@
 
       const res = await leavesApi.create(values);
       console.log("Leave created:", res);
-      toast.success("Leave applied successfully");
+      toast.success($t("leaves.toasts.apply_success")); // Use translated toast message
       showApplyForm = false;
 
-      // Refresh the page data by invalidating current URL
       const currentUrl = new URL($page.url);
-      // Add or update a timestamp parameter to force reload
       currentUrl.searchParams.set("t", Date.now().toString());
-
-      // Navigate to the modified URL to trigger a refresh
-      await goto(currentUrl, {
-        replaceState: true,
-        invalidateAll: true, // This will force SvelteKit to refetch the page data
-      });
+      await goto(currentUrl, { replaceState: true, invalidateAll: true });
     } catch (error) {
       console.error("Error submitting leave:", error);
-      toast.error("Failed to apply leave");
-      // Handle error (show toast, etc.)
+      toast.error($t("leaves.toasts.apply_failure")); // Use translated toast message
     } finally {
       closeApplyForm();
       loading = false;
@@ -164,46 +153,25 @@
 <div class="leaves-page">
   <header>
     <div class="header-left">
-      <h1>Leave Management</h1>
+      <h1>{$t("leaves.page_title")}</h1>
       <div class="header-actions">
         <button class="btn-filter">
           <i class="fas fa-filter"></i>
-          Filter
+          {$t("leaves.buttons.filter")}
         </button>
         <button class="btn-view">
           <i class="fas fa-table-list"></i>
-          View
+          {$t("leaves.buttons.view")}
         </button>
       </div>
     </div>
     <div class="header-right">
       <button class="btn-secondary">
         <i class="fas fa-file-export"></i>
-        Export
+        {$t("leaves.buttons.export")}
       </button>
-      <!-- <button class="btn-primary" on:click={openApplyForm}>
-        <i class="fas fa-plus"></i>
-        Apply Leave
-      </button> -->
     </div>
   </header>
-
-  <!-- {#if showApplyForm}
-    <Modal
-      show={showApplyForm}
-      title="Leave Details"
-      onClose={() => (showApplyForm = false)}
-    >
-      <LeaveForm
-        {loading}
-        {summary}
-        initialValues={formValues}
-        on:submit={handleLeaveSubmit}
-        on:update={handleFormUpdate}
-        on:cancel={() => (showApplyForm = false)}
-      />
-    </Modal>
-  {/if} -->
 
   <div class="table-container">
     <Table
@@ -216,17 +184,6 @@
       on:sort={handleSort}
       on:page={handlePage}
     />
-    <!--  <Table
-      {columns}
-      data={leaves}
-      loading={$page.url.searchParams.toString() !== $page.url.searchParams.toString()}
-      meta={pagination}
-      currentSort={sort}
-      serverSide={true}
-      on:search={handleSearch}
-      on:sort={handleSort}
-      on:page={handlePage}
-    /> -->
   </div>
 </div>
 

@@ -60,6 +60,7 @@ export type User = {
   name: string;
   firstName: string;
   lastName: string;
+  departmentId: string;
   role: UserRole;
   active: boolean;
   createdAt: string;

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import type { PaginationMeta } from "$lib/types";
-  // import "../../../Mobileview.css"; // Import responsive CSS for mobile view
+  import { t } from "svelte-i18n"; // Import svelte-i18n
 
   type Column<T> = {
     key: keyof T;
@@ -85,6 +85,7 @@
     }
   }
   console.log(searchQuery, "searchquery");
+
   function handlePageChange(page: number) {
     console.log(serverSide, page, "handlePageChange");
     if (serverSide) {
@@ -117,7 +118,7 @@
         type="text"
         value={searchQuery}
         on:input={handleSearch}
-        placeholder="Search..."
+        placeholder={$t("table.search_placeholder")}
         class="search-input"
       />
     </div>
@@ -126,14 +127,14 @@
   {#if loading}
     <div class="loading">
       <span class="loader"></span>
-      Loading...
+      {$t("table.loading_message")}
     </div>
   {:else if error}
     <div class="error">
       {error}
     </div>
   {:else if sortedData.length === 0}
-    <div class="empty">No data available</div>
+    <div class="empty">{$t("table.no_data_message")}</div>
   {:else}
     <table>
       <thead>
@@ -183,12 +184,19 @@
           disabled={meta.page === 1}
           on:click={() => handlePageChange(meta.page - 1)}
         >
-          Previous
+          {$t("table.pagination.previous_button")}
         </button>
 
         <div class="page-info">
-          Page {meta.page} of {meta.totalPages}
-          <span class="total-items">({meta.total} items)</span>
+          {String($t("table.pagination.page_info"))
+            .replace("{page}", String(meta.page))
+            .replace("{totalPages}", String(meta.totalPages))}
+          <span class="total-items"
+            >{$t("table.pagination.total_items").replace(
+              "{total}",
+              String(meta.total)
+            )}</span
+          >
         </div>
 
         <button
@@ -196,7 +204,7 @@
           disabled={meta.page === meta.totalPages}
           on:click={() => handlePageChange(meta.page + 1)}
         >
-          Next
+          {$t("table.pagination.next_button")}
         </button>
       </div>
     {/if}
