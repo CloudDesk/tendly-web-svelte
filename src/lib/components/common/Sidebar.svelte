@@ -106,33 +106,33 @@
       icon: ChartArea,
     },
     {
-      label: "Configurations",
-      href: "/admin/configurations",
+      label: "Setup",
+      href: "/admin/setup",
       icon: Settings,
       children: [
         {
           label: "LOVs",
-          href: "/admin/configurations?tab=lovs",
+          href: "/admin/setup?tab=lovs",
         },
         {
           label: "Shifts",
-          href: "/admin/configurations?tab=shifts",
+          href: "/admin/setup?tab=shifts",
         },
         {
           label: "Trainings",
-          href: "/admin/configurations?tab=trainings",
+          href: "/admin/setup?tab=trainings",
         },
         {
           label: "Salary Structure",
-          href: "/admin/configurations?tab=salary",
+          href: "/admin/setup?tab=salary",
         },
         {
           label: "Tax Slab",
-          href: "/admin/configurations?tab=taxslab",
+          href: "/admin/setup?tab=taxslab",
         },
         {
           label: "Org Chart",
-          href: "/admin/configurations?tab=org",
+          href: "/admin/setup?tab=org",
         },
       ],
     },
@@ -430,7 +430,9 @@
       </div>
       {#if !$isCollapsed}
         <div>
-          <div class="text-sm font-medium text-gray-900">{$auth.user?.name}</div>
+          <div class="text-sm font-medium text-gray-900">
+            {$auth.user?.name}
+          </div>
           <div class="text-xs text-gray-500">{$auth.user?.role}</div>
         </div>
       {/if}

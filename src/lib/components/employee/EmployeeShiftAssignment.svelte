@@ -5,7 +5,7 @@
   import { Pencil, Trash2 } from "lucide-svelte";
   import { onMount } from "svelte";
   import Modal from "../common/Modal.svelte";
-  import ShiftAssignmentUpdate from "../management/shifts/ShiftAssignmentUpdate.svelte";
+  import ShiftAssignmentUpdate from "../setup/shifts/ShiftAssignmentUpdate.svelte";
 
   export let employeeId: string;
 
