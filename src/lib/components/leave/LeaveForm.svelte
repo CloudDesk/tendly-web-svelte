@@ -4,7 +4,7 @@
   import { leaveTypeOptions as allLeaveTypeOptions } from "$lib/constants/leaveTypes";
   import { auth } from "$lib/stores/auth";
   import { get } from "svelte/store";
-
+  import { t } from "svelte-i18n";
   interface LeaveCategory {
     alloted: number;
     availed: number;
@@ -44,16 +44,13 @@
     cancel: void;
   }>();
 
-  // Create a writable store for form data
   let formData = initialValues;
 
-  // Get remaining leave days based on leave type
   const getRemainingDays = (leaveType: string): number => {
     console.log(leaveType, "leaveType");
 
-    // Special case for lossOfPay - return a large number since there's no limit
     if (leaveType.toLowerCase() === "lossofpay") {
-      return Number.MAX_SAFE_INTEGER; // Effectively unlimited days
+      return Number.MAX_SAFE_INTEGER;
     }
 
     const typeMapping: { [key: string]: keyof typeof summary } = {
@@ -70,7 +67,6 @@
       : 0;
   };
 
-  // Form handlers
   const handleSubmit = () => {
     if (!isLeaveBalanceValid) {
       return;
@@ -95,7 +91,6 @@
     console.log("Form changed:", formData);
   };
 
-  // Validation
   $: isEndDateValid =
     !formData.startDate ||
     !formData.endDate ||
@@ -114,25 +109,24 @@
     ? getRemainingDays(formData.leaveType)
     : 0;
 
-  // Update the isLeaveBalanceValid reactive statement to match
   $: isLeaveBalanceValid =
     formData.leaveType?.toLowerCase() === "lossofpay" ||
     numberOfDays <= remainingDays;
 
-  // Update the leaveBalanceMessage reactive statement
   $: leaveBalanceMessage = formData.leaveType
     ? formData.leaveType.toLowerCase() === "lossofpay"
       ? ""
-      : `Available balance: ${remainingDays} days${!isLeaveBalanceValid ? " (Insufficient balance)" : ""}`
+      : $t("leaves.form.messages.available_balance", { days: remainingDays }) +
+        (!isLeaveBalanceValid
+          ? $t("leaves.form.messages.insufficient_balance")
+          : "")
     : "";
 
-  // Update the leaveTypeOptions reactive statement
   $: leaveTypeOptions =
     summary && Object.values(summary).some((leave) => leave.alloted > 0)
       ? allLeaveTypeOptions
-      : [{ value: "lossOfPay", label: "Loss of Pay" }];
+      : [{ value: "lossOfPay", label: $t("leaves.form.fields.loss_of_pay") }];
 
-  // Check if any leave type is allocated
   $: isLeaveAllocated =
     summary && Object.values(summary).some((leave) => leave.alloted > 0);
 </script>
@@ -140,18 +134,16 @@
 {#if !isLeaveAllocated}
   <div class="alert alert-error">
     <span>
-      Leave has not been allocated to you. Please inform your admin. You are
-      only eligible to apply for Loss of Pay.
+      {$t("leaves.form.alerts.no_leave_allocated")}
     </span>
   </div>
 {/if}
 
 <form on:submit|preventDefault={handleSubmit} class="space-y-6">
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <!-- Leave Type -->
     <div class="form-control">
       <label class="label" for="leaveType">
-        <span class="label-text">Leave Type</span>
+        <span class="label-text">{$t("leaves.form.fields.leave_type")}</span>
         <span class="text-error">*</span>
       </label>
       <select
@@ -161,7 +153,7 @@
         on:change={handleChange}
         required
       >
-        <option value="">Select Leave Type</option>
+        <option value="">{$t("leaves.form.fields.select_leave_type")}</option>
         {#each leaveTypeOptions as option}
           <option value={option.value}>{option.label}</option>
         {/each}
@@ -179,10 +171,9 @@
       {/if}
     </div>
 
-    <!-- Start Date -->
     <div class="form-control">
       <label class="label" for="startDate">
-        <span class="label-text">Start Date</span>
+        <span class="label-text">{$t("leaves.form.fields.start_date")}</span>
         <span class="text-error">*</span>
       </label>
       <input
@@ -195,10 +186,9 @@
       />
     </div>
 
-    <!-- End Date -->
     <div class="form-control">
       <label class="label" for="endDate">
-        <span class="label-text">End Date</span>
+        <span class="label-text">{$t("leaves.form.fields.end_date")}</span>
         <span class="text-error">*</span>
       </label>
       <input
@@ -211,17 +201,16 @@
       />
       {#if !isEndDateValid}
         <div class="label">
-          <span class="label-text-alt text-error"
-            >End date must be after start date</span
-          >
+          <span class="label-text-alt text-error">
+            {$t("leaves.form.messages.end_date_validation")}
+          </span>
         </div>
       {/if}
     </div>
 
-    <!-- Reason -->
     <div class="form-control">
       <label class="label" for="reason">
-        <span class="label-text">Reason</span>
+        <span class="label-text">{$t("leaves.form.fields.reason")}</span>
         <span class="text-error">*</span>
       </label>
       <textarea
@@ -233,14 +222,18 @@
       ></textarea>
     </div>
 
-    <!-- Number of Days -->
     {#if formData.startDate && formData.endDate && isEndDateValid}
       <div class="form-control col-span-full">
         <label class="label" for="numberOfDays">
-          <span class="label-text">Number of Days</span>
+          <span class="label-text"
+            >{$t("leaves.form.fields.number_of_days")}</span
+          >
         </label>
         <div id="numberOfDays" class="text-sm font-medium">
-          {numberOfDays} day{numberOfDays !== 1 ? "s" : ""}
+          {numberOfDays}
+          {$t(
+            `leaves.form.messages.days_suffix.${numberOfDays !== 1 ? "plural" : "singular"}`
+          )}
         </div>
       </div>
     {/if}
@@ -253,14 +246,16 @@
       on:click={handleCancel}
       disabled={loading}
     >
-      Cancel
+      {$t("leaves.form.buttons.cancel")}
     </button>
     <button
       type="submit"
       class="btn btn-primary"
       disabled={loading || !isEndDateValid || !isLeaveBalanceValid}
     >
-      {loading ? "Applying..." : "Apply"}
+      {loading
+        ? $t("leaves.form.buttons.applying")
+        : $t("leaves.form.buttons.apply")}
     </button>
   </div>
 </form>

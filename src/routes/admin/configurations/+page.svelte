@@ -70,8 +70,6 @@
           <TaxSlabManagement />
         {:else if $activeTab === "holiday"}
           <HolidayCalendar />
-          <!-- {:else if $activeTab === "weekends"}
-          <WeekendCalendar /> -->
         {/if}
       </Tabs>
     </div>

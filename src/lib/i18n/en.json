@@ -184,6 +184,33 @@
                 "reject_title": "Reject Leave",
                 "remarks_label": "Remarks (optional)"
             }
+        },
+        "form": {
+            "alerts": {
+                "no_leave_allocated": "Leave has not been allocated to you. Please inform your admin. You are only eligible to apply for Loss of Pay."
+            },
+            "fields": {
+                "leave_type": "Leave Type",
+                "start_date": "Start Date",
+                "end_date": "End Date",
+                "reason": "Reason",
+                "number_of_days": "Number of Days",
+                "select_leave_type": "Select Leave Type"
+            },
+            "buttons": {
+                "cancel": "Cancel",
+                "apply": "Apply",
+                "applying": "Applying..."
+            },
+            "messages": {
+                "end_date_validation": "End date must be after start date",
+                "available_balance": "Available balance: {days} days",
+                "insufficient_balance": " (Insufficient balance)",
+                "days_suffix": {
+                    "singular": "day",
+                    "plural": "days"
+                }
+            }
         }
     }
 }

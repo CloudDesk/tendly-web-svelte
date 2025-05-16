@@ -28,6 +28,8 @@
 
   const dispatch = createEventDispatcher();
 
+  console.log(meta, "meta table");
+
   $: if (serverSide && meta) {
     currentPage = meta.page;
     itemsPerPage = meta.limit;
