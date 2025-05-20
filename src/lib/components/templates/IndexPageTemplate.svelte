@@ -1,4 +1,97 @@
 <script lang="ts">
+  import { Download, Layout, Plus } from "lucide-svelte";
+  import Button from "../common/Button.svelte";
+  import { Filter } from "lucide-svelte";
+
+  export let title = "";
+  export let subtitle = "";
+  export let showExport = false;
+  export let showAdd = false;
+  export let addButtonText = "Add New";
+  export let onAdd = () => {};
+  export let onExport = () => {};
+
+  // Header actions props
+  export let showFilter = false;
+  export let showView = false;
+  export let onFilter = () => {};
+  export let onView = () => {};
+  export let filterText = "Filter";
+  export let viewText = "View";
+</script>
+
+<div class="page-wrapper">
+  <header
+    class="page-header flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6"
+  >
+    <div class="header-left">
+      <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div>
+          <h1 class="text-2xl font-semibold text-gray-900">{title}</h1>
+          {#if subtitle}
+            <p class="text-sm text-gray-500 mt-1">{subtitle}</p>
+          {/if}
+        </div>
+
+        {#if showFilter || showView}
+          <div class="header-actions flex items-center gap-2 mt-2 sm:mt-0">
+            {#if showFilter}
+              <Button variant="none" size="sm" on:click={onFilter}>
+                <span class="flex items-center gap-2">
+                  <Filter size="16" />
+                  {filterText}
+                </span>
+              </Button>
+            {/if}
+
+            {#if showView}
+              <Button variant="none" size="sm" on:click={onView}>
+                <span class="flex items-center gap-2">
+                  <Layout size="16" />
+                  {viewText}
+                </span>
+              </Button>
+            {/if}
+          </div>
+        {/if}
+      </div>
+      <slot name="header-left" />
+    </div>
+
+    <div class="header-right flex flex-wrap items-center gap-3">
+      <slot name="header-right-start" />
+
+      {#if showExport}
+        <Button variant="outline" on:click={onExport}>
+          <span class="flex items-center gap-2">
+            <Download size="16" />
+            Export
+          </span>
+        </Button>
+      {/if}
+
+      {#if showAdd}
+        <Button variant="primary" on:click={onAdd}>
+          <span class="flex items-center gap-2">
+            <Plus size={16} />
+            {addButtonText}
+          </span>
+        </Button>
+      {/if}
+
+      <slot name="header-right-end" />
+    </div>
+  </header>
+
+  <div class="content-container bg-white rounded-lg shadow-sm overflow-hidden">
+    <slot />
+  </div>
+</div>
+
+<!-- Compare this snippet from src/lib/components/templates/DetailPageTemplate.svelte: -->
+
+<!-- 
+<script lang="ts">
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
   import ContentCard from "$lib/components/common/ContentCard.svelte";
   import Table from "$lib/components/common/Table.svelte";
@@ -279,5 +372,13 @@
   :global(.status-badge.inactive) {
     background: #ffebeb;
     color: #d83a52;
+  }
+</style>
+
+-->
+
+<style>
+  .page-wrapper {
+    @apply min-h-[calc(100vh-4rem)];
   }
 </style>

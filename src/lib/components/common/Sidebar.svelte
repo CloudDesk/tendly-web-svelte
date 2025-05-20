@@ -289,28 +289,27 @@
   }
 </script>
 
-<!-- Hamburger Menu Button -->
+<!-- Mobile menu trigger -->
 <button
-  class="hamburger-menu lg:hidden"
+  class="fixed top-4 left-4 z-50 p-2 bg-white rounded-md shadow-md lg:hidden"
   on:click={toggleSidebar}
   aria-label="Toggle Sidebar"
 >
-  <Menu />
+  <Menu size={20} />
 </button>
 
 <aside
-  class="sidebar fixed left-0 top-0 h-screen bg-gradient-to-b from-[#F8FAFF] to-[#EDF3FF] border-r border-surface-border shadow-sm {$isCollapsed
-    ? 'w-20'
-    : 'w-64'} transition-all duration-200 z-20 {$isSidebarOpen
-    ? 'open'
-    : ''} lg:translate-x-0"
+  class="fixed left-0 top-0 h-screen bg-gradient-to-b from-[#F8FAFF] to-[#EDF3FF]
+  border-r border-surface-border shadow-sm transition-all duration-300 ease-in-out z-30
+  {$isCollapsed ? 'w-20' : 'w-64'} 
+  {$isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}"
 >
   <!-- Header -->
   <div
     class="h-16 flex items-center justify-between px-4 border-b border-surface-border/50 backdrop-blur-sm bg-white/50"
   >
     <div
-      class="{$isCollapsed ? 'w-8' : 'w-[120px]'} transition-all duration-200"
+      class="{$isCollapsed ? 'w-8' : 'w-[120px]'} transition-all duration-300"
     >
       {#if !$isCollapsed}
         <img
@@ -329,20 +328,21 @@
       {/if}
     </div>
     <button
-      class="w-8 h-8 flex items-center justify-center text-text-muted hover:text-text rounded-lg hover:bg-white/50 transition-colors"
+      class="w-8 h-8 flex items-center justify-center text-text-muted hover:text-primary
+      rounded-lg hover:bg-white/80 transition-colors"
       on:click={toggleSidebar}
       aria-label={$isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
     >
       {#if $isCollapsed}
-        <ChevronRight size={20} />
+        <ChevronRight size={18} />
       {:else}
-        <ChevronLeft size={20} />
+        <ChevronLeft size={18} />
       {/if}
     </button>
   </div>
 
   <!-- Navigation -->
-  <nav class="h-[calc(100vh-4rem)] overflow-y-auto py-4">
+  <nav class="h-[calc(100vh-4rem)] overflow-y-auto py-4 scrollbar-thin">
     {#each $navigationSections as section}
       <div class="mb-6">
         {#if !$isCollapsed}
@@ -417,7 +417,8 @@
 
   <!-- User Card -->
   <div
-    class="absolute bottom-0 w-full p-3 bg-white border-t border-surface-border/50 flex items-center justify-between gap-2"
+    class="absolute bottom-0 w-full p-3 bg-white border-t border-surface-border/50
+  flex items-center justify-between gap-2"
   >
     <a
       href="/my/profile"
@@ -474,21 +475,25 @@
 </aside>
 
 <style lang="postcss">
-  :global(nav::-webkit-scrollbar) {
-    width: 5px;
+  :global(nav.scrollbar-thin::-webkit-scrollbar) {
+    width: 4px;
   }
-  :global(nav::-webkit-scrollbar-track) {
+
+  :global(nav.scrollbar-thin::-webkit-scrollbar-track) {
     background: transparent;
   }
-  :global(nav::-webkit-scrollbar-thumb) {
+
+  :global(nav.scrollbar-thin::-webkit-scrollbar-thumb) {
     @apply bg-surface-border/50 rounded-full;
   }
-  nav {
+
+  nav.scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: var(--surface-border) transparent;
   }
-  button:disabled {
-    cursor: not-allowed;
-    opacity: 0.7;
+
+  /* Add box-shadow to sidebar for subtle elevation */
+  aside {
+    box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.1);
   }
 </style>

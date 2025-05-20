@@ -85,6 +85,7 @@
         limit,
         search: searchQuery,
       });
+      console.log(response, "loadTrainings");
       trainings = response.data;
     } catch (err) {
       error = "Failed to load trainings";

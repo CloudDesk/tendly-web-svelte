@@ -3,6 +3,13 @@ import type { Training } from '$lib/types';
 import { toUTCDate, toUTCTime, fromUTCTime, fromUTCDate } from '$lib/utils/date';
 
 
+export type TrainingFilters = {
+  search?: string;
+  page?: number;
+  limit?: number;
+};
+
+
 function convertTrainingTimesToUTC<T extends { startTime?: string; endTime?: string; trainingWindowStart?: string; trainingWindowEnd?: string; validFrom?: string; validTill?: string }>(training: T): T {
   return {
     ...training,

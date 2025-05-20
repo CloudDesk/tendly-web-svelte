@@ -1,13 +1,14 @@
 <script lang="ts">
   import Table from "$lib/components/common/Table.svelte";
-  import type { LeaveRequest, LeaveSummary } from "$lib/services/api/leaves";
+  import type { LeaveRequest } from "$lib/services/api/leaves";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { leavesApi } from "$lib/services/api/leaves";
-  import Modal from "$lib/components/common/Modal.svelte";
-  import LeaveForm from "$lib/components/leave/LeaveForm.svelte";
   import { getLeaveTypeLabel } from "$lib/constants/leaveTypes.js";
   import { toast } from "$lib/components/common/stores/toast.store.js";
+  import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
+  import InfoBanner from "$lib/components/common/InfoBanner.svelte";
+  import ContentCard from "$lib/components/common/ContentCard.svelte";
 
   export let data;
   let isLoading = false;
@@ -152,6 +153,7 @@
   function handleFormUpdate(event: CustomEvent) {
     formValues = event.detail;
   }
+  function handleExport() {}
 </script>
 
 <svelte:head>
@@ -161,51 +163,20 @@
   />
 </svelte:head>
 
-<div class="leaves-page">
-  <header>
-    <div class="header-left">
-      <h1>Leave Management</h1>
-      <div class="header-actions">
-        <button class="btn-filter">
-          <i class="fas fa-filter"></i>
-          Filter
-        </button>
-        <button class="btn-view">
-          <i class="fas fa-table-list"></i>
-          View
-        </button>
-      </div>
-    </div>
-    <div class="header-right">
-      <button class="btn-secondary">
-        <i class="fas fa-file-export"></i>
-        Export
-      </button>
-      <!-- <button class="btn-primary" on:click={openApplyForm}>
-        <i class="fas fa-plus"></i>
-        Apply Leave
-      </button> -->
-    </div>
-  </header>
+<IndexPageTemplate
+  title="Leave Management"
+  subtitle="Leave "
+  showExport={true}
+  showAdd={false}
+  onExport={handleExport}
+  showFilter={true}
+  showView={true}
+>
+  <InfoBanner type="info" dismissible={true}>
+    Remember to verify employee documents after adding new records.
+  </InfoBanner>
 
-  <!-- {#if showApplyForm}
-    <Modal
-      show={showApplyForm}
-      title="Leave Details"
-      onClose={() => (showApplyForm = false)}
-    >
-      <LeaveForm
-        {loading}
-        {summary}
-        initialValues={formValues}
-        on:submit={handleLeaveSubmit}
-        on:update={handleFormUpdate}
-        on:cancel={() => (showApplyForm = false)}
-      />
-    </Modal>
-  {/if} -->
-
-  <div class="table-container">
+  <ContentCard noPadding={true}>
     <Table
       {columns}
       data={leaves}
@@ -216,147 +187,5 @@
       on:sort={handleSort}
       on:page={handlePage}
     />
-    <!--  <Table
-      {columns}
-      data={leaves}
-      loading={$page.url.searchParams.toString() !== $page.url.searchParams.toString()}
-      meta={pagination}
-      currentSort={sort}
-      serverSide={true}
-      on:search={handleSearch}
-      on:sort={handleSort}
-      on:page={handlePage}
-    /> -->
-  </div>
-</div>
-
-<style>
-  .leaves-page {
-    padding: 24px;
-    background: #f6f7fb;
-    min-height: 100vh;
-  }
-
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-  }
-
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-  }
-
-  .header-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .header-right {
-    display: flex;
-    gap: 12px;
-  }
-
-  h1 {
-    font-size: 24px;
-    font-weight: 600;
-    color: #323338;
-    margin: 0;
-  }
-
-  button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    border-radius: 4px;
-    border: none;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn-primary {
-    background: #0073ea;
-    color: white;
-  }
-
-  .btn-primary:hover {
-    background: #0060c2;
-  }
-
-  .btn-secondary {
-    background: white;
-    color: #323338;
-    border: 1px solid #dcdcdc;
-  }
-
-  .btn-secondary:hover {
-    background: #f5f6f8;
-  }
-
-  .btn-filter,
-  .btn-view {
-    background: transparent;
-    color: #676879;
-    padding: 6px 12px;
-  }
-
-  .btn-filter:hover,
-  .btn-view:hover {
-    background: #f5f6f8;
-  }
-
-  .table-container {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  }
-
-  :global(.status) {
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.875rem;
-    font-weight: 500;
-  }
-
-  :global(.status.approved) {
-    background: #d1fae5;
-    color: #047857;
-  }
-
-  :global(.status.pending) {
-    background: #fef3c7;
-    color: #b45309;
-  }
-
-  :global(.status.rejected) {
-    background: #fee2e2;
-    color: #b91c1c;
-  }
-
-  :global(.status.cancelled) {
-    background: #f3f4f6;
-    color: #4b5563;
-  }
-  :global(.btn-action) {
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border-radius: 4px;
-    background: transparent;
-    color: #676879;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  :global(.btn-action:hover) {
-    background: #f5f6f8;
-    color: #323338;
-  }
-</style>
+  </ContentCard>
+</IndexPageTemplate>

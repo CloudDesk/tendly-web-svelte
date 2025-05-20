@@ -13,15 +13,20 @@
   import { toast } from "$lib/components/common/stores/toast.store.js";
   import Modal from "$lib/components/common/Modal.svelte";
   import EmployeeForm from "$lib/components/employee/EmployeeForm.svelte";
-  export let data;
-  $: ({ employee } = data);
-  console.log(data.employee, "employeeemployee");
-  console.log(data, "data");
+  import DetailPageTemplate from "$lib/components/templates/DetailPageTemplate.svelte";
+  import ContentCard from "$lib/components/common/ContentCard.svelte";
+  import InfoBanner from "$lib/components/common/InfoBanner.svelte";
+  import { Edit, Mail } from "lucide-svelte";
+  import LoaderNew from "$lib/components/common/LoaderNew.svelte";
 
+  export let data: { employee?: any } | undefined;
+
+  let employee = data?.employee;
   let showEditForm = false;
   let loading = false;
-
+  let errorMessage: string | null = null;
   let employeeBankdetailsData;
+
   const tabs = [
     { id: "overview", label: "Overview" },
     { id: "shifts", label: "Shifts" },
@@ -34,62 +39,48 @@
 
   $: activeTab = $page.url.searchParams.get("tab") || tabs[0]?.id;
 
-  // function setActiveTab(tab: string) {
-  //   activeTab = tab;
-  // }
-
-  function formatDate(date: string) {
-    return new Date(date).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  }
-
-  async function handleRefresh(event: CustomEvent) {
-    console.log("Refresh event triggered:", event.detail);
-
-    try {
-      const response = await employeesApi.getById(employee._id);
-      console.log(response, "responseresponse");
-      if (!response.success) {
-        throw response as unknown as ApiError;
-      }
-      employeeBankdetailsData = response.data;
-      console.log(employeeBankdetailsData, "employeeBankdetailsData");
-      return {
-        employee: response.data,
-      };
-    } catch (error) {
-      console.error("Failed to load employee:", error);
-
-      // // Ensure event.detail contains updated employee data before modifying `data`
-      // if (event.detail) {
-      //   data = { ...data, employee: event.detail };
-      // }
-    }
-  }
+  // Define actions for the header
+  const headerActions = [
+    {
+      label: "Message",
+      handler: () => {
+        console.log("Message employee");
+      },
+      variant: "outline" as const,
+      icon: Mail,
+    },
+    {
+      label: "Edit Profile",
+      handler: () => {
+        showEditForm = true;
+      },
+      variant: "primary" as const,
+      icon: Edit,
+    },
+  ];
 
   async function handleEditSubmit(event: CustomEvent) {
     let data = event.detail;
 
-    //remove dates createdAt and updatedAt
+    // Remove unnecessary fields
     delete data.createdAt;
     delete data.updatedAt;
     delete data.currentShiftAssignmentData;
     delete data.upcomingShiftAssignmentData;
-    // Remove dateOfBirth if it is false, empty, or null
+
     if (!data.dateOfBirth) {
       delete data.dateOfBirth;
     }
 
     try {
       loading = true;
+      if (!employee) {
+        throw new Error("Employee data is not available");
+      }
       const response = await employeesApi.update(employee._id, event.detail);
       if (response.success) {
         toast.success("Profile updated successfully");
         showEditForm = false;
-        // Refresh the page or update the employee data
         employee = response.data;
       } else {
         toast.error("Failed to update profile");
@@ -101,60 +92,113 @@
       loading = false;
     }
   }
+
+  async function handleRefresh(event: CustomEvent) {
+    try {
+      loading = true;
+      const response = await employeesApi.getById(employee?._id);
+      if (!response.success) {
+        throw new Error("Failed to fetch employee data");
+      }
+      employeeBankdetailsData = response.data;
+      employee = response.data;
+    } catch (error) {
+      console.error("Failed to load employee:", error);
+      errorMessage = "Failed to load employee data. Please try again later.";
+    } finally {
+      loading = false;
+    }
+  }
 </script>
 
-<div class="p-8 bg-surface-muted min-h-screen">
-  <header class="flex justify-between items-center mb-12">
-    <div class="flex items-center gap-6">
-      <button class="btn-icon" on:click={() => goto("/admin/employees")}>
-        <i class="fas fa-arrow-left"></i>
-      </button>
-      <div class="flex items-center gap-3">
-        <h1 class="text-xl font-semibold text-text m-0">{employee.name}</h1>
-        <div class="badge badge-success">{employee.role}</div>
+<DetailPageTemplate
+  title=""
+  subtitle=""
+  backLink="/admin/employees"
+  showActions={true}
+  actions={headerActions}
+>
+  {#if loading}
+    <div class="flex justify-center items-center py-10">
+      <LoaderNew />
+    </div>
+  {:else if errorMessage}
+    <InfoBanner type="error" message={errorMessage} dismissible={false} />
+  {:else if !employee}
+    <InfoBanner
+      type="warning"
+      message="Employee data is not available. Please try again later."
+      dismissible={false}
+    />
+  {:else}
+    <!-- Employee Status and Avatar Section -->
+    <ContentCard noPadding={true}>
+      <div class="p-6">
+        <div class="flex items-center gap-4">
+          <div class="avatar avatar-lg">
+            {employee?.name[0]}
+          </div>
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center gap-3">
+              <h2 class="text-xl font-semibold text-gray-900">
+                {employee?.name}
+              </h2>
+              <div class="badge badge-success">{employee?.role}</div>
+            </div>
+            <div
+              class="badge {employee?.active
+                ? 'badge-success'
+                : 'badge-danger'}"
+            >
+              {employee?.active ? "Active" : "Inactive"}
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="flex gap-3">
-      <button class="btn btn-secondary">
-        <i class="fas fa-envelope"></i>
-        Message
-      </button>
-      <button class="btn btn-primary" on:click={() => (showEditForm = true)}>
-        <i class="fas fa-pencil"></i>
-        Edit Profile
-      </button>
-    </div>
-  </header>
+    </ContentCard>
 
-  <div class="space-y-8">
-    <div class="flex items-center gap-4 mb-8">
-      <div class="avatar avatar-lg">
-        {employee.name[0]}
+    <!-- Tabs Section -->
+    <ContentCard title="Employee Details" noPadding={true}>
+      <div class="tab-container">
+        <Tabs
+          {tabs}
+          urlParam="tab"
+          on:changeTab={(e) => (activeTab = e.detail)}
+        >
+          {#if activeTab === "overview"}
+            <div class="p-6">
+              <EmployeeInfo employeeId={employee._id} {employee} />
+            </div>
+          {:else if activeTab === "leaves"}
+            <div class="p-6">
+              <EmployeeLeaves employeeId={employee._id} />
+            </div>
+          {:else if activeTab === "attendance"}
+            <div class="p-6">
+              <EmployeeAttendance employeeId={employee._id} />
+            </div>
+          {:else if activeTab === "training"}
+            <div class="p-6">
+              <EmployeeTrainingAttendance employeeId={employee._id} />
+            </div>
+          {:else if activeTab === "salary"}
+            <div class="p-6">
+              <EmployeeSalary employeeId={employee._id} />
+            </div>
+          {:else if activeTab === "it-declaration"}
+            <div class="p-6">
+              <ITDeclarationApproval employeeId={employee._id} />
+            </div>
+          {:else if activeTab === "shifts"}
+            <div class="p-6">
+              <EmployeeShiftAssignment employeeId={employee._id} />
+            </div>
+          {/if}
+        </Tabs>
       </div>
-      <div class="badge {employee.active ? 'badge-success' : 'badge-danger'}">
-        {employee.active ? "Active" : "Inactive"}
-      </div>
-    </div>
+    </ContentCard>
 
-    <div class="tab-container">
-      <Tabs {tabs}>
-        {#if activeTab === "overview"}
-          <EmployeeInfo employeeId={employee._id} {employee} />
-        {:else if activeTab === "leaves"}
-          <EmployeeLeaves employeeId={employee._id} />
-        {:else if activeTab === "attendance"}
-          <EmployeeAttendance employeeId={employee._id} />
-        {:else if activeTab === "training"}
-          <EmployeeTrainingAttendance employeeId={employee._id} />
-        {:else if activeTab === "salary"}
-          <EmployeeSalary employeeId={employee._id} />
-        {:else if activeTab === "it-declaration"}
-          <ITDeclarationApproval employeeId={employee._id} />
-        {:else if activeTab === "shifts"}
-          <EmployeeShiftAssignment employeeId={employee._id} />
-        {/if}
-      </Tabs>
-    </div>
+    <!-- Edit Modal -->
     {#if showEditForm}
       <Modal
         show={showEditForm}
@@ -164,27 +208,11 @@
         <EmployeeForm
           mode="update"
           {loading}
-          initialValues={data.employee}
+          initialValues={employee}
           on:update={handleEditSubmit}
           on:cancel={() => (showEditForm = false)}
         />
       </Modal>
     {/if}
-  </div>
-</div>
-
-<style>
-  .loading {
-    text-align: center;
-    padding: 2rem;
-    color: #6b7280;
-  }
-
-  .error {
-    text-align: center;
-    padding: 2rem;
-    color: #991b1b;
-    background: #fee2e2;
-    border-radius: 0.5rem;
-  }
-</style>
+  {/if}
+</DetailPageTemplate>
