@@ -1,7 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { auth } from "$lib/stores/auth";
-  import { navigationContext } from "$lib/stores/navigation";
   import type { ComponentType } from "svelte";
   import logo from "$lib/assets/Tendly_logo_Full.png";
   import logoSmall from "$lib/assets/Tendly_T_logo.png";
@@ -9,7 +8,6 @@
     LayoutDashboard,
     Users,
     CalendarCheck,
-    CalendarOff,
     Settings,
     LogOut,
     ChevronLeft,
@@ -27,7 +25,7 @@
     Menu,
   } from "lucide-svelte";
   import PayrollIcon from "./icon/PayrollIcon.svelte";
-  import { fly } from "svelte/transition";
+  import { fly, slide } from "svelte/transition";
   import { writable } from "svelte/store";
   import { createEventDispatcher } from "svelte";
   export const ssr = false;
@@ -46,11 +44,19 @@
   }
 
   const collapsedSections = writable<{ [key: string]: boolean }>({});
+  const collapsedSubItems = writable<{ [key: string]: boolean }>({});
 
   function toggleSection(label: string) {
     collapsedSections.update((sections) => ({
       ...sections,
       [label]: !sections[label],
+    }));
+  }
+
+  function toggleSubItem(itemLabel: string) {
+    collapsedSubItems.update((items) => ({
+      ...items,
+      [itemLabel]: !items[itemLabel],
     }));
   }
 
@@ -268,6 +274,11 @@
     return currentPath === path && currentTab === params.get("tab");
   };
 
+  $: getHasActiveChild = (item: NavItem) => {
+    if (!item.children) return false;
+    return item.children.some((child) => getIsChildActive(child.href));
+  };
+
   function toggleSidebar() {
     isCollapsed.update((v) => {
       const newValue = !v;
@@ -300,13 +311,13 @@
 
 <aside
   class="fixed left-0 top-0 h-screen bg-gradient-to-b from-[#F8FAFF] to-[#EDF3FF]
-  border-r border-surface-border shadow-sm transition-all duration-300 ease-in-out z-30
+  border-r border-surface-border shadow-sm transition-all duration-300 ease-in-out z-30 flex flex-col
   {$isCollapsed ? 'w-20' : 'w-64'} 
   {$isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}"
 >
   <!-- Header -->
   <div
-    class="h-16 flex items-center justify-between px-4 border-b border-surface-border/50 backdrop-blur-sm bg-white/50"
+    class="h-16 flex items-center justify-between px-4 border-b border-surface-border/50 backdrop-blur-sm bg-white/50 flex-shrink-0"
   >
     <div
       class="{$isCollapsed ? 'w-8' : 'w-[120px]'} transition-all duration-300"
@@ -341,8 +352,8 @@
     </button>
   </div>
 
-  <!-- Navigation -->
-  <nav class="h-[calc(100vh-4rem)] overflow-y-auto py-4 scrollbar-thin">
+  <!-- Navigation - Uses flex-1 to take available space between header and user card -->
+  <nav class="h-[calc(100vh-4rem)] pb-4 overflow-y-auto py-4 scrollbar-thin">
     {#each $navigationSections as section}
       <div class="mb-6">
         {#if !$isCollapsed}
@@ -374,40 +385,68 @@
           <div class="space-y-1">
             {#each section.items as item}
               {@const isActive = getIsActive(item.href)}
-              <a
-                href={item.href}
-                class="flex items-center gap-3 px-4 py-2 text-sm {isActive
-                  ? 'bg-white/70 text-primary font-medium shadow-sm'
-                  : 'text-text-muted hover:text-text hover:bg-white/50'} transition-all"
-              >
-                <svelte:component this={item.icon} size={20} />
-                {#if !$isCollapsed}
-                  <span>{item.label}</span>
-                  {#if item.children}
+              {@const hasActiveChild = getHasActiveChild(item)}
+              {@const isSubItemExpanded = !$collapsedSubItems[item.label]}
+
+              <!-- Main nav item -->
+              <div>
+                {#if item.children && !$isCollapsed}
+                  <!-- Item with children - make it clickable to toggle -->
+                  <div
+                    class="flex items-center gap-3 px-4 py-2 text-sm cursor-pointer {isActive ||
+                    hasActiveChild
+                      ? 'bg-white/70 text-primary font-medium shadow-sm'
+                      : 'text-text-muted hover:text-text hover:bg-white/50'} transition-all"
+                    role="button"
+                    tabindex="0"
+                    on:click={() => toggleSubItem(item.label)}
+                    on:keydown={(e) =>
+                      e.key === "Enter" && toggleSubItem(item.label)}
+                  >
+                    <svelte:component this={item.icon} size={20} />
+                    <span class="flex-1">{item.label}</span>
                     <ChevronDown
                       size={16}
-                      class="ml-auto transition-transform {isActive
+                      class="transition-transform {isSubItemExpanded
                         ? ''
                         : '-rotate-90'}"
                     />
-                  {/if}
+                  </div>
+                {:else}
+                  <!-- Regular nav item -->
+                  <a
+                    href={item.href}
+                    class="flex items-center gap-3 px-4 py-2 text-sm {isActive
+                      ? 'bg-white/70 text-primary font-medium shadow-sm'
+                      : 'text-text-muted hover:text-text hover:bg-white/50'} transition-all"
+                  >
+                    <svelte:component this={item.icon} size={20} />
+                    {#if !$isCollapsed}
+                      <span>{item.label}</span>
+                    {/if}
+                  </a>
                 {/if}
-              </a>
-              {#if item.children && !$isCollapsed && isActive}
-                <div class="pl-12 space-y-1 bg-white/30">
-                  {#each item.children as child}
-                    {@const isChildActive = getIsChildActive(child.href)}
-                    <a
-                      href={child.href}
-                      class="block py-2 text-sm {isChildActive
-                        ? 'text-primary font-medium'
-                        : 'text-text-muted hover:text-text'} transition-colors"
-                    >
-                      {child.label}
-                    </a>
-                  {/each}
-                </div>
-              {/if}
+
+                <!-- Children items with slide transition -->
+                {#if item.children && !$isCollapsed && isSubItemExpanded}
+                  <div
+                    class="pl-12 space-y-1 bg-white/30"
+                    transition:slide={{ duration: 200 }}
+                  >
+                    {#each item.children as child}
+                      {@const isChildActive = getIsChildActive(child.href)}
+                      <a
+                        href={child.href}
+                        class="block py-2 text-sm {isChildActive
+                          ? 'text-primary font-medium'
+                          : 'text-text-muted hover:text-text'} transition-colors"
+                      >
+                        {child.label}
+                      </a>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
             {/each}
           </div>
         {/if}
@@ -415,10 +454,9 @@
     {/each}
   </nav>
 
-  <!-- User Card -->
+  <!-- User Card - Fixed at bottom -->
   <div
-    class="absolute bottom-0 w-full p-3 bg-white border-t border-surface-border/50
-  flex items-center justify-between gap-2"
+    class="p-3 bg-white border-t border-surface-border/50 flex items-center justify-between gap-2 flex-shrink-0"
   >
     <a
       href="/my/profile"
