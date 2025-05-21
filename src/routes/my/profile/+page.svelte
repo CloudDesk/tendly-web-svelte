@@ -4,6 +4,8 @@
   import { Calendar, Mail, Briefcase, Shield, Users, Settings, Edit } from 'lucide-svelte';
   import LeaveSummary from '$lib/components/dashboard/LeaveSummary.svelte';
   import CurrentShift from '$lib/components/dashboard/CurrentShift.svelte';
+  import IndexPageTemplate from '$lib/components/templates/IndexPageTemplate.svelte';
+  import ContentCard from '$lib/components/common/ContentCard.svelte';
 
   // Format joining date for display
   $: formattedJoiningDate = $auth.user?.joiningDate
@@ -32,43 +34,11 @@
   }
 </script>
 
-<div class="min-h-screen bg-gray-50 flex">
-  <!-- Sidebar -->
-  <!-- <aside
-    class="{isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 fixed md:static w-64 bg-blue-800 text-white h-full transition-transform duration-300 ease-in-out z-20"
-  >
-    <div class="p-6">
-      <h2 class="text-xl font-bold">HRMS Dashboard</h2>
-    </div>
-    <nav class="mt-4">
-      <a href="/profile" class="flex items-center gap-3 px-6 py-3 bg-blue-900">
-        <User class="w-5 h-5" />
-        Profile
-      </a>
-      <a href="/settings" class="flex items-center gap-3 px-6 py-3 hover:bg-blue-700">
-        <Settings class="w-5 h-5" />
-        Settings
-      </a>
-    </nav>
-  </aside> -->
-
-  <!-- Main Content -->
-  <main class="flex-1 p-6 md:p-8">
-    <!-- Mobile Sidebar Toggle -->
-    <button
-      class="md:hidden mb-6 p-2 bg-blue-600 text-white rounded-full"
-      on:click={toggleSidebar}
-    >
-      <!-- <User class="w-6 h-6" /> -->
-    </button>
-
-    <!-- Profile Header -->
-    <div class="flex justify-between items-center mb-8">
-      <h1 class="text-2xl md:text-3xl font-bold text-gray-800">My Profile</h1>
-    </div>
-
-    <!-- Profile Card -->
-    <div class="bg-white rounded-xl p-6 md:p-8 shadow-sm">
+<IndexPageTemplate
+  title="My Profile"
+  subtitle="Personal Details"
+>
+<div class="bg-white rounded-xl p-6 md:p-8 shadow-sm">
       <div class="flex items-center gap-4 mb-6">
         <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
           <span class="text-2xl font-bold text-white">{firstLetter}</span>
@@ -146,12 +116,4 @@
         </p>
       </div>
     </div>
-  </main>
-</div>
-
-<style>
-  /* Hover effects for buttons */
-  button:hover {
-    transform: translateY(-1px);
-  }
-</style>
+</IndexPageTemplate>

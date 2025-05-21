@@ -7,6 +7,8 @@
   import EmployeeTrainingAttendance from "$lib/components/attendance/EmployeeTrainingAttendance.svelte";
   import { page } from "$app/stores";
   import { navigationContext } from "$lib/stores/navigation";
+  import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
+  import ContentCard from "$lib/components/common/ContentCard.svelte";
   // import "../../../Mobileview.css"; // Import the external CSS file
 
   let loading = false;
@@ -60,6 +62,32 @@
     loadEmployees();
   });
 </script>
+
+<IndexPageTemplate
+  title="Attendance Management"
+  subtitle="Manage your attendance"
+
+>
+<ContentCard noPadding={true}>
+    <Tabs {tabs}>
+          {#if activeTab === "shift"}
+            <EmployeeAttendance
+              mode="multi"
+              employeeIds={Array.from(selectedEmployeeIds)}
+            />
+          {:else if activeTab === "training"}
+            <EmployeeTrainingAttendance
+              mode="multi"
+              employeeIds={Array.from(selectedEmployeeIds)}
+            />
+          {:else}
+            <div class="alert alert-info">
+              Please select at least one employee to view attendance records.
+            </div>
+          {/if}
+        </Tabs>
+  </ContentCard>
+</IndexPageTemplate>
 
 <div class="p-4">
   <div class="flex justify-between items-center mb-6">

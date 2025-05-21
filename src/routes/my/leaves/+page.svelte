@@ -15,6 +15,8 @@
   import Filter from "$lib/components/common/Filter.svelte";
   import { writable, derived } from "svelte/store";
   import type { LeaveFilterSchema } from "$lib/types";
+  import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
+  import ContentCard from "$lib/components/common/ContentCard.svelte";
 
   // Constants for default form values
   const DEFAULT_FORM_VALUES = {
@@ -156,6 +158,7 @@
 
   // Open apply form
   function openApplyForm() {
+    console.log("Opening apply form");
     formValues = { ...DEFAULT_FORM_VALUES };
     showApplyForm = true;
   }
@@ -272,6 +275,7 @@
       toggleFilter();
     }
   }
+  const handleExport = async () => {};
 </script>
 
 <svelte:head>
@@ -281,68 +285,20 @@
   />
 </svelte:head>
 
-<div class="leaves-page">
-  <header>
-    <div class="header-left">
-      <h1>Leave Management</h1>
-      <div class="header-actions">
-        <button
-          class="btn-filter"
-          class:active={isFilterOpen}
-          on:click={toggleFilter}
-        >
-          <i class="fas fa-filter"></i>
-          {#if $selectedFilterCount > 0}
-            <span class="filter-badge">{$selectedFilterCount}</span>
-          {/if}
-          Filter
-        </button>
-        <button class="btn-view">
-          <i class="fas fa-table-list"></i>
-          View
-        </button>
-      </div>
-    </div>
-    <div class="header-right">
-      <button class="btn-secondary">
-        <i class="fas fa-file-export"></i>
-        Export
-      </button>
-      <button class="btn-primary" on:click={openApplyForm}>
-        <i class="fas fa-plus"></i>
-        Apply Leave
-      </button>
-    </div>
-  </header>
-
-  {#if showApplyForm}
-    <Modal
-      show={showApplyForm}
-      title="Leave Details"
-      onClose={() => (showApplyForm = false)}
-    >
-      <LeaveForm
-        {loading}
-        {summary}
-        initialValues={formValues}
-        on:submit={handleLeaveSubmit}
-        on:update={handleFormUpdate}
-        on:cancel={() => (showApplyForm = false)}
-      />
-    </Modal>
-  {/if}
-
-  <Filter
-    filters={filtersSchema}
-    values={$appliedFilterValues}
-    isOpen={isFilterOpen}
-    on:change={handleFilterChange}
-    on:apply={handleFilterApply}
-    on:reset={handleFilterReset}
-    on:close={() => (isFilterOpen = false)}
-  />
-
-  <div class="table-container">
+<IndexPageTemplate
+  title="Leave Management"
+  subtitle="Apply for Leave and View Your Leave History"
+  showExport={true}
+  showAdd={true}
+  addButtonText="Add Leave"
+  onAdd={openApplyForm}
+  onExport={handleExport}
+  showFilter={true}
+  showView={true}
+  onFilter={toggleFilter}
+  selectedFilterCount={$selectedFilterCount}
+>
+  <ContentCard noPadding={true}>
     <Table
       {columns}
       data={leaves}
@@ -353,196 +309,31 @@
       on:sort={handleSort}
       on:page={handlePage}
     />
-  </div>
-</div>
+    {#if showApplyForm}
+      <Modal
+        show={showApplyForm}
+        title="Leave Details"
+        onClose={() => (showApplyForm = false)}
+      >
+        <LeaveForm
+          {loading}
+          {summary}
+          initialValues={formValues}
+          on:submit={handleLeaveSubmit}
+          on:update={handleFormUpdate}
+          on:cancel={() => (showApplyForm = false)}
+        />
+      </Modal>
+    {/if}
+  </ContentCard>
 
-<style>
-  .leaves-page {
-    padding: 24px;
-    background: #f6f7fb;
-    min-height: 100vh;
-  }
-
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-  }
-
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-  }
-
-  .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 2px;
-    border-radius: 6px;
-  }
-
-  h1 {
-    font-size: 24px;
-    font-weight: 600;
-    color: #323338;
-    margin: 0;
-  }
-
-  button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 8px 16px;
-    border-radius: 6px;
-    border: none;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-  }
-
-  .btn-filter,
-  .btn-view {
-    background: #f0f1f5;
-    color: #4b4b4b;
-    padding: 8px 12px;
-    font-weight: 500;
-    position: relative;
-    min-width: 90px;
-  }
-
-  .btn-filter.active {
-    background: white;
-    color: #0073ea;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  }
-
-  .btn-filter:hover,
-  .btn-view:hover {
-    background: white;
-    color: #0073ea;
-  }
-
-  .filter-badge {
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    background: #ff3b30;
-    color: white;
-    border-radius: 10px;
-    padding: 2px 6px;
-    font-size: 11px;
-    font-weight: 600;
-    min-width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid #f6f7fb;
-  }
-
-  .header-right {
-    display: flex;
-    gap: 12px;
-  }
-
-  .btn-primary {
-    background: #0073ea;
-    color: white;
-    padding: 10px 18px;
-    box-shadow: 0 2px 4px rgba(0, 115, 234, 0.2);
-  }
-
-  .btn-primary:hover {
-    background: #0060c2;
-    box-shadow: 0 4px 6px rgba(0, 115, 234, 0.25);
-    transform: translateY(-1px);
-  }
-
-  .btn-primary:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0, 115, 234, 0.2);
-  }
-
-  .btn-secondary {
-    background: white;
-    color: #323338;
-    border: 1px solid #e0e0e0;
-    padding: 9px 18px;
-  }
-
-  .btn-secondary:hover {
-    background: #f8f9fc;
-    border-color: #d0d0d0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  }
-
-  .btn-secondary:active {
-    background: #f0f1f5;
-    border-color: #d0d0d0;
-  }
-
-  button i {
-    font-size: 16px;
-  }
-
-  .btn-primary i,
-  .btn-secondary i {
-    font-size: 14px;
-  }
-
-  button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .table-container {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  }
-
-  :global(.status) {
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.875rem;
-    font-weight: 500;
-  }
-
-  :global(.status.approved) {
-    background: #dcfce7;
-    color: #166534;
-  }
-
-  :global(.status.pending) {
-    background: #fef9c3;
-    color: #854d0e;
-  }
-
-  :global(.status.rejected) {
-    background: #fee2e2;
-    color: #991b1b;
-  }
-
-  :global(.btn-action) {
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border-radius: 4px;
-    background: transparent;
-    color: #676879;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  :global(.btn-action:hover) {
-    background: #f5f6f8;
-    color: #323338;
-  }
-</style>
+  <Filter
+    filters={filtersSchema}
+    values={$appliedFilterValues}
+    isOpen={isFilterOpen}
+    on:change={handleFilterChange}
+    on:apply={handleFilterApply}
+    on:reset={handleFilterReset}
+    on:close={() => (isFilterOpen = false)}
+  />
+</IndexPageTemplate>

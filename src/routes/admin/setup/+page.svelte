@@ -10,6 +10,8 @@
   import SalaryStructureManagement from "$lib/components/setup/SalaryStructureManagement.svelte";
   import TaxSlabManagement from "$lib/components/setup/TaxSlabManagement.svelte";
   import HolidayCalendar from "$lib/components/setup/holiday/HolidayCalendar.svelte";
+  import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
+  import ContentCard from "$lib/components/common/ContentCard.svelte";
 
   const tabs = [
     { id: "lovs", label: "LOVs" },
@@ -45,17 +47,12 @@
     showModal = true;
   }
 </script>
-
-<div class="page-container">
-  <header>
-    <div class="header-left">
-      <h1>Setup</h1>
-    </div>
-  </header>
-
-  <div class="card">
-    <div class="card-body">
-      <Tabs {tabs}>
+<IndexPageTemplate
+  title="Setup"
+  subtitle="Manage your organization's Setup"
+>
+<ContentCard noPadding={true}>
+    <Tabs {tabs}>
         {#if $activeTab === "shifts"}
           <ShiftManagement />
         {:else if $activeTab === "trainings"}
@@ -74,34 +71,5 @@
           <WeekendCalendar /> -->
         {/if}
       </Tabs>
-    </div>
-  </div>
-</div>
-
-<style>
-  .page-container {
-    padding: 24px;
-    background: #f6f7fb;
-    min-height: 100vh;
-  }
-
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-  }
-
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-  }
-
-  h1 {
-    font-size: 24px;
-    font-weight: 600;
-    color: #323338;
-    margin: 0;
-  }
-</style>
+  </ContentCard>
+</IndexPageTemplate>

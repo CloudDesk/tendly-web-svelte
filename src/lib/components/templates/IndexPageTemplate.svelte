@@ -18,6 +18,7 @@
   export let onView = () => {};
   export let filterText = "Filter";
   export let viewText = "View";
+  export let selectedFilterCount = 0;
 </script>
 
 <div class="page-wrapper">
@@ -39,6 +40,9 @@
               <Button variant="none" size="sm" on:click={onFilter}>
                 <span class="flex items-center gap-2">
                   <Filter size="16" />
+                  {#if selectedFilterCount > 0}
+                    <span class="filter-badge">{selectedFilterCount}</span>
+                  {/if}
                   {filterText}
                 </span>
               </Button>
@@ -380,5 +384,23 @@
 <style>
   .page-wrapper {
     @apply min-h-[calc(100vh-4rem)];
+  }
+
+  .filter-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #ff3b30;
+    color: white;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #f6f7fb;
   }
 </style>

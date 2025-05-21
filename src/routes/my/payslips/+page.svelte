@@ -3,6 +3,7 @@
   import { auth } from "$lib/stores/auth";
   import { Chart, registerables } from "chart.js";
   import { payslipApi } from "$lib/services/api/payslip";
+  import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
 
   Chart.register(...registerables);
 
@@ -187,17 +188,11 @@
     fetchPayslip();
   });
 </script>
-
-<div class="bg-gray-50 min-h-screen">
-  <div class="max-w-6xl mx-auto px-4 py-8">
-    <div
-      class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8"
-    >
-      <div>
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">My Payslip</h1>
-      </div>
-
-      <div class="mt-4 md:mt-0 flex flex-wrap items-end gap-3">
+<IndexPageTemplate
+  title="My Payslip"
+  subtitle="Your Salary Details and Payment History"
+>
+<div class="mt-4 md:mt-0 flex flex-wrap items-end gap-3">
         <div class="relative">
           <label
             for="month"
@@ -245,9 +240,7 @@
           </div>
         </div>
       </div>
-    </div>
-
-    {#if isLoading}
+      {#if isLoading}
       <div class="flex justify-center items-center h-64">
         <div
           class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-600"
@@ -559,5 +552,5 @@
         </p>
       </div>
     {/if}
-  </div>
-</div>
+</IndexPageTemplate>
+

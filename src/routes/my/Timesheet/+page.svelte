@@ -14,6 +14,8 @@
   import { Calendar, ArrowLeft, ArrowRight, Download } from "lucide-svelte";
   import Modal from "$lib/components/common/Modal.svelte";
   import TimesheetExport from "$lib/components/timesheet/TimesheetExport.svelte";
+  import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
+  import ContentCard from "$lib/components/common/ContentCard.svelte";
 
   $: employeeId = $auth.user?._id || "";
   let selectedWeekStart = new Date();
@@ -316,113 +318,103 @@
   }
 
   const handleExport = () => {
+    console.log("handleExport");
     isExporting = true;
   };
 </script>
 
-<div class="min-h-screen bg-gray-50">
-  <div class="max-w-6xl mx-auto py-8 px-4 sm:px-6">
-    <div class="flex flex-row justify-between items-center flex-wrap gap-4">
-      <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Timesheet</h1>
-        <p class="text-gray-600 mt-1">Track and submit your working hours</p>
-      </div>
-      <div>
-        <button class="btn-primary" on:click={handleExport}
-          ><Download size={18} class="mr-2" />Export</button
-        >
-      </div>
-    </div>
+<IndexPageTemplate
+  title="Timesheet"
+  subtitle="Track and submit your working hours"
+  showExport={true}
+  onExport={handleExport}
+>
+  <div class="bg-white rounded-xl shadow-sm mb-6 p-4">
+    <div
+      class="flex flex-col md:flex-row md:justify-between md:items-center gap-4"
+    >
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center">
+          <button
+            on:click={() => navigateWeek("prev")}
+            class="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+            aria-label="Previous week"
+          >
+            <ArrowLeft size={18} />
+          </button>
 
-    <!-- Header Control Panel -->
-    <div class="bg-white rounded-xl shadow-sm mb-6 p-4">
-      <div
-        class="flex flex-col md:flex-row md:justify-between md:items-center gap-4"
-      >
-        <div class="flex flex-wrap items-center gap-3">
-          <div class="flex items-center">
-            <button
-              on:click={() => navigateWeek("prev")}
-              class="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-              aria-label="Previous week"
-            >
-              <ArrowLeft size={18} />
-            </button>
-
-            <div class="flex items-center mx-2 px-4 py-2 bg-gray-50 rounded-lg">
-              <Calendar size={18} class="text-blue-600 mr-2" />
-              <span class="font-medium text-gray-800">{weekRange}</span>
-            </div>
-
-            <button
-              on:click={() => navigateWeek("next")}
-              class="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-              aria-label="Next week"
-            >
-              <ArrowRight size={18} />
-            </button>
+          <div class="flex items-center mx-2 px-4 py-2 bg-gray-50 rounded-lg">
+            <Calendar size={18} class="text-blue-600 mr-2" />
+            <span class="font-medium text-gray-800">{weekRange}</span>
           </div>
 
-          <div class="ml-0 md:ml-2">
-            <CalendarWrapper
-              maxRange={7}
-              initialMonth={new Date()}
-              metaData={meta}
-              {selectedWeekStart}
-              {selectedWeekEnd}
-              on:rangeSelect={handleRangeSelect}
-              on:monthChange={handleMonthChange}
-            />
-          </div>
+          <button
+            on:click={() => navigateWeek("next")}
+            class="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+            aria-label="Next week"
+          >
+            <ArrowRight size={18} />
+          </button>
+        </div>
+
+        <div class="ml-0 md:ml-2">
+          <CalendarWrapper
+            maxRange={7}
+            initialMonth={new Date()}
+            metaData={meta}
+            {selectedWeekStart}
+            {selectedWeekEnd}
+            on:rangeSelect={handleRangeSelect}
+            on:monthChange={handleMonthChange}
+          />
         </div>
       </div>
     </div>
-
-    {#if error}
-      <div
-        class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6 animate-fade-in"
-      >
-        <div class="flex">
-          <div class="ml-3">
-            <p class="text-sm font-medium">{error}</p>
-          </div>
-        </div>
-      </div>
-    {/if}
-
-    {#if success}
-      <div
-        class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg mb-6 animate-fade-in"
-      >
-        <div class="flex">
-          <div class="ml-3">
-            <p class="text-sm font-medium">Timesheet saved successfully!</p>
-          </div>
-        </div>
-      </div>
-    {/if}
-
-    {#if isLoading}
-      <div class="flex items-center justify-center p-12">
-        <div class="relative w-16 h-16">
-          <div
-            class="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"
-          ></div>
-          <div
-            class="absolute top-0 left-0 w-full h-full border-4 border-t-blue-600 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"
-          ></div>
-        </div>
-      </div>
-    {:else}
-      <TimesheetEntries
-        {holidays}
-        {weekendDays}
-        {entries}
-        on:submit={handleSubmit}
-      />
-    {/if}
   </div>
 
+  {#if error}
+    <div
+      class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6 animate-fade-in"
+    >
+      <div class="flex">
+        <div class="ml-3">
+          <p class="text-sm font-medium">{error}</p>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  {#if success}
+    <div
+      class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg mb-6 animate-fade-in"
+    >
+      <div class="flex">
+        <div class="ml-3">
+          <p class="text-sm font-medium">Timesheet saved successfully!</p>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  {#if isLoading}
+    <div class="flex items-center justify-center p-12">
+      <div class="relative w-16 h-16">
+        <div
+          class="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"
+        ></div>
+        <div
+          class="absolute top-0 left-0 w-full h-full border-4 border-t-blue-600 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"
+        ></div>
+      </div>
+    </div>
+  {:else}
+    <TimesheetEntries
+      {holidays}
+      {weekendDays}
+      {entries}
+      on:submit={handleSubmit}
+    />
+  {/if}
   {#if isExporting}
     <Modal
       title="Export Timesheet"
@@ -432,7 +424,7 @@
       <TimesheetExport onClose={() => (isExporting = false)} />
     </Modal>
   {/if}
-
+ 
   {#if showConfirmModal}
     <Modal
       title="Confirm Submission"
@@ -483,46 +475,4 @@
       </div>
     </Modal>
   {/if}
-</div>
-
-<style>
-  .btn-primary,
-  .btn-secondary {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    height: 2.75rem;
-    padding: 0 1.25rem;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .btn-primary {
-    background-color: #3b82f6;
-    color: white;
-    border: none;
-  }
-
-  .btn-primary:hover {
-    background-color: #2563eb;
-  }
-
-  .btn-primary:disabled {
-    background-color: #93c5fd;
-    cursor: not-allowed;
-  }
-
-  .btn-secondary {
-    background-color: #f3f4f6;
-    color: #374151;
-    border: 1px solid #d1d5db;
-  }
-
-  .btn-secondary:hover {
-    background-color: #e5e7eb;
-  }
-</style>
+</IndexPageTemplate>

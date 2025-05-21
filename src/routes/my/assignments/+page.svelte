@@ -1,8 +1,8 @@
 <script lang="ts">
   import { auth } from '$lib/stores/auth';
+  import IndexPageTemplate from '$lib/components/templates/IndexPageTemplate.svelte';
 </script>
-
-<div class="p-6">
-  <h1 class="text-2xl font-bold mb-6">My Assignments</h1>
-  <!-- Add assignments content here -->
-</div> 
+ <IndexPageTemplate
+  title="My Assignments"
+  subtitle="Manage your organization's assignments"
+></IndexPageTemplate>

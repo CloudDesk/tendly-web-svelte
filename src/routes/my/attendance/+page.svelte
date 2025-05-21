@@ -10,6 +10,7 @@
   import { attendanceApi } from "$lib/services/api";
   import type { AttendanceRecord } from "$lib/types";
   import Regularization from "$lib/components/attendance-Regularization/Regularization.svelte";
+  import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
 
   const viewMode = writable<"calendar" | "list" | "heat">("calendar");
   const userId: string = $auth.user?._id ?? "";
@@ -94,8 +95,11 @@
     initializeData();
   });
 </script>
-
-<div class="p-6">
+<IndexPageTemplate
+  title="Attendance"
+  subtitle="Attendance records and regularization"
+  >
+  <div class="p-6">
   <div class="flex justify-end">
     <ToggleView
       bind:viewMode={$viewMode}
@@ -121,21 +125,4 @@
     {/if}
   </div>
 </div>
-
-<style>
-  .p-6 {
-    padding: 1.5rem;
-  }
-  .mt-4 {
-    margin-top: 1rem;
-  }
-  /* .text-2xl {
-    font-size: 1.5rem;
-  }
-  .font-bold {
-    font-weight: bold;
-  }
-  .mb-6 {
-    margin-bottom: 1.5rem;
-  } */
-</style>
+</IndexPageTemplate>

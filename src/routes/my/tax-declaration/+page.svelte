@@ -2,6 +2,7 @@
   import Card from "$lib/components/common/Card.svelte";
   import Loader from "$lib/components/common/Loader.svelte";
   import TaxDeclarationViewer from "$lib/components/taxDeclaration/TaxDeclarationViewer.svelte";
+  import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
   import { taxSlabApi } from "$lib/services/api";
   import { taxDeclarationApi } from "$lib/services/api/taxDeclaration";
   import { auth } from "$lib/stores/auth";
@@ -142,21 +143,10 @@
   />
 </svelte:head>
 
-<div class="container">
-  <header class="header">
-    <h1>Tax Declaration {currentFY}</h1>
-    <!-- <div class="actions">
-      <button class="btn-secondary">
-        <i class="fas fa-file-export"></i> Export
-      </button>
-      {#if taxDeclaration}
-        <button class="btn-primary" on:click={handleOpenTaxModal}>
-          <i class="fas fa-plus"></i> Update
-        </button>
-      {/if}
-    </div> -->
-  </header>
-
+<IndexPageTemplate
+  title={`Tax Declaration ${currentFY}`}
+  subtitle="Tax Declaration Summary and Submission"
+>
   {#if isLoading}
     <Loader />
   {/if}
@@ -345,79 +335,4 @@
       on:fileupload={handleFileUpload}
     />
   {/if}
-</div>
-
-<style>
-  .container {
-    padding: 24px;
-    background: #f6f7fb;
-    /* min-height: 100vh; */
-  }
-
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-  }
-
-  h1 {
-    font-size: 24px;
-    font-weight: 600;
-    color: #323338;
-    margin: 0;
-  }
-
-  button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 8px 16px;
-    border-radius: 6px;
-    border: none;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-  }
-  /* .actions {
-    display: flex;
-    gap: 12px;
-  } 
-  .btn-primary {
-    background: #0073ea;
-    color: white;
-    padding: 10px 18px;
-    box-shadow: 0 2px 4px rgba(0, 115, 234, 0.2);
-  }
-
-  .btn-primary:hover {
-    background: #0060c2;
-    box-shadow: 0 4px 6px rgba(0, 115, 234, 0.25);
-    transform: translateY(-1px);
-  }
-
-  .btn-secondary {
-    background: white;
-    color: #323338;
-    border: 1px solid #e0e0e0;
-    padding: 9px 18px;
-  }
-
-  .btn-secondary:hover {
-    background: #f8f9fc;
-    border-color: #d0d0d0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  }
-
-  button i {
-    font-size: 16px;
-  }
-*/
-  button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-</style>
+</IndexPageTemplate>

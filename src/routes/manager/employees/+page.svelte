@@ -4,6 +4,9 @@
   import Table from "$lib/components/common/Table.svelte";
   import type { User, PaginationMeta } from "$lib/types_old";
   import { goto } from "$app/navigation";
+  import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
+  import InfoBanner from "$lib/components/common/InfoBanner.svelte";
+  import ContentCard from "$lib/components/common/ContentCard.svelte";
   // import "../../../Mobileview.css"; // Import responsive CSS
 
   let employees: User[] = [];
@@ -104,12 +107,16 @@
   }
 </script>
 
-<div class="employees-page container">
-  <header>
-    <h1>Employees</h1>
-  </header>
+<IndexPageTemplate
+  title="Employees"
+  subtitle="Manage your organization's employees"
+>
+  <InfoBanner type="info" dismissible={true}>
+    Remember to verify employee documents after adding new records.
+  </InfoBanner>
 
-  <Table
+  <ContentCard noPadding={true}>
+    <Table
     {columns}
     data={employees}
     {loading}
@@ -121,55 +128,6 @@
     on:page={handlePage}
     on:rowClick={handleRowClick}
   />
-</div>
+  </ContentCard>
 
-<style>
-  .employees-page {
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-  }
-
-  :global(.status) {
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.875rem;
-    font-weight: 500;
-  }
-
-  :global(.status.active) {
-    background: #dcfce7;
-    color: #166534;
-  }
-
-  :global(.status.inactive) {
-    background: #fee2e2;
-    color: #991b1b;
-  }
-
-  :global(.actions) {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  :global(.btn-action) {
-    padding: 0.25rem 0.75rem;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    text-decoration: none;
-    background: #f3f4f6;
-    color: #374151;
-    border: none;
-    cursor: pointer;
-  }
-
-  :global(.btn-action:hover) {
-    background: #e5e7eb;
-  }
-</style>
+</IndexPageTemplate>

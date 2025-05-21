@@ -1,8 +1,12 @@
 <script lang="ts">
   import { auth } from '$lib/stores/auth';
+  import IndexPageTemplate from '$lib/components/templates/IndexPageTemplate.svelte';
 </script>
 
-<div class="p-6">
-  <h1 class="text-2xl font-bold mb-6">Manager Attendance</h1>
-  <!-- Add manager attendance content here -->
-</div> 
+<IndexPageTemplate
+  title="Manager Attendance"
+  subtitle="Monitor and Manage Team Attendance Records"
+
+>
+</IndexPageTemplate>
+ 

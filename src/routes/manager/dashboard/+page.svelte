@@ -4,6 +4,7 @@
   import { attendanceApi, employeesApi } from "$lib/services/api";
   import { navigationContext } from "$lib/stores/navigation";
   import { auth } from "$lib/stores/auth";
+  import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
 
   Chart.register(...registerables);
 
@@ -399,11 +400,12 @@
     };
   }
 </script>
+<IndexPageTemplate
+  title="Team Dashboard"
+  subtitle="Manage Team Performance, Attendance, and Requests"
 
-<div class="p-6">
-  <h1 class="text-2xl font-bold mb-8">Team Dashboard</h1>
-
-  {#if error}
+>
+{#if error}
     <div class="alert alert-error">{error}</div>
   {:else if loading}
     <div class="loading">Loading dashboard data...</div>
@@ -438,36 +440,4 @@
       </div>
     </div>
   {/if}
-</div>
-
-<style>
-  .loading {
-    text-align: center;
-    padding: 2rem;
-    color: #6b7280;
-  }
-
-  .card {
-    background: white;
-    border-radius: 1rem;
-    overflow: hidden;
-    transition: all 0.3s ease;
-  }
-
-  .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-  }
-
-  .card-body {
-    padding: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  canvas {
-    max-width: 100% !important;
-    height: 100% !important;
-  }
-</style>
+</IndexPageTemplate>

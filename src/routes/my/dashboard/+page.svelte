@@ -8,6 +8,7 @@
   import PayslipSummary from "$lib/components/dashboard/PayslipSummary.svelte";
   import LeaveSummary from "$lib/components/dashboard/LeaveSummary.svelte";
   import CurrentShift from "$lib/components/dashboard/CurrentShift.svelte";
+  import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
 
   $: user = $auth.user;
 
@@ -32,14 +33,10 @@
 
   let loading = false;
 </script>
-
-<div class="p-4 md:p-6 bg-gray-50 min-h-screen">
-  <h1 class="text-2xl font-bold mb-6 text-gray-800 flex items-center">
-    <Gauge class="inline mr-2 text-blue-600" size={24} />
-    My Dashboard
-  </h1>
-
-  <!-- Dashboard Grid -->
+<IndexPageTemplate
+  title="My Dashboard"
+  subtitle="Welcome, {user?.name}!"
+  >
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <!-- Attendance Swipes (Existing Component) -->
     <div
@@ -88,4 +85,4 @@
     <!-- Current Shift Details -->
     <CurrentShift />
   </div>
-</div>
+</IndexPageTemplate>

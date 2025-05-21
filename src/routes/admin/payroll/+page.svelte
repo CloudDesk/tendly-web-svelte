@@ -27,7 +27,8 @@
   import PayslipProcess from "$lib/components/payroll/payslipProcess.svelte";
   import { payslipApi } from "$lib/services/api/payslip";
   import PayslipHistory from "$lib/components/payroll/payslipHistory.svelte";
-
+  import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
+  
   let today = new Date();
   let year = today.getFullYear();
   let month = getMonthFormats(today.getMonth() - 1);
@@ -417,11 +418,11 @@
     checkPayslipGeneration();
   });
 </script>
-
-<div class="page">
-  <!-- Main Content Tabs -->
-  <div class="bg-white rounded-xl shadow-sm">
-    <Tabs {tabs} let:activeTab>
+<IndexPageTemplate
+  title="Payroll"
+  subtitle="Centralized Payroll Management for All Employees"
+>
+<Tabs {tabs} let:activeTab>
       {#if activeTab === "processing"}
         <PayrollProcess
           {month}
@@ -490,150 +491,4 @@
         />
       {/if}
     </Tabs>
-  </div>
-
-  <!-- Modal to display payroll initiation data -->
-  {#if showModal && payrollInitiateResponse}
-    <Modal
-      title="Payroll Initiation Summary"
-      show
-      onClose={() => (showModal = false)}
-    >
-      <div class="p-6 space-y-6">
-        <div class="bg-blue-50 rounded-xl p-5 border border-blue-100">
-          <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-            <DollarSign class="h-8 w-8 mr-3 text-blue-600" />
-            Payroll Summary
-          </h2>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div class="bg-white p-4 rounded-lg shadow-sm">
-              <p class="text-sm text-gray-500 mb-1">Total Records</p>
-              <p class="text-xl font-semibold text-gray-800">
-                {payrollInitiateResponse.totalRecords}
-              </p>
-            </div>
-
-            <div class="bg-white p-4 rounded-lg shadow-sm">
-              <p class="text-sm text-gray-500 mb-1">Total Employees</p>
-              <p class="text-xl font-semibold text-gray-800">
-                {payrollInitiateResponse.totalEmployees}
-              </p>
-            </div>
-
-            <div class="bg-white p-4 rounded-lg shadow-sm">
-              <p class="text-sm text-gray-500 mb-1">Active Employees</p>
-              <p class="text-xl font-semibold text-gray-800">
-                {payrollInitiateResponse.totalActiveEmployees}
-              </p>
-            </div>
-
-            <div class="bg-white p-4 rounded-lg shadow-sm">
-              <p class="text-sm text-gray-500 mb-1">Status</p>
-              <p class="text-xl font-semibold text-gray-800">
-                {payrollInitiateResponse.status}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="bg-green-50 p-4 rounded-lg border border-green-100">
-            <p class="text-sm text-gray-600 mb-1">Total Gross Salary</p>
-            <p class="text-2xl font-bold text-green-700">
-              {formatCurrency(payrollInitiateResponse.totalGrossSalary)}
-            </p>
-          </div>
-
-          <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
-            <p class="text-sm text-gray-600 mb-1">Total Net Salary</p>
-            <p class="text-2xl font-bold text-blue-700">
-              {formatCurrency(payrollInitiateResponse.totalNetSalary)}
-            </p>
-          </div>
-
-          <div class="bg-red-50 p-4 rounded-lg border border-red-100">
-            <p class="text-sm text-gray-600 mb-1">Total Deductions</p>
-            <p class="text-2xl font-bold text-red-700">
-              {formatCurrency(payrollInitiateResponse.totalDeductions)}
-            </p>
-          </div>
-        </div>
-
-        <div class="actions flex justify-end space-x-4">
-          <button
-            on:click={handleDecline}
-            class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center"
-          >
-            <XCircle class="h-5 w-5 mr-2" />
-            Decline
-          </button>
-          <button
-            on:click={handleProceed}
-            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-          >
-            <CheckCircle class="h-5 w-5 mr-2" />
-            Proceed
-          </button>
-        </div>
-      </div>
-    </Modal>
-  {/if}
-
-  <!-- Confirmation Dialog for Proceed -->
-  {#if showConfirmDialog}
-    <Modal
-      title="Confirm Proceed"
-      show
-      onClose={() => (showConfirmDialog = false)}
-    >
-      <div class="p-6 text-center space-y-6">
-        <div class="bg-yellow-50 p-5 rounded-xl border border-yellow-100">
-          <AlertTriangle class="h-12 w-12 mx-auto mb-4 text-yellow-600" />
-          <h2 class="text-2xl font-bold text-gray-800 mb-3">
-            Confirm Payroll Proceed
-          </h2>
-          <p class="text-gray-600">
-            All {payrollInitiateResponse.totalActiveEmployees} active employees are
-            included in this payroll. Do you want to proceed to Pending Approval?
-          </p>
-        </div>
-
-        <div class="flex justify-center space-x-4">
-          <button
-            on:click={async () => {
-              await checkPayrollStatus();
-              showConfirmDialog = false;
-            }}
-            class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-          >
-            No, Cancel
-          </button>
-          <button
-            on:click={proceedToPendingApproval}
-            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Yes, Proceed
-          </button>
-        </div>
-      </div>
-    </Modal>
-  {/if}
-
-  {#if isLoading}
-    <LoaderNew />
-  {/if}
-</div>
-
-<style>
-  :global(body) {
-    @apply m-0 p-0 text-gray-800 bg-gray-50;
-  }
-  .page {
-    @apply p-6 bg-gray-50 min-h-screen;
-  }
-
-  button {
-    @apply px-4 py-2 rounded-md transition-all focus:outline-none focus:ring-2;
-  }
-</style>
+</IndexPageTemplate>

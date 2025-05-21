@@ -5,6 +5,10 @@
   import { page } from "$app/stores";
   import Resignation from "$lib/components/employee/resignation/Resignation.svelte";
   import RegularizationList from "$lib/components/attendance-Regularization/RegularizationList.svelte";
+  import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
+  import ContentCard from "$lib/components/common/ContentCard.svelte";
+  import InfoBanner from "$lib/components/common/InfoBanner.svelte";
+
   const tabs = [
     { id: "leave", label: "Leave" },
     { id: "regularization", label: "Regularization" },
@@ -15,14 +19,13 @@
   $: activeTab = $page.url.searchParams.get("tab") || tabs[0]?.id;
 </script>
 
-<div class="container mx-auto p-4">
-  <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold text-neutral">Management</h1>
-  </div>
+<IndexPageTemplate
+  title="Management"
+  subtitle="Review and Manage Leave, Regularization, and Resignation Requests"
+>
 
-  <div class="card">
-    <div class="card-body">
-      <Tabs {tabs}>
+<ContentCard noPadding={true}>
+    <Tabs {tabs}>
         {#if activeTab === "leave"}
           <AssignedLeaves />
         {:else if activeTab === "regularization"}
@@ -33,6 +36,6 @@
           <Resignation viewMode="admin" />
         {/if}
       </Tabs>
-    </div>
-  </div>
-</div>
+  </ContentCard>
+</IndexPageTemplate>
+
