@@ -18,6 +18,9 @@
   import Modal from "$lib/components/common/Modal.svelte";
   import ReportDataUnit from "$lib/components/report/ReportDataUnit.svelte";
   import Card from "$lib/components/common/Card.svelte";
+  import DetailPageTemplate from "$lib/components/templates/DetailPageTemplate.svelte";
+  import ContentCard from "$lib/components/common/ContentCard.svelte";
+
   let reportData: any = null;
   let executedData: any[] = [];
   let isLoading = false;
@@ -170,49 +173,47 @@
   }
 
   onMount(fetchReportDetails);
+  const headerActions = [
+    {
+      label: "Edit",
+      handler: () => {
+        isShowModal = true;
+      },
+      variant: "outline",
+      icon: Edit,
+    },
+    {
+      label: "Execute Report",
+      handler: executeReport,
+      variant: "primary",
+      icon: Database,
+    },
+  ];
 </script>
 
-<div class="page-container">
-  {#if isLoading}
+<DetailPageTemplate
+  title=""
+  subtitle=""
+  backLink="/admin/reports"
+  showActions={true}
+  actions={headerActions}
+>
+  <ContentCard noPadding={true}>
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">{reportData?.name}</h1>
+      <p class="text-sm text-gray-500 mt-1">
+        {reportData?.updatedAt
+          ? `Last updated: ${formatDate(new Date(reportData?.updatedAt))}`
+          : ""}
+      </p>
+    </div>
+  </ContentCard>
+  <ContentCard>
+    {#if isLoading}
     <div class="flex justify-center items-center h-64">
       <LoaderNew />
     </div>
-  {:else if reportData}
-    <!-- Header Section -->
-    <header class="mb-8">
-      <div
-        class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
-      >
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">{reportData.name}</h1>
-          <p class="text-sm text-gray-500 mt-1">
-            Last updated: {formatDate(new Date(reportData.updatedAt))}
-          </p>
-        </div>
-        <div class="flex flex-wrap gap-3">
-          <button class="btn-secondary" on:click={handleEdit}>
-            <Edit
-              class="w-4 h-4 text-gray-500 hover:text-blue-500 transition"
-            />
-            Edit
-          </button>
-          <button
-            class="btn-primary"
-            on:click={executeReport}
-            disabled={isExecuting}
-          >
-            {#if isExecuting}
-              <Loader2 class="w-4 h-4 animate-spin" />
-              Executing...
-            {:else}
-              <Database class="w-4 h-4" />
-              Execute Report
-            {/if}
-          </button>
-        </div>
-      </div>
-    </header>
-
+    {:else if reportData}
     <!-- Metadata Cards -->
     <div class="grid grid-cols-2 grid-rows-2 gap-6 mb-8">
       {#each metadataGroups as group}
@@ -297,67 +298,7 @@
       </div>
     </Modal>
   {/if}
-</div>
 
-<!-- Executed Data Table (Inline) -->
-<!-- {#if executedData.length && !showResultsModal}
-      <CommonCard>
-        <div slot="header" class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <Database class="w-5 h-5 text-blue-600" />
-            <h2 class="text-lg font-semibold text-gray-900">
-              Executed Results ({executedData.length} records)
-            </h2>
-          </div>
-          <button
-            class="text-sm text-blue-600 hover:text-blue-800"
-            on:click={() => (showResultsModal = true)}
-          >
-            View Full Screen
-          </button>
-        </div>
-        <div slot="content" class="overflow-x-auto max-h-96">
-          <Table
-            columns={Object.keys(executedData[0]).map((key) => ({
-              key,
-              label: key.charAt(0).toUpperCase() + key.slice(1),
-              sortable: true,
-            }))}
-            data={executedData}
-          />
-        </div>
-      </CommonCard>
-    {/if} -->
+  </ContentCard>
+</DetailPageTemplate>
 
-<style lang="postcss">
-  .page-container {
-    @apply max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8;
-  }
-
-  .btn-primary {
-    @apply flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg
-             hover:bg-blue-700 transition-colors duration-200
-             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-             disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-
-  .btn-secondary {
-    @apply flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-lg
-             border border-gray-300 hover:bg-gray-50 transition-colors duration-200
-             focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
-             disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-
-  .btn-accent {
-    @apply flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg
-             hover:bg-green-700 transition-colors duration-200
-             focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2
-             disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-
-  .btn-accent-sm {
-    @apply flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg
-             hover:bg-green-700 transition-colors duration-200
-             focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2;
-  }
-</style>

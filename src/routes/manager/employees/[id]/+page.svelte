@@ -7,6 +7,9 @@
   import EmployeeDetails from "$lib/components/employee/EmployeeDetails.svelte";
   import EmployeeLeaves from "$lib/components/employee/EmployeeLeaves.svelte";
   import type { User } from "$lib/types_old";
+  import DetailPageTemplate from "$lib/components/templates/DetailPageTemplate.svelte";
+  import ContentCard from "$lib/components/common/ContentCard.svelte";
+  import LoaderNew from "$lib/components/common/LoaderNew.svelte";
 
   const employeeId = $page.params.id;
   let user: User | null = null;
@@ -33,15 +36,20 @@
   });
 </script>
 
+<DetailPageTemplate
+  title=''
+  description="View and manage employee details"
+  backLink="/manager/employees"
+>
+<ContentCard>
 <div class="p-4">
   {#if loading}
-    <div class="loading-spinner">Loading...</div>
+    <LoaderNew/>
   {:else if error}
     <div class="alert alert-error">{error}</div>
   {:else if user}
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-bold text-neutral">{user.name}</h1>
-      <button class="btn btn-primary">Edit Profile</button>
     </div>
 
     <div class="card">
@@ -59,36 +67,5 @@
     </div>
   {/if}
 </div>
-
-<style>
-  .employee-details {
-    padding: 1rem;
-  }
-
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-  }
-
-  .page-header h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #111827;
-  }
-
-  .loading {
-    text-align: center;
-    padding: 2rem;
-    color: #6b7280;
-  }
-
-  .error {
-    text-align: center;
-    padding: 2rem;
-    color: #991b1b;
-    background: #fee2e2;
-    border-radius: 0.5rem;
-  }
-</style>
+</ContentCard>
+</DetailPageTemplate>
