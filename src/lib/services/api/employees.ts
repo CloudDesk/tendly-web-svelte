@@ -87,11 +87,29 @@ export const employeesApi = {
       body: formData,
     });
   },
-  updateGovernmentId: async (id: string, formData: FormData) => {
+  updateGovernmentIdFile: async (id: string, formData: FormData) => {
     console.log("formData entries:", [...formData.entries()]); // Debug: Log FormData
-
-    return await uploadFiles(`/users/${id}/government-ids`, formData);
+    return await uploadFiles(`/users/${id}/government-ids/files`, formData);
   },
+  updateGovernmentId: async (id: string, values: any) => {
+    return await fetchApi(`/users/${id}/government-ids`, {
+      method: "PATCH",
+      body: JSON.stringify(values),
+    });
+  },
+
+  updateAcademicId: async (id: string, values: any) => {
+    return await fetchApi(`/users/${id}/academic-details`, {
+      method: "PATCH",
+      body: JSON.stringify(values),
+    });
+  },
+  updateExperienceDetails: async (id: string, values: any) => {
+    return await fetchApi(`/users/${id}/experience-details`, {
+      method: "PATCH",
+      body: JSON.stringify(values),
+    });
+  }
 
   // /users/:id/government-ids
 };

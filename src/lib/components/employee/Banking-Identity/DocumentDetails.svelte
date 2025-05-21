@@ -14,7 +14,7 @@
   let savingSection: string | null = null;
   let successMessage: string | null = null;
   let errorMessage: string | null = null;
-
+  console.log(employee, " employee createEventDispatcher");
   // Ensure employee properties are initialized
   $: employee = {
     ...employee,
@@ -130,6 +130,8 @@
 
     return await response.json();
   }
+
+  const handleRefresh = () => {};
 </script>
 
 <div class="container mx-auto p-6">
@@ -159,6 +161,7 @@
         on:update={handleSectionUpdate}
         on:submit={handleSectionSubmit}
         on:fileupload={handleFileUpload}
+        on:refresh={handleRefresh}
       />
     </Accordion>
   {/each}

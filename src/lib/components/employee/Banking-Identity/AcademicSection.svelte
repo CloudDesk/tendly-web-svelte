@@ -1,30 +1,27 @@
-<!-- AcademicSection.svelte -->
+<!-- AcademicSection.svelte (without id) -->
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import { Plus, Trash2 } from "lucide-svelte";
-  import DocumentUpload from "./DocumentUpload.svelte";
   import { employeesApi } from "$lib/services/api";
+  import { toast } from "$lib/components/common/stores/toast.store";
 
   interface IAcademicDetails {
-    id?: string;
     instituteName: string;
     grade?: string;
     yearOfPassing?: string;
-    documentUrl?: string;
   }
 
   export let academicDetails: IAcademicDetails[];
   export let employeeId: string;
 
   const dispatch = createEventDispatcher();
-  let loading: Record<string, boolean> = {};
+  let loading = false;
   let formErrors: Record<string, string> = {};
 
   function addAcademic() {
     academicDetails = [
       ...academicDetails,
       {
-        id: crypto.randomUUID(),
         instituteName: "",
         grade: "",
         yearOfPassing: "",
@@ -34,7 +31,6 @@
 
   function removeAcademic(index: number) {
     academicDetails = academicDetails.filter((_, i) => i !== index);
-    updateDetails();
   }
 
   function validateForm() {
@@ -64,39 +60,43 @@
     );
   }
 
-  function updateDetails() {
-    if (validateForm()) {
-      dispatch("update", {
-        type: "academicDetails",
-        data: academicDetails,
-      });
+  async function handleSubmit() {
+    if (!validateForm()) {
+      console.log("Validation failed, but proceeding with submission");
     }
-  }
 
-  async function handleFileUpload(index: number, file: File) {
-    loading[`academic-${index}`] = true;
+    console.log("academicDetails before submit:", academicDetails);
+
+    loading = true;
+    formErrors = {};
+
     try {
-      const response = await employeesApi.filesUpload(file);
-      academicDetails[index].documentUrl = response.url;
-      updateDetails();
-    } catch (error) {
-      console.error("Failed to upload file:", error);
+      // Prepare field values for update (without id)
+      const fieldValues = academicDetails.map((detail) => ({
+        instituteName: detail.instituteName || "",
+        grade: detail.grade || "",
+        yearOfPassing: detail.yearOfPassing || "",
+      }));
+      console.log("Field values for update:", fieldValues);
+
+      // // Update field values
+      const response: any = await employeesApi.updateAcademicId(
+        employeeId,
+        fieldValues
+      );
+      console.log("Field update response:", response);
+      if (response.error) {
+        toast.error("Failed to update academic details");
+      } else {
+        toast.success("Academic details updated successfully");
+      }
+
+      dispatch("refresh");
+    } catch (error: any) {
+      formErrors["submit"] = error.message || "Submission failed.";
+      console.error("Submission error:", error);
     } finally {
-      loading[`academic-${index}`] = false;
-    }
-  }
-
-  function handleDeleteDocument(index: number) {
-    academicDetails[index].documentUrl = undefined;
-    updateDetails();
-  }
-
-  function handleSubmit() {
-    if (validateForm()) {
-      dispatch("submit", {
-        type: "academicDetails",
-        data: academicDetails,
-      });
+      loading = false;
     }
   }
 </script>
@@ -109,7 +109,7 @@
     </button>
   </div>
 
-  {#each academicDetails as detail, index}
+  {#each academicDetails as detail, index (index)}
     <div class="card bg-base-100 shadow-sm">
       <div class="card-body">
         <div class="flex justify-between items-center mb-2">
@@ -131,7 +131,6 @@
                 : ''}"
               placeholder="Institute Name *"
               bind:value={detail.instituteName}
-              on:blur={updateDetails}
             />
             {#if formErrors[`institute-${index}`]}
               <label class="label">
@@ -148,7 +147,6 @@
               class="input input-bordered"
               placeholder="Grade"
               bind:value={detail.grade}
-              on:blur={updateDetails}
             />
           </div>
 
@@ -160,7 +158,6 @@
                 : ''}"
               placeholder="Year of Passing (YYYY)"
               bind:value={detail.yearOfPassing}
-              on:blur={updateDetails}
             />
             {#if formErrors[`year-${index}`]}
               <label class="label">
@@ -171,25 +168,25 @@
             {/if}
           </div>
         </div>
-
-        <div class="flex justify-end mt-2">
-          <DocumentUpload
-            documentUrl={detail.documentUrl}
-            {loading}
-            fieldId={`academic-${index}`}
-            onUpload={(file) => handleFileUpload(index, file)}
-            on:delete={() => handleDeleteDocument(index)}
-          />
-        </div>
       </div>
     </div>
   {/each}
+
+  {#if formErrors["submit"]}
+    <div class="text-error">{formErrors["submit"]}</div>
+  {/if}
+
+  {#if loading}
+    <div class="flex justify-center">
+      <span class="loading loading-spinner"></span>
+    </div>
+  {/if}
 
   <div class="flex justify-end mt-4">
     <button
       class="btn btn-primary"
       on:click={handleSubmit}
-      disabled={academicDetails.length === 0}
+      disabled={academicDetails.length === 0 || loading}
     >
       Save Academic Details
     </button>

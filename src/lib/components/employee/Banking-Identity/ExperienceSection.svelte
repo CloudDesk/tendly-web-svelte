@@ -2,27 +2,26 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import { Plus, Trash2 } from "lucide-svelte";
-  import DocumentUpload from "./DocumentUpload.svelte";
   import { employeesApi } from "$lib/services/api";
 
   interface IExperienceDetails {
     id?: string;
     companyName: string;
     period?: string;
-    documentUrl?: string;
   }
+
   export let experienceDetails: IExperienceDetails[];
   export let employeeId: string;
 
   const dispatch = createEventDispatcher();
-  let loading: Record<string, boolean> = {};
+  let loading = false;
   let formErrors: Record<string, string> = {};
 
   function addExperience() {
     experienceDetails = [
       ...experienceDetails,
       {
-        id: crypto.randomUUID(),
+        id: crypto.randomUUID(), // Retain id for frontend reactivity
         companyName: "",
         period: "",
       },
@@ -31,7 +30,7 @@
 
   function removeExperience(index: number) {
     experienceDetails = experienceDetails.filter((_, i) => i !== index);
-    updateDetails();
+    validateAndUpdate();
   }
 
   function validateForm() {
@@ -59,40 +58,51 @@
     return /^\w+\s\d{4}(\s?-\s?\w+\s\d{4})?$/.test(period);
   }
 
-  function updateDetails() {
-    if (validateForm()) {
-      dispatch("update", {
-        type: "experienceDetails",
-        data: experienceDetails,
-      });
-    }
+  function validateAndUpdate() {
+    dispatch("update", {
+      type: "experienceDetails",
+      data: experienceDetails,
+    });
+    validateForm();
   }
 
-  async function handleFileUpload(index: number, file: File) {
-    loading[`experience-${index}`] = true;
+  async function handleSubmit() {
+    if (!validateForm()) {
+      console.log("Validation failed, but proceeding with submission");
+    }
+
+    console.log("experienceDetails before submit:", experienceDetails);
+
+    loading = true;
+    formErrors = {};
+
     try {
-      const response = await employeesApi.filesUpload(file);
-      experienceDetails[index].documentUrl = response.url;
-      updateDetails();
-    } catch (error) {
-      console.error("Failed to upload file:", error);
-    } finally {
-      loading[`experience-${index}`] = false;
-    }
-  }
+      // Prepare field values for update
+      const fieldValues = experienceDetails.map((detail) => ({
+        id: detail.id,
+        companyName: detail.companyName || "",
+        period: detail.period || "",
+      }));
+      console.log("Field values for update:", fieldValues);
 
-  function handleDeleteDocument(index: number) {
-    experienceDetails[index].documentUrl = undefined;
-    updateDetails();
-  }
+      // Update experience details
+      const response = await employeesApi.updateExperienceDetails(
+        employeeId,
+        fieldValues
+      );
+      console.log("Field update response:", response);
 
-  // Submit handler for the entire section
-  function handleSubmit() {
-    if (validateForm()) {
+      // Update experienceDetails with the response data
+      experienceDetails = response.data;
       dispatch("submit", {
         type: "experienceDetails",
         data: experienceDetails,
       });
+    } catch (error: any) {
+      formErrors["submit"] = error.message || "Submission failed.";
+      console.error("Submission error:", error);
+    } finally {
+      loading = false;
     }
   }
 </script>
@@ -105,7 +115,7 @@
     </button>
   </div>
 
-  {#each experienceDetails as experience, index}
+  {#each experienceDetails as experience, index (experience.id)}
     <div class="card bg-base-100 shadow-sm">
       <div class="card-body">
         <div class="flex justify-between items-center mb-2">
@@ -127,7 +137,7 @@
                 : ''}"
               placeholder="Company Name *"
               bind:value={experience.companyName}
-              on:blur={updateDetails}
+              on:blur={validateAndUpdate}
             />
             {#if formErrors[`company-${index}`]}
               <label class="label">
@@ -146,7 +156,7 @@
                 : ''}"
               placeholder="Period (e.g. Jan 2020 - Dec 2023)"
               bind:value={experience.period}
-              on:blur={updateDetails}
+              on:blur={validateAndUpdate}
             />
             {#if formErrors[`period-${index}`]}
               <label class="label">
@@ -157,25 +167,25 @@
             {/if}
           </div>
         </div>
-
-        <div class="flex justify-end mt-2">
-          <DocumentUpload
-            documentUrl={experience.documentUrl}
-            {loading}
-            fieldId={`experience-${index}`}
-            onUpload={(file) => handleFileUpload(index, file)}
-            on:delete={() => handleDeleteDocument(index)}
-          />
-        </div>
       </div>
     </div>
   {/each}
+
+  {#if formErrors["submit"]}
+    <div class="text-error">{formErrors["submit"]}</div>
+  {/if}
+
+  {#if loading}
+    <div class="flex justify-center">
+      <span class="loading loading-spinner"></span>
+    </div>
+  {/if}
 
   <div class="flex justify-end mt-4">
     <button
       class="btn btn-primary"
       on:click={handleSubmit}
-      disabled={experienceDetails.length === 0}
+      disabled={experienceDetails.length === 0 || loading}
     >
       Save Experience Details
     </button>
