@@ -1,5 +1,6 @@
 <script lang="ts">
   import { attendanceRegularizeApi } from "$lib/services/api";
+  import type { AttendanceRegularization } from "$lib/services/api/attendance-regularization";
   import { toast } from "../common/stores/toast.store";
   import { writable } from "svelte/store";
   import { onMount } from "svelte";
@@ -7,7 +8,6 @@
   import RegularizationCalendar from "./RegularizationCalendar.svelte";
   import RegularizationForm from "./RegularizationFormBulk.svelte";
   import { formatDate } from "$lib/utils/date";
-  import type { AttendanceRegularization } from "$lib/types";
 
   const isLoading = writable(false);
   let selectedDates: Date[] = [];
@@ -41,20 +41,19 @@
   async function fetchAttendanceRecords(year?: number, month?: number) {
     isLoading.set(true);
     try {
-      // Simple month range calculation instead of using getMonthStartEnd
-      const firstDayOfMonth = new Date(
-        year || new Date().getFullYear(),
-        (month || new Date().getMonth()) - 1,
-        1
-      );
-      const lastDayOfMonth = new Date(
-        year || new Date().getFullYear(),
-        month || new Date().getMonth(),
-        0
-      );
+      // Calculate first and last day of the month correctly
+      const currentYear = year || new Date().getFullYear();
+      const currentMonth = month || new Date().getMonth() + 1; // Adding 1 since getMonth() is 0-based
+      
+      // First day of the month
+      const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1);
+      // Last day of the month
+      const lastDayOfMonth = new Date(currentYear, currentMonth, 0);
 
       const startDate = formatDate(firstDayOfMonth);
       const endDate = formatDate(lastDayOfMonth);
+
+      console.log('Fetching records from:', startDate, 'to:', endDate);
 
       // Fetch regularization records
       const userId = $auth.user?._id;
@@ -65,32 +64,37 @@
           endDate
         });
 
+        console.log('API Response:', response);
+
         if (response.success && response.data) {
           // Convert array to record object with date as key
-          regularizationRecords = response.data.reduce((acc, record) => {
-            // Extract just the date part from shiftDay
-            const date = record.shiftDay.split('T')[0];
-            acc[date] = record;
+          const newRecords = response.data.reduce((acc, record) => {
+            // Extract the date part from shiftDay without timezone conversion
+            const [dateStr] = record.shiftDay.split('T');
+            console.log('Processing record for date:', dateStr, record);
+            acc[dateStr] = record;
             return acc;
           }, {} as Record<string, AttendanceRegularization>);
+
+          console.log('Processed records:', newRecords);
+          regularizationRecords = newRecords;
         }
       }
-
-      isLoading.set(false);
     } catch (error) {
       console.error("Failed to fetch attendance records:", error);
+      toast.error("Failed to fetch attendance records");
+    } finally {
       isLoading.set(false);
     }
   }
 
   // Handle date selection
   function handleDateSelect(event: CustomEvent<{ selectedDates: Date[] }>) {
-    // Create a new array to ensure reactivity
     selectedDates = [...event.detail.selectedDates];
 
     // Initialize data for each selected date
     selectedDates.forEach((date) => {
-      const dateStr = date.toISOString().split("T")[0];
+      const dateStr = date.toISOString().split('T')[0];
       if (!shiftData[dateStr]) {
         shiftData[dateStr] = {
           date,
@@ -113,7 +117,7 @@
     // Remove data for dates that are no longer selected
     Object.keys(shiftData).forEach((dateStr) => {
       const stillSelected = selectedDates.some(
-        (date) => date.toISOString().split("T")[0] === dateStr
+        (date) => date.toISOString().split('T')[0] === dateStr
       );
       if (!stillSelected) {
         delete shiftData[dateStr];
@@ -132,11 +136,9 @@
   }
 
   // Handle month change
-  function handleMonthChange(
-    event: CustomEvent<{ year: number; month: number }>
-  ) {
+  function handleMonthChange(event: CustomEvent<{ year: number; month: number }>) {
     const { year, month } = event.detail;
-    // Optional: fetch shift data for new month
+    fetchAttendanceRecords(year, month);
   }
 
   // Update shift data
@@ -190,12 +192,10 @@
     selectedDates = []; // Clear selected dates
   }
 
-  onMount(() => {
+  onMount(async () => {
+    console.log('Component mounted, fetching records...');
     const currentDate = new Date();
-    fetchAttendanceRecords(
-      currentDate.getFullYear(),
-      currentDate.getMonth() + 1
-    );
+    await fetchAttendanceRecords(currentDate.getFullYear(), currentDate.getMonth() + 1);
   });
 </script>
 
@@ -209,6 +209,7 @@
         allowFutureDates={false}
         maxFutureDays={0}
         {regularizationRecords}
+        isLoading={$isLoading}
         on:dateSelect={handleDateSelect}
         on:monthChange={handleMonthChange}
       />

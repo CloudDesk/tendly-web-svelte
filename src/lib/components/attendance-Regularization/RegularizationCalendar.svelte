@@ -65,7 +65,13 @@
   }
 
   function getRegularizationRecord(date: Date): AttendanceRegularization | null {
-    const dateStr = getDateString(date);
+    // Format date to YYYY-MM-DD without timezone conversion
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    
+    console.log('Looking for record for date:', dateStr, 'Available records:', regularizationRecords);
     return regularizationRecords[dateStr] || null;
   }
 
@@ -116,7 +122,7 @@
     const firstDayOfMonth = new Date(year, month, 1);
     const lastDayOfMonth = new Date(year, month + 1, 0);
     const daysCount = lastDayOfMonth.getDate();
-    const firstDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const firstDayOfWeek = firstDayOfMonth.getDay();
 
     const days: Date[] = [];
     emptyDays.set(firstDayOfWeek);
@@ -126,6 +132,7 @@
     }
 
     daysInMonth.set(days);
+    console.log('Days generated:', days.map(d => d.toISOString()));
   }
 
   // Handle month navigation
@@ -256,7 +263,7 @@
       pending: 0,
       approved: 0,
       rejected: 0,
-      cancelled: 0,
+      withdrawn: 0,
       total: Object.keys(regularizationRecords).length,
     };
 
@@ -269,10 +276,12 @@
           summary.approved++;
           break;
         case "Rejected":
+        case "Rejected-Absent":
+        case "Rejected-Leave":
           summary.rejected++;
           break;
-        case "Cancelled":
-          summary.cancelled++;
+        case "Withdrawn":
+          summary.withdrawn++;
           break;
       }
     });
@@ -280,8 +289,20 @@
     return summary;
   }
 
-  // Initialize days on mount
-  $: generateDays(year, month);
+  // Watch for changes in regularizationRecords
+  $: {
+    if (regularizationRecords && Object.keys(regularizationRecords).length > 0) {
+      console.log('RegularizationCalendar records updated:', regularizationRecords);
+      // Force calendar update
+      daysInMonth.update(days => [...days]);
+    }
+  }
+
+  // Initialize days on mount and when month/year changes
+  $: {
+    generateDays(year, month);
+    console.log('Calendar days generated:', $daysInMonth);
+  }
 
   // Get regularization records summary
   $: regularizationSummary = getRegularizationSummary();
@@ -350,9 +371,7 @@
           {@const selectable = isDateSelectable(day)}
           {@const selected = isSelected(day)}
           {@const regularizationRecord = getRegularizationRecord(day)}
-          {@const statusInfo = regularizationRecord
-            ? getStatusInfo(regularizationRecord.status)
-            : null}
+          {@const statusInfo = regularizationRecord ? getStatusInfo(regularizationRecord.status) : null}
           {@const hasBlocking = hasBlockingStatus(day)}
 
           <div
@@ -374,7 +393,7 @@
             <div class="day-number text-sm font-medium">{day.getDate()}</div>
 
             <!-- Status indicator -->
-            {#if statusInfo}
+            {#if statusInfo && regularizationRecord}
               <div class="status-indicator absolute top-0 right-0 p-0.5">
                 <svelte:component
                   this={statusInfo.icon}
@@ -382,12 +401,9 @@
                   class={statusInfo.color}
                 />
               </div>
-            {/if}
-
-            <!-- Status badge for better visibility -->
-            {#if regularizationRecord}
+              <!-- Status badge -->
               <div
-                class="status-badge text-xs {statusInfo?.bgColor} {statusInfo?.color} px-1 py-0.5 rounded mt-0.5"
+                class="status-badge text-xs {statusInfo.bgColor} {statusInfo.color} px-1 py-0.5 rounded mt-0.5"
               >
                 {regularizationRecord.status.charAt(0)}
               </div>
@@ -429,10 +445,10 @@
             <span>Rejected: {regularizationSummary.rejected}</span>
           </div>
         {/if}
-        {#if regularizationSummary.cancelled > 0}
+        {#if regularizationSummary.withdrawn > 0}
           <div class="flex items-center gap-1 text-gray-700">
             <AlertCircle size={12} />
-            <span>Cancelled: {regularizationSummary.cancelled}</span>
+            <span>Withdrawn: {regularizationSummary.withdrawn}</span>
           </div>
         {/if}
       </div>
