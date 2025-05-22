@@ -167,10 +167,14 @@
 
       let response;
       if (viewType === "user") {
-        response = await attendanceRegularizeApi.getMyRegularizationRecords(
+        // response = await attendanceRegularizeApi.getMyRegularizationRecords(
+        //   userId,
+        //   filterStatus,
+        //   filterDate || undefined
+        // );
+        response = await attendanceRegularizeApi.getRegularizationRecords(
           userId,
-          filterStatus,
-          filterDate || undefined
+          { status: filterStatus, date: filterDate || undefined }
         );
       } else {
         // For manager or admin view

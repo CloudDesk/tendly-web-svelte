@@ -2,14 +2,37 @@
   import { createEventDispatcher } from "svelte";
   import { writable } from "svelte/store";
   import { auth } from "$lib/stores/auth";
-  import { ChevronLeft, ChevronRight } from "lucide-svelte";
+  import {
+    ChevronLeft,
+    ChevronRight,
+    Clock,
+    CheckCircle,
+    XCircle,
+    AlertCircle,
+  } from "lucide-svelte";
 
+  // Types
   interface User {
     _id?: string;
     name?: string;
     employeeId?: string;
     avatar?: string;
     biometricId?: string;
+  }
+
+  interface RegularizationRecord {
+    _id: string;
+    userId: string;
+    date: string;
+    status: "Pending" | "Approved" | "Rejected" | "Cancelled";
+    fromTime: string;
+    toTime: string;
+    actualFromTime: string;
+    actualToTime: string;
+    reason: string;
+    shiftType: string;
+    createdAt: string;
+    updatedAt: string;
   }
 
   interface ShiftInfo {
@@ -24,15 +47,19 @@
     };
   }
 
-  const dispatch = createEventDispatcher();
-  const user = ($auth.user as User) || {};
-  console.log(user, "users");
+  // Props
   export let selectedDates: Date[] = []; // Array of selected dates
   export let weekendDays: number[] = [0, 6]; // Default weekends (Sunday, Saturday)
   export let year: number = new Date().getFullYear();
   export let month: number = new Date().getMonth(); // 0-based index for months
   export let allowFutureDates: boolean = false; // Control whether future dates can be selected
   export let maxFutureDays: number = 30; // How many days in the future can be selected
+  export let regularizationRecords: Record<string, RegularizationRecord> = {}; // Regularization records
+  export let isLoading: boolean = false; // Loading state
+
+  const dispatch = createEventDispatcher();
+  const user = ($auth.user as User) || {};
+  console.log(user, "users");
 
   const currentDate = new Date();
   currentDate.setHours(0, 0, 0, 0); // Reset time portion for accurate comparisons
@@ -45,6 +72,58 @@
   const userName = user.name || "User Name";
   const userCode = user.biometricId || "#EMP001";
   const userAvatar = user.avatar;
+
+  // Utility functions
+  function getDateString(date: Date): string {
+    return date.toISOString().split("T")[0];
+  }
+
+  function getRegularizationRecord(date: Date): RegularizationRecord | null {
+    const dateStr = getDateString(date);
+    return regularizationRecords[dateStr] || null;
+  }
+
+  function hasBlockingStatus(date: Date): boolean {
+    const record = getRegularizationRecord(date);
+    return (
+      record && (record.status === "Pending" || record.status === "Approved")
+    );
+  }
+
+  function getStatusInfo(status: string) {
+    switch (status) {
+      case "Pending":
+        return {
+          icon: Clock,
+          color: "text-yellow-600",
+          bgColor: "bg-yellow-100",
+          label: "Pending",
+        };
+      case "Approved":
+        return {
+          icon: CheckCircle,
+          color: "text-green-600",
+          bgColor: "bg-green-100",
+          label: "Approved",
+        };
+      case "Rejected":
+        return {
+          icon: XCircle,
+          color: "text-red-600",
+          bgColor: "bg-red-100",
+          label: "Rejected",
+        };
+      case "Cancelled":
+        return {
+          icon: AlertCircle,
+          color: "text-gray-600",
+          bgColor: "bg-gray-100",
+          label: "Cancelled",
+        };
+      default:
+        return null;
+    }
+  }
 
   // Generate days for the current month
   function generateDays(year: number, month: number) {
@@ -95,10 +174,19 @@
     );
   };
 
-  // Handle date selection
+  // Handle date selection with enhanced blocking logic
   function toggleDateSelection(date: Date) {
     // Check if the date is selectable
     if (!isDateSelectable(date)) return;
+
+    // Check for blocking regularization status
+    if (hasBlockingStatus(date)) {
+      const record = getRegularizationRecord(date);
+      console.log(
+        `Date ${getDateString(date)} is blocked due to ${record?.status} status`
+      );
+      return;
+    }
 
     const index = selectedDates.findIndex(
       (selectedDate) => selectedDate.toDateString() === date.toDateString()
@@ -117,12 +205,15 @@
     dispatch("dateSelect", { selectedDates });
   }
 
-  // Check if a date is selectable based on rules
+  // Enhanced date selectability check
   function isDateSelectable(date: Date): boolean {
     const dateToCheck = new Date(date);
     dateToCheck.setHours(0, 0, 0, 0);
 
-    // Always allow past dates
+    // Check for blocking regularization status first
+    if (hasBlockingStatus(date)) return false;
+
+    // Always allow past dates (if not blocked by regularization)
     if (dateToCheck <= currentDate) return true;
 
     // Future dates handling
@@ -173,78 +264,196 @@
     return date.toLocaleDateString("en-US", { weekday: "short" });
   }
 
+  // Get regularization summary for selected dates section
+  function getRegularizationSummary() {
+    const summary = {
+      pending: 0,
+      approved: 0,
+      rejected: 0,
+      cancelled: 0,
+      total: Object.keys(regularizationRecords).length,
+    };
+
+    Object.values(regularizationRecords).forEach((record) => {
+      switch (record.status) {
+        case "Pending":
+          summary.pending++;
+          break;
+        case "Approved":
+          summary.approved++;
+          break;
+        case "Rejected":
+          summary.rejected++;
+          break;
+        case "Cancelled":
+          summary.cancelled++;
+          break;
+      }
+    });
+
+    return summary;
+  }
+
   // Initialize days on mount
   $: generateDays(year, month);
+
+  // Get regularization records summary
+  $: regularizationSummary = getRegularizationSummary();
 </script>
 
 <div class="flex flex-col gap-3">
-  <div class="calendar-wrapper bg-white rounded shadow p-3">
-    <div class="month-nav flex justify-between items-center mb-3 px-2">
-      <button
-        class="nav-btn flex items-center gap-1 text-gray-700 hover:bg-gray-100 p-1 rounded"
-        on:click={() => handleMonthChange("prev")}
+  <!-- Loading overlay for calendar -->
+  <div class="relative">
+    {#if isLoading}
+      <div
+        class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded"
       >
-        <ChevronLeft />
-        <span>Prev</span>
-      </button>
-      <h2 class="text-base font-medium uppercase">
-        {new Date(year, month).toLocaleString("default", { month: "long" })}
-        {year}
-      </h2>
-      <button
-        class="nav-btn flex items-center gap-1 text-gray-700 hover:bg-gray-100 p-1 rounded"
-        on:click={() => handleMonthChange("next")}
-      >
-        <span>Next</span>
-        <ChevronRight />
-      </button>
-    </div>
-
-    <div
-      class="calendar-days grid grid-cols-7 text-center text-xs font-medium mb-1 border-b pb-1"
-    >
-      <div class="p-1 text-gray-500">S</div>
-      <div class="p-1 text-gray-500">M</div>
-      <div class="p-1 text-gray-500">T</div>
-      <div class="p-1 text-gray-500">W</div>
-      <div class="p-1 text-gray-500">T</div>
-      <div class="p-1 text-gray-500">F</div>
-      <div class="p-1 text-gray-500">S</div>
-    </div>
-
-    <div class="calendar-grid grid grid-cols-7 gap-1">
-      {#each Array($emptyDays) as _, i}
-        <div class="empty-day p-1 text-center text-xs text-gray-400">
-          {new Date(year, month, 0).getDate() - $emptyDays + i + 1}
+        <div class="flex items-center gap-2 text-blue-600">
+          <div
+            class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"
+          ></div>
+          <span class="text-sm">Loading...</span>
         </div>
-      {/each}
+      </div>
+    {/if}
 
-      {#each $daysInMonth as day}
-        {@const selectable = isDateSelectable(day)}
-        {@const selected = isSelected(day)}
-        <div
-          class="calendar-day p-1 text-center cursor-pointer transition-colors"
-          class:selected
-          class:weekend={isWeekend(day)}
-          class:today={isToday(day)}
-          class:past={isPast(day)}
-          class:future={isFuture(day)}
-          class:disabled={!selectable}
-          class:hover-effect={selectable && !selected}
-          on:click={() => toggleDateSelection(day)}
+    <div class="calendar-wrapper bg-white rounded shadow p-3">
+      <div class="month-nav flex justify-between items-center mb-3 px-2">
+        <button
+          class="nav-btn flex items-center gap-1 text-gray-700 hover:bg-gray-100 p-1 rounded"
+          on:click={() => handleMonthChange("prev")}
+          disabled={isLoading}
         >
-          <div class="day-number text-sm font-medium">{day.getDate()}</div>
-        </div>
-      {/each}
+          <ChevronLeft />
+          <span>Prev</span>
+        </button>
+        <h2 class="text-base font-medium uppercase">
+          {new Date(year, month).toLocaleString("default", { month: "long" })}
+          {year}
+        </h2>
+        <button
+          class="nav-btn flex items-center gap-1 text-gray-700 hover:bg-gray-100 p-1 rounded"
+          on:click={() => handleMonthChange("next")}
+          disabled={isLoading}
+        >
+          <span>Next</span>
+          <ChevronRight />
+        </button>
+      </div>
 
-      {#each Array(42 - $daysInMonth.length - $emptyDays) as _, i}
-        <div class="empty-day p-1 text-center text-xs text-gray-400">
-          {i + 1}
-        </div>
-      {/each}
+      <div
+        class="calendar-days grid grid-cols-7 text-center text-xs font-medium mb-1 border-b pb-1"
+      >
+        <div class="p-1 text-gray-500">S</div>
+        <div class="p-1 text-gray-500">M</div>
+        <div class="p-1 text-gray-500">T</div>
+        <div class="p-1 text-gray-500">W</div>
+        <div class="p-1 text-gray-500">T</div>
+        <div class="p-1 text-gray-500">F</div>
+        <div class="p-1 text-gray-500">S</div>
+      </div>
+
+      <div class="calendar-grid grid grid-cols-7 gap-1">
+        {#each Array($emptyDays) as _, i}
+          <div class="empty-day p-1 text-center text-xs text-gray-400">
+            {new Date(year, month, 0).getDate() - $emptyDays + i + 1}
+          </div>
+        {/each}
+
+        {#each $daysInMonth as day}
+          {@const selectable = isDateSelectable(day)}
+          {@const selected = isSelected(day)}
+          {@const regularizationRecord = getRegularizationRecord(day)}
+          {@const statusInfo = regularizationRecord
+            ? getStatusInfo(regularizationRecord.status)
+            : null}
+          {@const hasBlocking = hasBlockingStatus(day)}
+
+          <div
+            class="calendar-day p-1 text-center cursor-pointer transition-colors relative"
+            class:selected
+            class:weekend={isWeekend(day)}
+            class:today={isToday(day)}
+            class:past={isPast(day)}
+            class:future={isFuture(day)}
+            class:disabled={!selectable}
+            class:blocked={hasBlocking}
+            class:hover-effect={selectable && !selected && !hasBlocking}
+            class:has-regularization={!!regularizationRecord}
+            title={regularizationRecord
+              ? `${regularizationRecord.status} - ${regularizationRecord.reason}`
+              : ""}
+            on:click={() => toggleDateSelection(day)}
+          >
+            <div class="day-number text-sm font-medium">{day.getDate()}</div>
+
+            <!-- Status indicator -->
+            {#if statusInfo}
+              <div class="status-indicator absolute top-0 right-0 p-0.5">
+                <svelte:component
+                  this={statusInfo.icon}
+                  size={10}
+                  class={statusInfo.color}
+                />
+              </div>
+            {/if}
+
+            <!-- Status badge for better visibility -->
+            {#if regularizationRecord}
+              <div
+                class="status-badge text-xs {statusInfo?.bgColor} {statusInfo?.color} px-1 py-0.5 rounded mt-0.5"
+              >
+                {regularizationRecord.status.charAt(0)}
+              </div>
+            {/if}
+          </div>
+        {/each}
+
+        {#each Array(42 - $daysInMonth.length - $emptyDays) as _, i}
+          <div class="empty-day p-1 text-center text-xs text-gray-400">
+            {i + 1}
+          </div>
+        {/each}
+      </div>
     </div>
   </div>
 
+  <!-- Regularization Summary -->
+  {#if regularizationSummary.total > 0}
+    <div class="regularization-summary p-3 bg-blue-50 rounded border">
+      <p class="text-sm font-medium mb-2 text-blue-800">
+        Month Summary ({regularizationSummary.total} records)
+      </p>
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        {#if regularizationSummary.pending > 0}
+          <div class="flex items-center gap-1 text-yellow-700">
+            <Clock size={12} />
+            <span>Pending: {regularizationSummary.pending}</span>
+          </div>
+        {/if}
+        {#if regularizationSummary.approved > 0}
+          <div class="flex items-center gap-1 text-green-700">
+            <CheckCircle size={12} />
+            <span>Approved: {regularizationSummary.approved}</span>
+          </div>
+        {/if}
+        {#if regularizationSummary.rejected > 0}
+          <div class="flex items-center gap-1 text-red-700">
+            <XCircle size={12} />
+            <span>Rejected: {regularizationSummary.rejected}</span>
+          </div>
+        {/if}
+        {#if regularizationSummary.cancelled > 0}
+          <div class="flex items-center gap-1 text-gray-700">
+            <AlertCircle size={12} />
+            <span>Cancelled: {regularizationSummary.cancelled}</span>
+          </div>
+        {/if}
+      </div>
+    </div>
+  {/if}
+
+  <!-- Selected dates section -->
   {#if selectedDates.length > 0}
     <div class="jump-to mt-2 p-3 border rounded bg-gray-50">
       <p class="text-sm font-medium mb-2 text-gray-500">Date Select's</p>
@@ -372,12 +581,46 @@
     cursor: not-allowed;
   }
 
-  .calendar-day.has-shift .day-number {
+  /* Blocked dates styling */
+  .calendar-day.blocked {
+    background-color: #fef3c7;
+    color: #92400e;
+    cursor: not-allowed;
+    border-color: #f59e0b;
+  }
+
+  .calendar-day.blocked:hover {
+    background-color: #fbbf24;
+  }
+
+  /* Regularization status styling */
+  .calendar-day.has-regularization .day-number {
     margin-bottom: 0;
+  }
+
+  .status-indicator {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+  }
+
+  .status-badge {
+    font-size: 8px;
+    line-height: 1;
+    min-width: 12px;
+    height: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .nav-btn {
     font-size: 0.875rem;
+  }
+
+  .nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   /* Enhanced selected date in the list */
@@ -389,5 +632,10 @@
 
   .selected-date:hover {
     background-color: #dbeafe;
+  }
+
+  /* Regularization summary styling */
+  .regularization-summary {
+    border-left: 4px solid #3b82f6;
   }
 </style>

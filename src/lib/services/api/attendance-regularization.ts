@@ -3,6 +3,15 @@ import type { ApiResponse } from '$lib/types/api';
 import type { AttendanceRegularization } from '$lib/types';
 
 
+type RegularizationFilters = {
+    status?: 'Pending' | 'Approved' | 'Rejected' | 'Rejected-Absent' | 'Rejected-Leave' | 'Withdrawn';
+    statuses?: string[]; // Array of statuses
+    allStatus?: boolean;
+    date?: string; // Single date 
+    startDate?: string;
+    endDate?: string;
+}
+
 
 type AttendanceRegularizationBulk = {
     attendanceId?: string | null;
@@ -69,6 +78,46 @@ export const attendanceRegularizeApi = {
         });
     },
 
+    // Fetch regularization records with all Filters
+
+    getRegularizationRecords: async (
+        userId: string,
+        filters: RegularizationFilters = {}
+    ): Promise<ApiResponse<AttendanceRegularization[]>> => {
+        const params = new URLSearchParams();
+
+        // Handle status filtering with priority order
+        if (filters.allStatus) {
+            params.append('allStatus', 'true');
+        } else if (filters.statuses && filters.statuses.length > 0) {
+            // Convert array to comma-separated string
+            params.append('statuses', filters.statuses.join(','));
+        } else if (filters.status) {
+            params.append('status', filters.status);
+        } else {
+            // Default to 'Pending' for backward compatibility
+            params.append('status', 'Pending');
+        }
+
+        // Handle date filtering
+        if (filters.startDate || filters.endDate) {
+            // Date range filtering
+            if (filters.startDate) {
+                params.append('startDate', filters.startDate);
+            }
+            if (filters.endDate) {
+                params.append('endDate', filters.endDate);
+            }
+        } else if (filters.date) {
+            // Single date filtering (legacy)
+            params.append('date', filters.date);
+        }
+
+        const url = `/attendance-regularizations/${userId}?${params.toString()}`;
+        console.log(url, "URL for regularization records")
+        return await fetchApi<ApiResponse<AttendanceRegularization[]>>(url, { method: 'GET' });
+    },
+
     // Fetch regularization records for the authenticated user
     getMyRegularizationRecords: async (
         userId: string,
@@ -81,6 +130,7 @@ export const attendanceRegularizeApi = {
         }
         return await fetchApi<ApiResponse<AttendanceRegularization[]>>(url, { method: 'GET' });
     },
+
 
     // Fetch assigned regularization records for an approver
     getAssignedRegularizationRecords: async (
