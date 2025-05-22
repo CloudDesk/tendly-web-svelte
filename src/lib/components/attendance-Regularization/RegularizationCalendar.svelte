@@ -10,6 +10,7 @@
     XCircle,
     AlertCircle,
   } from "lucide-svelte";
+  import type { AttendanceRegularization } from "$lib/services/api/attendance-regularization";
 
   // Types
   interface User {
@@ -18,21 +19,6 @@
     employeeId?: string;
     avatar?: string;
     biometricId?: string;
-  }
-
-  interface RegularizationRecord {
-    _id: string;
-    userId: string;
-    date: string;
-    status: "Pending" | "Approved" | "Rejected" | "Cancelled";
-    fromTime: string;
-    toTime: string;
-    actualFromTime: string;
-    actualToTime: string;
-    reason: string;
-    shiftType: string;
-    createdAt: string;
-    updatedAt: string;
   }
 
   interface ShiftInfo {
@@ -54,7 +40,7 @@
   export let month: number = new Date().getMonth(); // 0-based index for months
   export let allowFutureDates: boolean = false; // Control whether future dates can be selected
   export let maxFutureDays: number = 30; // How many days in the future can be selected
-  export let regularizationRecords: Record<string, RegularizationRecord> = {}; // Regularization records
+  export let regularizationRecords: Record<string, AttendanceRegularization> = {}; // Regularization records
   export let isLoading: boolean = false; // Loading state
 
   const dispatch = createEventDispatcher();
@@ -78,19 +64,17 @@
     return date.toISOString().split("T")[0];
   }
 
-  function getRegularizationRecord(date: Date): RegularizationRecord | null {
+  function getRegularizationRecord(date: Date): AttendanceRegularization | null {
     const dateStr = getDateString(date);
     return regularizationRecords[dateStr] || null;
   }
 
   function hasBlockingStatus(date: Date): boolean {
     const record = getRegularizationRecord(date);
-    return (
-      record && (record.status === "Pending" || record.status === "Approved")
-    );
+    return record ? (record.status === "Pending" || record.status === "Approved") : false;
   }
 
-  function getStatusInfo(status: string) {
+  function getStatusInfo(status: AttendanceRegularization['status']) {
     switch (status) {
       case "Pending":
         return {
@@ -107,18 +91,20 @@
           label: "Approved",
         };
       case "Rejected":
+      case "Rejected-Absent":
+      case "Rejected-Leave":
         return {
           icon: XCircle,
           color: "text-red-600",
           bgColor: "bg-red-100",
           label: "Rejected",
         };
-      case "Cancelled":
+      case "Withdrawn":
         return {
           icon: AlertCircle,
           color: "text-gray-600",
           bgColor: "bg-gray-100",
-          label: "Cancelled",
+          label: "Withdrawn",
         };
       default:
         return null;

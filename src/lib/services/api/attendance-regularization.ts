@@ -1,7 +1,21 @@
 import { fetchApi } from './base';
 import type { ApiResponse } from '$lib/types/api';
-import type { AttendanceRegularization } from '$lib/types';
 
+export type AttendanceRegularization = {
+    _id: string;
+    attendanceId: string;
+    shiftDay: string;
+    from: string;
+    to: string;
+    reason: string;
+    status: 'Pending' | 'Approved' | 'Rejected' | 'Rejected-Absent' | 'Rejected-Leave' | 'Withdrawn';
+    approver: {
+        id: string;
+        name: string;
+    };
+    approvedDate: string | null;
+    comments: string | null;
+};
 
 type RegularizationFilters = {
     status?: 'Pending' | 'Approved' | 'Rejected' | 'Rejected-Absent' | 'Rejected-Leave' | 'Withdrawn';

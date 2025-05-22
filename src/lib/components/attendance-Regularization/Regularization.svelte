@@ -3,14 +3,17 @@
   import { toast } from "../common/stores/toast.store";
   import { writable } from "svelte/store";
   import { onMount } from "svelte";
+  import { auth } from "$lib/stores/auth";
   import RegularizationCalendar from "./RegularizationCalendar.svelte";
   import RegularizationForm from "./RegularizationFormBulk.svelte";
   import { formatDate } from "$lib/utils/date";
+  import type { AttendanceRegularization } from "$lib/types";
 
   const isLoading = writable(false);
   let selectedDates: Date[] = [];
   let expandedDates: Record<string, boolean> = {};
   let isRegularizationLoading = false;
+  let regularizationRecords: Record<string, AttendanceRegularization> = {};
 
   // Form data for regularization
   let shiftData: Record<
@@ -53,12 +56,25 @@
       const startDate = formatDate(firstDayOfMonth);
       const endDate = formatDate(lastDayOfMonth);
 
-      // Optional API call if needed
-      // const response = await attendanceApi.search({
-      //   userIds: [userId],
-      //   startDate,
-      //   endDate
-      // });
+      // Fetch regularization records
+      const userId = $auth.user?._id;
+      if (userId) {
+        const response = await attendanceRegularizeApi.getRegularizationRecords(userId, {
+          allStatus: true,
+          startDate,
+          endDate
+        });
+
+        if (response.success && response.data) {
+          // Convert array to record object with date as key
+          regularizationRecords = response.data.reduce((acc, record) => {
+            // Extract just the date part from shiftDay
+            const date = record.shiftDay.split('T')[0];
+            acc[date] = record;
+            return acc;
+          }, {} as Record<string, AttendanceRegularization>);
+        }
+      }
 
       isLoading.set(false);
     } catch (error) {
@@ -192,6 +208,7 @@
         weekendDays={[]}
         allowFutureDates={false}
         maxFutureDays={0}
+        {regularizationRecords}
         on:dateSelect={handleDateSelect}
         on:monthChange={handleMonthChange}
       />
