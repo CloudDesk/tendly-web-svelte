@@ -1,6 +1,3 @@
-// Give the service worker access to Firebase Messaging.
-// Note that you can only use Firebase Messaging here. Other Firebase libraries
-// are not available in the service worker.
 importScripts(
   "https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"
 );
@@ -9,30 +6,33 @@ importScripts(
 );
 
 // Initialize the Firebase app in the service worker
-firebase.initializeApp({
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-});
+try {
+  firebase.initializeApp({
+    apiKey: "AIzaSyBPfDz4iHUWjYWojHHdtqT1MW37UG6QqBI",
+    authDomain: "tendly-web.firebaseapp.com",
+    projectId: "tendly-web",
+    storageBucket: "tendly-web.firebasestorage.app",
+    messagingSenderId: "681549896685",
+    appId: "1:681549896685:web:b213aceff2b7cd2a17e5e4",
+  });
 
-// Retrieve an instance of Firebase Messaging so that it can handle background messages.
-const messaging = firebase.messaging();
+  const messaging = firebase.messaging();
+  console.log("[firebase-messaging-sw.js] Service worker initialized");
 
-// Optional: Add background message handler
-messaging.onBackgroundMessage((payload) => {
-  console.log(
-    "[firebase-messaging-sw.js] Received background message ",
-    payload
-  );
-  // Customize notification here
-  const notificationTitle = payload.notification.title;
-  const notificationOptions = {
-    body: payload.notification.body,
-    icon: "/path/to/icon.png",
-  };
+  messaging.onBackgroundMessage((payload) => {
+    console.log(
+      "[firebase-messaging-sw.js] Received background message:",
+      payload
+    );
+    const notificationTitle =
+      payload.notification?.title || "Background Message";
+    const notificationOptions = {
+      body: payload.notification?.body || "You have a new message!",
+      icon: "/favicon.png",
+    };
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
-});
+    self.registration.showNotification(notificationTitle, notificationOptions);
+  });
+} catch (error) {
+  console.error("[firebase-messaging-sw.js] Error initializing:", error);
+}
