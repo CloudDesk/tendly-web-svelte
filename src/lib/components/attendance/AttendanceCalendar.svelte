@@ -16,6 +16,21 @@
   import { createEventDispatcher } from "svelte";
   import { writable } from "svelte/store";
   import Loader from "../common/Loader.svelte";
+  import { 
+    CheckCircle2, 
+    AlertTriangle, 
+    Clock, 
+    XCircle, 
+    AlertCircle,
+    CalendarClock,
+    Home,
+    HelpCircle,
+    Timer,
+    LogOut,
+    Calendar,
+    Palmtree,
+    X
+  } from 'lucide-svelte';
 
   interface AttendanceRecord {
     shiftDay: string;
@@ -69,84 +84,84 @@
       label: "Weekend",
       description: "Weekend or holiday",
       className: "bg-slate-100 text-slate-600 border-slate-200",
-      icon: "🏠",
+      icon: Home,
     },
     UNKNOWN: {
       status: "?",
       label: "Unknown",
       description: "Status not determined",
       className: "bg-amber-50 text-amber-700 border-amber-200",
-      icon: "❓",
+      icon: HelpCircle,
     },
     NEEDS_REGULARIZATION: {
       status: "⚠",
       label: "Needs Regularization",
       description: "Requires attendance correction",
       className: "bg-red-50 text-red-700 border-red-300",
-      icon: "⚠️",
+      icon: AlertTriangle,
     },
     LATE: {
       status: "L",
       label: "Late",
       description: "Late check-in",
       className: "bg-orange-50 text-orange-700 border-orange-200",
-      icon: "⏰",
+      icon: Clock,
     },
     ON_TIME: {
       status: "✓",
       label: "On Time",
       description: "Punctual attendance",
       className: "bg-emerald-50 text-emerald-700 border-emerald-200",
-      icon: "✅",
+      icon: CheckCircle2,
     },
     EARLY_EXIT: {
       status: "EE",
       label: "Early Exit",
       description: "Left before scheduled time",
       className: "bg-orange-50 text-orange-700 border-orange-200",
-      icon: "🚪",
+      icon: LogOut,
     },
     PRESENT: {
       status: "P",
       label: "Present",
       description: "Full day attendance",
       className: "bg-green-50 text-green-700 border-green-300",
-      icon: "✅",
+      icon: CheckCircle2,
     },
     OUT_OF_WINDOW: {
       status: "OW",
       label: "Out of Window",
       description: "Swipe outside allowed hours",
       className: "bg-purple-50 text-purple-700 border-purple-200",
-      icon: "⏱️",
+      icon: Timer,
     },
     ON_LEAVE: {
       status: "LV",
       label: "On Leave",
       description: "Approved leave",
       className: "bg-blue-50 text-blue-700 border-blue-200",
-      icon: "🌴",
+      icon: Palmtree,
     },
     ABSENT: {
       status: "A",
       label: "Absent",
       description: "No attendance recorded",
       className: "bg-red-50 text-red-700 border-red-300",
-      icon: "❌",
+      icon: X,
     },
     PENDING_REGULARIZATION: {
       status: "PR",
       label: "Pending Regularization",
       description: "Regularization request submitted",
       className: "bg-yellow-50 text-yellow-700 border-yellow-200",
-      icon: "⏳",
+      icon: CalendarClock,
     },
     REGULARIZED: {
       status: "R",
       label: "Regularized",
       description: "Attendance corrected & approved",
       className: "bg-teal-50 text-teal-700 border-teal-200",
-      icon: "✔️",
+      icon: CheckCircle2,
     },
   } as const;
 
@@ -377,39 +392,63 @@
                 </div>
 
                 <!-- Status Display -->
-                {#if showStatus && isPastDay(day)}
-                  <div class="flex-grow flex items-center justify-center py-2">
+                {#if showStatus && isPastDay(day) && isSameMonth(day, $currentDate)}
+                  <div class="flex-grow flex flex-col items-center justify-center py-2 relative">
                     {#if attendance}
-                      <div
-                        class="status-badge {attendance.className} border rounded-lg px-3 py-1.5 text-sm font-semibold shadow-sm"
-                      >
-                        <span class="mr-1">{attendance.icon}</span>
-                        {attendance.status}
+                      <!-- Main Status Badge -->
+                      <div class="status-badge {attendance.className} rounded-lg px-2.5 py-1.5 text-sm font-medium flex items-center gap-1.5 relative">
+                        {#if record?.attendanceStatus.includes('Present')}
+                          <span class="status-code">P</span>
+                        {:else if record?.needsRegularization}
+                          <span class="status-code">NR</span>
+                        {:else}
+                          <span class="status-code">{attendance.status}</span>
+                        {/if}
+                      </div>
+                      
+                      <!-- Status Indicators -->
+                      <div class="status-indicators mt-1.5 flex flex-col gap-1 items-center">
+                        <!-- Regularization Status -->
+                        {#if record?.attendanceStatus.includes('Regularized')}
+                          <div class="indicator-badge bg-teal-50 text-teal-700 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1">
+                            <CheckCircle2 size={12} strokeWidth={2.5} />
+                            <span>R</span>
+                          </div>
+                        {/if}
+
+                        <!-- Multiple Status Indicators -->
+                        {#if record?.needsRegularization}
+                          <div class="flex flex-col gap-1 items-center">
+                            {#if record.attendanceStatus.includes('Late')}
+                              <div class="indicator-badge bg-orange-50 text-orange-700 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1">
+                                <Clock size={12} strokeWidth={2.5} />
+                                <span>Late</span>
+                              </div>
+                            {/if}
+                            {#if record.attendanceStatus.includes('Early-Exit')}
+                              <div class="indicator-badge bg-orange-50 text-orange-700 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1">
+                                <LogOut size={12} strokeWidth={2.5} />
+                                <span>Early</span>
+                              </div>
+                            {/if}
+                            {#if record.attendanceStatus.includes('Out-Of-Window')}
+                              <div class="indicator-badge bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1">
+                                <Timer size={12} strokeWidth={2.5} />
+                                <span>OW</span>
+                              </div>
+                            {/if}
+                          </div>
+                        {/if}
                       </div>
                     {/if}
                   </div>
-
-                  <!-- Regularization Button -->
-                  {#if record?.needsRegularization}
-                    <div class="mt-2">
-                      <button
-                        class="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded-md font-medium transition-colors duration-200 w-full"
-                        on:click|stopPropagation={() =>
-                          dispatch("openRegularization", { date: day })}
-                        aria-label="Regularize attendance for {format(
-                          day,
-                          'yyyy-MM-dd'
-                        )}"
-                      >
-                        Regularize
-                      </button>
-                    </div>
-                  {/if}
-                {:else if !isPastDay(day) && !isWeekendDay(day)}
-                  <div
-                    class="flex-grow flex items-center justify-center text-gray-400 text-xs"
-                  >
+                {:else if !isPastDay(day) && !isWeekendDay(day) && isSameMonth(day, $currentDate)}
+                  <div class="flex-grow flex items-center justify-center text-gray-400 text-xs font-medium">
                     Future
+                  </div>
+                {:else if !isSameMonth(day, $currentDate)}
+                  <div class="flex-grow flex items-center justify-center text-gray-300 text-xs font-medium opacity-50">
+                    {format(day, "dd")}
                   </div>
                 {/if}
               </div>
@@ -422,73 +461,99 @@
 
   <!-- Legend Component -->
   {#if showLegend}
-    <div
-      class="legend-card bg-white shadow-lg rounded-lg border border-gray-200 p-6"
-    >
+    <div class="legend-card bg-white shadow-lg rounded-lg border border-gray-200 p-6">
       <div class="flex items-center gap-2 mb-4">
-        <svg
-          class="w-5 h-5 text-blue-600"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
+        <AlertCircle class="w-5 h-5 text-blue-600" />
         <h3 class="text-lg font-semibold text-gray-800">
           Attendance Status Legend
         </h3>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {#each Object.values(ATTENDANCE_STATUSES) as status}
-          <div
-            class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
-          >
-            <div
-              class="status-badge {status.className} border rounded px-2 py-1 text-xs font-semibold flex-shrink-0"
-            >
-              <span class="mr-1">{status.icon}</span>
-              {status.status}
+      <!-- Main Status Section -->
+      <div class="space-y-4">
+        <div>
+          <h4 class="text-sm font-medium text-gray-700 mb-2">Main Status</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
+              <div class="status-badge bg-green-50 text-green-700 px-2 py-1 rounded text-sm font-medium">
+                P
+              </div>
+              <span class="text-sm text-gray-600">Present</span>
             </div>
-            <div class="min-w-0 flex-1">
-              <div class="font-medium text-gray-900 text-sm">
-                {status.label}
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
+              <div class="status-badge bg-red-50 text-red-700 px-2 py-1 rounded text-sm font-medium">
+                NR
               </div>
-              <div class="text-xs text-gray-600 mt-0.5">
-                {status.description}
+              <span class="text-sm text-gray-600">Needs Regularization</span>
+            </div>
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
+              <div class="status-badge bg-slate-100 text-slate-600 px-2 py-1 rounded text-sm font-medium">
+                W
               </div>
+              <span class="text-sm text-gray-600">Weekend</span>
             </div>
           </div>
-        {/each}
-      </div>
+        </div>
 
-      <!-- Additional Information -->
-      <div class="mt-6 pt-4 border-t border-gray-200">
-        <div
-          class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600"
-        >
-          <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded border-2 border-blue-400"></div>
-            <span>Today's date</span>
+        <!-- Status Indicators Section -->
+        <div>
+          <h4 class="text-sm font-medium text-gray-700 mb-2">Status Indicators</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
+              <div class="indicator-badge bg-teal-50 text-teal-700 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1">
+                <CheckCircle2 size={12} strokeWidth={2.5} />
+                <span>R</span>
+              </div>
+              <span class="text-sm text-gray-600">Regularized</span>
+            </div>
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
+              <div class="indicator-badge bg-orange-50 text-orange-700 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1">
+                <Clock size={12} strokeWidth={2.5} />
+                <span>Late</span>
+              </div>
+              <span class="text-sm text-gray-600">Late Entry</span>
+            </div>
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
+              <div class="indicator-badge bg-orange-50 text-orange-700 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1">
+                <LogOut size={12} strokeWidth={2.5} />
+                <span>Early</span>
+              </div>
+              <span class="text-sm text-gray-600">Early Exit</span>
+            </div>
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
+              <div class="indicator-badge bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1">
+                <Timer size={12} strokeWidth={2.5} />
+                <span>OW</span>
+              </div>
+              <span class="text-sm text-gray-600">Out of Window</span>
+            </div>
           </div>
-          <div class="flex items-center gap-2">
-            <div
-              class="w-3 h-3 rounded bg-blue-50 border border-blue-300"
-            ></div>
-            <span>Selected date</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded bg-gray-100 text-gray-500"></div>
-            <span>Shift code (top right)</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded bg-blue-100"></div>
-            <span>Regularize button (when needed)</span>
+        </div>
+
+        <!-- Additional Information -->
+        <div class="border-t border-gray-200 pt-4 mt-4">
+          <h4 class="text-sm font-medium text-gray-700 mb-2">Additional Information</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
+              <div class="w-3 h-3 rounded border-2 border-blue-400"></div>
+              <span class="text-sm text-gray-600">Today's date</span>
+            </div>
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
+              <div class="w-3 h-3 rounded bg-blue-50 border border-blue-300"></div>
+              <span class="text-sm text-gray-600">Selected date</span>
+            </div>
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
+              <div class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-medium text-gray-500">
+                GS
+              </div>
+              <span class="text-sm text-gray-600">Shift code</span>
+            </div>
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
+              <div class="text-xs text-gray-400 font-medium">
+                Future
+              </div>
+              <span class="text-sm text-gray-600">Upcoming dates</span>
+            </div>
           </div>
         </div>
       </div>
@@ -501,34 +566,72 @@
     box-shadow:
       0 10px 25px -5px rgba(0, 0, 0, 0.1),
       0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    background-color: white;
   }
 
   .day-cell {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     min-height: 112px;
+    background: white;
+    border: 1px solid #f3f4f6;
   }
 
   .day-cell:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.05),
+      0 2px 4px rgba(0, 0, 0, 0.05);
+    border-color: #e5e7eb;
+    z-index: 10;
   }
 
   .status-badge {
     transition: all 0.2s ease-in-out;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    min-width: 40px;
+    justify-content: center;
   }
 
-  .status-badge:hover {
+  .status-code {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .indicator-badge {
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    white-space: nowrap;
+  }
+
+  .indicator-badge:hover {
     transform: scale(1.05);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .status-indicators {
+    position: absolute;
+    bottom: 4px;
+    left: 0;
+    right: 0;
+  }
+
+  /* Calendar grid styling */
+  .calendar-body {
+    background-color: white;
+  }
+
+  .calendar-header {
+    background: linear-gradient(to right, #f8fafc, #f1f5f9);
   }
 
   .legend-card {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
-  .bg-blue-25 {
-    background-color: #f8faff;
+  .legend-card .status-badge,
+  .legend-card .indicator-badge {
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
 
   @media (max-width: 768px) {
@@ -539,6 +642,10 @@
     .status-badge {
       font-size: 0.75rem;
       padding: 0.25rem 0.5rem;
+    }
+
+    .indicator-badge {
+      font-size: 0.65rem;
     }
   }
 </style>
