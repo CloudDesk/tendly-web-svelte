@@ -8,8 +8,8 @@
   import { browser } from "$app/environment";
   import FcmToast from "$lib/components/common/FCMToast.svelte";
   import { auth } from "$lib/stores/auth";
-  import { fcmTokenApi } from "$lib/services/api/fcm";
   import { getFCMToken } from "$lib/firebase/getFCMToken";
+    import { employeesApi } from "$lib/services/api";
 
   export let data;
   $: ({ isAuthenticated } = data);
@@ -26,14 +26,11 @@
     initializeFCM($auth.user._id);
   }
 
-  // // Reset FCM when user logs out
-  // $: if (browser && !isAuthenticated) {
-  //     fcmService?.reset();
-  // }
+
 
   onMount(() => {
     if (browser) {
-      import("../lib/service-worker");
+      import("../lib/service-worker"); // for PWA
     }
     console.log("first", "serviceWorker" in navigator);
   });
@@ -43,7 +40,7 @@
       const token: any = await getFCMToken();
       console.log("FCM Token:", token);
       if (token && userId) {
-        const result = await fcmTokenApi.save(userId, token);
+        const result = await employeesApi.fcmToken(userId, token);
         console.log(result, "FCM Token saved successfully");
       }
     } catch (error) {

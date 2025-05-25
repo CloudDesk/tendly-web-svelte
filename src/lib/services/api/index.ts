@@ -18,3 +18,4 @@ export * from './holidayCalendar';
 export * from './weekendCalendar';
 export * from './user-resignation';
 export * from './attendance-regularization';
+export * from './fcm';

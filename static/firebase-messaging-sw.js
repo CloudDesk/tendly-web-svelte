@@ -5,16 +5,18 @@ importScripts(
   "https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js"
 );
 
+const firebaseConfig = {
+  apiKey: "AIzaSyBPfDz4iHUWjYWojHHdtqT1MW37UG6QqBI",
+  authDomain: "tendly-web.firebaseapp.com",
+  projectId: "tendly-web",
+  storageBucket: "tendly-web.firebasestorage.app",
+  messagingSenderId: "681549896685",
+  appId: "1:681549896685:web:b213aceff2b7cd2a17e5e4"
+};
+
 // Initialize the Firebase app in the service worker
 try {
-  firebase.initializeApp({
-    apiKey: "AIzaSyBPfDz4iHUWjYWojHHdtqT1MW37UG6QqBI",
-    authDomain: "tendly-web.firebaseapp.com",
-    projectId: "tendly-web",
-    storageBucket: "tendly-web.firebasestorage.app",
-    messagingSenderId: "681549896685",
-    appId: "1:681549896685:web:b213aceff2b7cd2a17e5e4",
-  });
+  firebase.initializeApp(firebaseConfig);
 
   const messaging = firebase.messaging();
   console.log("[firebase-messaging-sw.js] Service worker initialized");

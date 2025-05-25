@@ -109,7 +109,14 @@ export const employeesApi = {
       method: "PATCH",
       body: JSON.stringify(values),
     });
-  }
+  },
+
+  fcmToken: async (id: string, fcmToken: string) => {
+    return await fetchApi(`/users/${id}/fcm-token`, {
+      method: "PATCH",
+      body: JSON.stringify({ fcmToken }),
+    });
+  },  
 
   // /users/:id/government-ids
 };
