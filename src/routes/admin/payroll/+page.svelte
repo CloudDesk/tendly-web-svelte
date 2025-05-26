@@ -1,6 +1,4 @@
 <script lang="ts">
-  import LoaderNew from "$lib/components/common/LoaderNew.svelte";
-  import Modal from "$lib/components/common/Modal.svelte";
   import { toast } from "$lib/components/common/stores/toast.store";
   import Tabs from "$lib/components/common/Tabs.svelte";
   import PayrollProcess from "$lib/components/payroll/payrollProcess.svelte";
@@ -9,8 +7,6 @@
   import { getMonthFormats } from "$lib/utils/monthFormats";
   import { onMount } from "svelte";
   import {
-    CheckCircle,
-    XCircle,
     Check,
     X,
     AlertTriangle,
@@ -21,14 +17,12 @@
     Calendar,
     Download,
     Mail,
-    History,
-    Settings,
   } from "lucide-svelte";
   import PayslipProcess from "$lib/components/payroll/payslipProcess.svelte";
   import { payslipApi } from "$lib/services/api/payslip";
   import PayslipHistory from "$lib/components/payroll/payslipHistory.svelte";
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
-  
+
   let today = new Date();
   let year = today.getFullYear();
   let month = getMonthFormats(today.getMonth() - 1);
@@ -418,77 +412,78 @@
     checkPayslipGeneration();
   });
 </script>
+
 <IndexPageTemplate
   title="Payroll"
   subtitle="Centralized Payroll Management for All Employees"
 >
-<Tabs {tabs} let:activeTab>
-      {#if activeTab === "processing"}
-        <PayrollProcess
-          {month}
-          {year}
-          payrollData={reviewPayrollData}
-          {isLoading}
-          {canInitiate}
-          {canApprove}
-          on:initiate={processPayroll}
-          on:approval={approvalPayroll}
-        />
-        {#if needsAdminApproval}
-          <div class="admin-approval-container">
-            <div
-              class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 flex items-center justify-between shadow-md"
-            >
-              <div class="flex items-center space-x-5">
-                <div class="bg-yellow-100 p-3 rounded-full">
-                  <AlertTriangle class="h-8 w-8 text-yellow-600" />
-                </div>
-                <div>
-                  <h3 class="text-xl font-bold text-gray-800 mb-2">
-                    Admin Action Required
-                  </h3>
-                  <p class="text-gray-600">
-                    All payroll records are currently in Draft status and need
-                    your attention.
-                  </p>
-                </div>
+  <Tabs {tabs} let:activeTab>
+    {#if activeTab === "processing"}
+      <PayrollProcess
+        {month}
+        {year}
+        payrollData={reviewPayrollData}
+        {isLoading}
+        {canInitiate}
+        {canApprove}
+        on:initiate={processPayroll}
+        on:approval={approvalPayroll}
+      />
+      {#if needsAdminApproval}
+        <div class="admin-approval-container">
+          <div
+            class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 flex items-center justify-between shadow-md"
+          >
+            <div class="flex items-center space-x-5">
+              <div class="bg-yellow-100 p-3 rounded-full">
+                <AlertTriangle class="h-8 w-8 text-yellow-600" />
               </div>
-              <div class="flex space-x-4">
-                <button
-                  on:click={handleAdminApproval}
-                  class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 shadow-md"
-                >
-                  <Check class="h-5 w-5" />
-                  <span>Approve for Processing</span>
-                </button>
-                <button
-                  on:click={handleCancelDraft}
-                  class="px-6 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center space-x-2 shadow-md"
-                >
-                  <X class="h-5 w-5" />
-                  <span>Cancel Draft</span>
-                </button>
+              <div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">
+                  Admin Action Required
+                </h3>
+                <p class="text-gray-600">
+                  All payroll records are currently in Draft status and need
+                  your attention.
+                </p>
               </div>
             </div>
+            <div class="flex space-x-4">
+              <button
+                on:click={handleAdminApproval}
+                class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 shadow-md"
+              >
+                <Check class="h-5 w-5" />
+                <span>Approve for Processing</span>
+              </button>
+              <button
+                on:click={handleCancelDraft}
+                class="px-6 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center space-x-2 shadow-md"
+              >
+                <X class="h-5 w-5" />
+                <span>Cancel Draft</span>
+              </button>
+            </div>
           </div>
-        {/if}
-      {:else if activeTab === "payslips"}
-        <PayslipProcess
-          {month}
-          {year}
-          {isPayslipGenerated}
-          {payslips}
-          on:payslip-generated={generatePayslip}
-          on:payslip-sent={sendPayslip}
-        />
-      {:else if activeTab === "history"}
-        <PayslipHistory
-          {startDate}
-          {endDate}
-          {page}
-          {limit}
-          on:filterChange={handleFilterChange}
-        />
+        </div>
       {/if}
-    </Tabs>
+    {:else if activeTab === "payslips"}
+      <PayslipProcess
+        {month}
+        {year}
+        {isPayslipGenerated}
+        {payslips}
+        on:payslip-generated={generatePayslip}
+        on:payslip-sent={sendPayslip}
+      />
+    {:else if activeTab === "history"}
+      <PayslipHistory
+        {startDate}
+        {endDate}
+        {page}
+        {limit}
+        on:filterChange={handleFilterChange}
+      />
+    {/if}
+  </Tabs>
 </IndexPageTemplate>
