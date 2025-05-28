@@ -137,6 +137,10 @@
           href: "/admin/setup?tab=taxslab",
         },
         {
+          label: "Holiday Calendar",
+          href: "/admin/setup?tab=holiday",
+        },
+        {
           label: "Org Chart",
           href: "/admin/setup?tab=org",
         },

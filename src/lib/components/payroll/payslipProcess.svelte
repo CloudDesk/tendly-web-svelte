@@ -27,7 +27,8 @@
   // let isPayslipGenerated = writable(false);
   let showSendOptionsModal = writable(false);
   let selectedEmployees = writable<string[]>([]);
-
+  console.log(isGenerating, "isGenerating");
+  console.log(isPayslipGenerated, "isPayslipGenerated");
   // Format the payslip URL for display
   const formatPayslipUrl = (url: string) => {
     const parts = url.split("/");
@@ -186,7 +187,7 @@
     <button
       class="action-card generate-card"
       on:click={generatePayslips}
-      disabled={$isGenerating || isPayslipGenerated}
+      disabled={$isGenerating || !isPayslipGenerated}
     >
       {#if $isGenerating}
         <LoaderNew />

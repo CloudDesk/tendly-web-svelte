@@ -37,7 +37,7 @@
   }
 </script>
 
-<div class="w-full">
+<div class="w-full p-4">
   <nav class="border-b border-gray-200">
     <div class="tabs-container flex space-x-8">
       <!-- Apply tabs-container class -->

@@ -6,18 +6,7 @@
   import { formatCurrency } from "$lib/utils/currency";
   import { getMonthFormats } from "$lib/utils/monthFormats";
   import { onMount } from "svelte";
-  import {
-    Check,
-    X,
-    AlertTriangle,
-    DollarSign,
-    FileText,
-    Users,
-    TrendingUp,
-    Calendar,
-    Download,
-    Mail,
-  } from "lucide-svelte";
+  import { Check, X, AlertTriangle } from "lucide-svelte";
   import PayslipProcess from "$lib/components/payroll/payslipProcess.svelte";
   import { payslipApi } from "$lib/services/api/payslip";
   import PayslipHistory from "$lib/components/payroll/payslipHistory.svelte";
@@ -25,7 +14,7 @@
 
   let today = new Date();
   let year = today.getFullYear();
-  let month = getMonthFormats(today.getMonth() - 1);
+  let month = getMonthFormats(today.getMonth() + 1);
   let reviewPayrollData: any;
 
   let payrollInitiateResponse: any = null; // New variable for initiation response
@@ -65,7 +54,7 @@
   const getPayrolls = async () => {
     try {
       let result: any = await payrollApi.payrollApprovalSummary(
-        today.getMonth() - 1,
+        today.getMonth() + 1,
         year
       );
       console.log(result, "result getpayrolls");
@@ -172,7 +161,7 @@
   // Action handlers
   const processPayroll = async () => {
     console.log("processPayroll", today);
-
+    console.log(year, month, "year month");
     const formattedDate = `${year}-${month.numeric}`;
     console.log("Formatted Date:", formattedDate);
     isLoading = true;
@@ -188,62 +177,6 @@
     } catch (error) {
       console.log(error);
       toast.error("error in Pyroll initate ");
-    } finally {
-      await checkPayrollStatus();
-      isLoading = false;
-    }
-  };
-
-  // Handle Proceed action
-  const handleProceed = async () => {
-    console.log(payrollInitiateResponse, "handleProceed");
-    if (
-      payrollInitiateResponse.totalEmployees ===
-      payrollInitiateResponse.totalActiveEmployees
-    ) {
-      await proceedToPendingApproval();
-    } else {
-      showConfirmDialog = true;
-    }
-  };
-
-  // Confirm Proceed and update to PendingApproval
-  const proceedToPendingApproval = async () => {
-    isLoading = true;
-    try {
-      const result = await payrollApi.updateStatus(
-        Number(month.numeric),
-        year,
-        "Pending Approval"
-      );
-      console.log(result, "Proceed result");
-      toast.success("Payroll moved to Pending Approval");
-      showModal = false;
-      showConfirmDialog = false;
-    } catch (error) {
-      console.log(error);
-      toast.error("Failed to proceed with payroll");
-    } finally {
-      await checkPayrollStatus();
-      isLoading = false;
-    }
-  };
-
-  // Handle Decline action
-  const handleDecline = async () => {
-    isLoading = true;
-    try {
-      const result = await payrollApi.updateStatus(
-        Number(month.numeric),
-        year,
-        "Cancelled"
-      );
-      console.log(result, "Decline result");
-      toast.success("Payroll marked as Failed");
-      showModal = false;
-    } catch (error) {
-      console.log(error);
-      toast.error("Failed to decline payroll");
     } finally {
       await checkPayrollStatus();
       isLoading = false;
@@ -356,55 +289,9 @@
   ];
 
   $: payslips;
+  $: isPayslipGenerated;
+  console.log(isPayslipGenerated, "isPayslipGenerated");
   console.log(payslips, "payslip");
-
-  const dashboardStats = [
-    {
-      title: "Total Employees",
-      value: reviewPayrollData?.totalEmployees || 0,
-      icon: Users,
-      color: "blue",
-    },
-    {
-      title: "Gross Payroll",
-      value: formatCurrency(reviewPayrollData?.totalGrossSalary || 0),
-      icon: DollarSign,
-      color: "green",
-    },
-    {
-      title: "Net Payroll",
-      value: formatCurrency(reviewPayrollData?.totalNetSalary || 0),
-      icon: TrendingUp,
-      color: "indigo",
-    },
-    {
-      title: "Processing Month",
-      value: `${month.name} ${year}`,
-      icon: Calendar,
-      color: "purple",
-    },
-  ];
-
-  const quickActions = [
-    {
-      title: "Generate Payslips",
-      icon: FileText,
-      action: generatePayslip,
-      disabled: !isPayslipGenerated,
-    },
-    {
-      title: "Download Reports",
-      icon: Download,
-      action: () => {},
-      disabled: false,
-    },
-    {
-      title: "Send Payslips",
-      icon: Mail,
-      action: () => {},
-      disabled: !isPayslipGenerated,
-    },
-  ];
 
   onMount(() => {
     getPayrolls();
@@ -477,13 +364,120 @@
         on:payslip-sent={sendPayslip}
       />
     {:else if activeTab === "history"}
-      <PayslipHistory
+      <!-- <PayslipHistory
         {startDate}
         {endDate}
         {page}
         {limit}
         on:filterChange={handleFilterChange}
-      />
+      /> -->
     {/if}
   </Tabs>
 </IndexPageTemplate>
+
+<!-- 
+  const dashboardStats = [
+    {
+      title: "Total Employees",
+      value: reviewPayrollData?.totalEmployees || 0,
+      icon: Users,
+      color: "blue",
+    },
+    {
+      title: "Gross Payroll",
+      value: formatCurrency(reviewPayrollData?.totalGrossSalary || 0),
+      icon: DollarSign,
+      color: "green",
+    },
+    {
+      title: "Net Payroll",
+      value: formatCurrency(reviewPayrollData?.totalNetSalary || 0),
+      icon: TrendingUp,
+      color: "indigo",
+    },
+    {
+      title: "Processing Month",
+      value: `${month.name} ${year}`,
+      icon: Calendar,
+      color: "purple",
+    },
+  ];
+
+  const quickActions = [
+    {
+      title: "Generate Payslips",
+      icon: FileText,
+      action: generatePayslip,
+      disabled: !isPayslipGenerated,
+    },
+    {
+      title: "Download Reports",
+      icon: Download,
+      action: () => {},
+      disabled: false,
+    },
+    {
+      title: "Send Payslips",
+      icon: Mail,
+      action: () => {},
+      disabled: !isPayslipGenerated,
+    },
+  ];
+
+    // Handle Proceed action
+  const handleProceed = async () => {
+    console.log(payrollInitiateResponse, "handleProceed");
+    if (
+      payrollInitiateResponse.totalEmployees ===
+      payrollInitiateResponse.totalActiveEmployees
+    ) {
+      await proceedToPendingApproval();
+    } else {
+      showConfirmDialog = true;
+    }
+  };
+
+
+  // Confirm Proceed and update to PendingApproval
+  const proceedToPendingApproval = async () => {
+    isLoading = true;
+    try {
+      const result = await payrollApi.updateStatus(
+        Number(month.numeric),
+        year,
+        "Pending Approval"
+      );
+      console.log(result, "Proceed result");
+      toast.success("Payroll moved to Pending Approval");
+      showModal = false;
+      showConfirmDialog = false;
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to proceed with payroll");
+    } finally {
+      await checkPayrollStatus();
+      isLoading = false;
+    }
+  };
+
+  // Handle Decline action
+  const handleDecline = async () => {
+    isLoading = true;
+    try {
+      const result = await payrollApi.updateStatus(
+        Number(month.numeric),
+        year,
+        "Cancelled"
+      );
+      console.log(result, "Decline result");
+      toast.success("Payroll marked as Failed");
+      showModal = false;
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to decline payroll");
+    } finally {
+      await checkPayrollStatus();
+      isLoading = false;
+    }
+  };
+-->
