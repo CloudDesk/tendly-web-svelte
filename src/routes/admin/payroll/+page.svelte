@@ -25,6 +25,7 @@
   let canInitiate: boolean = false;
   let isLoading = false;
   let isPayslipGenerated: boolean = false;
+  let isPayrollApproved: boolean = false; // New variable to track if payroll is approved
   let payslips: {
     employeeId: string;
     employeeName: string;
@@ -51,6 +52,18 @@
     endDate = newEndDate || endDate;
     page = newPage || page;
   };
+
+  // Fix 4: Add state validation function
+  const validateFlowState = () => {
+    console.log("=== FLOW STATE DEBUG ===");
+    console.log("canInitiate:", canInitiate);
+    console.log("canApprove:", canApprove);
+    console.log("isPayrollApproved:", isPayrollApproved);
+    console.log("isPayslipGenerated:", isPayslipGenerated);
+    console.log("needsAdminApproval:", needsAdminApproval);
+    console.log("========================");
+  };
+
   const getPayrolls = async () => {
     try {
       let result: any = await payrollApi.payrollApprovalSummary(
@@ -113,6 +126,11 @@
             console.log(
               "All records are Cancelled, proceeding to next checks."
             );
+          } else if (
+            totalRecords === payrollSummary.statusBreakdown.Processing
+          ) {
+            console.log("Processing records found, proceeding to next checks.");
+            isPayrollApproved = true;
           } else {
             console.log("Proceeding as conditions don't restrict the process.");
           }
@@ -194,8 +212,9 @@
       );
       console.log(result, "Result approvalPayroll");
       if (result.success) {
+        isPayrollApproved = true;
+        toast.success(result.data?.message);
       }
-      toast.success(result.data?.message);
     } catch (error) {
       console.log(error, "error approvalPayroll");
     } finally {
@@ -207,14 +226,17 @@
   const handleAdminApproval = async () => {
     isLoading = true;
     try {
-      const result = await payrollApi.updateStatus(
+      const result: any = await payrollApi.updateStatus(
         Number(month.numeric),
         year,
         "Pending Approval"
       );
       console.log(result, "Admin approval result");
-      toast.success("Payroll approved for further processing");
-      needsAdminApproval = false;
+      if (result.success) {
+        toast.success("Payroll approved for further processing");
+        needsAdminApproval = false;
+        isPayrollApproved = true;
+      }
     } catch (error) {
       console.log(error);
       toast.error("Failed to approve payroll");
@@ -245,13 +267,20 @@
   };
 
   const generatePayslip = async () => {
+    isLoading = true;
     try {
-      let result = await payslipApi.bulkGenerate({
+      let result: any = await payslipApi.bulkGenerate({
         month: Number(month.numeric),
         year,
       });
-      console.log(result, "result generatePayslip");
-      isPayslipGenerated = true;
+      if (result.success) {
+        isPayslipGenerated = true;
+        toast.success("Payslips generated successfully");
+        // ✅ Refresh payslips data after generation
+        await checkPayslipGeneration();
+      } else {
+        toast.error(result?.message || "Failed to generate payslips");
+      }
     } catch (error) {
       console.log(error, "error generatePayslip");
     }
@@ -297,7 +326,14 @@
     getPayrolls();
     checkPayrollStatus();
     checkPayslipGeneration();
+    validateFlowState();
   });
+  // Fix 6: Add reactive statement to track state changes
+  $: {
+    if (isPayrollApproved || isPayslipGenerated || canInitiate || canApprove) {
+      validateFlowState();
+    }
+  }
 </script>
 
 <IndexPageTemplate
@@ -358,6 +394,7 @@
       <PayslipProcess
         {month}
         {year}
+        {isPayrollApproved}
         {isPayslipGenerated}
         {payslips}
         on:payslip-generated={generatePayslip}

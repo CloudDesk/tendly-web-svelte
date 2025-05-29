@@ -149,24 +149,24 @@
         <div class="summary-grid">
           <div class="summary-card">
             <h3>Total Employees</h3>
-            <div class="summary-value">{payrollData.totalEmployees}</div>
+            <div class="summary-value">{payrollData?.totalEmployees}</div>
           </div>
           <div class="summary-card">
             <h3>Gross Salary</h3>
             <div class="summary-value">
-              {formatCurrency(payrollData.totalGrossSalary)}
+              {formatCurrency(payrollData?.totalGrossSalary)}
             </div>
           </div>
           <div class="summary-card">
             <h3>Total Deductions</h3>
             <div class="summary-value">
-              {formatCurrency(payrollData.totalDeductions)}
+              {formatCurrency(payrollData?.totalDeductions)}
             </div>
           </div>
           <div class="summary-card">
             <h3>Net Salary</h3>
             <div class="summary-value">
-              {formatCurrency(payrollData.totalNetSalary)}
+              {formatCurrency(payrollData?.totalNetSalary)}
             </div>
           </div>
         </div>

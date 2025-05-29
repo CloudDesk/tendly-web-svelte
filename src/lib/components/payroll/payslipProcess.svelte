@@ -10,6 +10,7 @@
 
   export let year: number;
   export let month: { full: string; short: string; numeric: string };
+  export let isPayrollApproved: boolean;
   export let isPayslipGenerated: boolean;
   export let payslips: {
     employeeId: string;
@@ -20,7 +21,8 @@
     emailSent: boolean;
     lastEmailSentAt: string;
   }[] = [];
-
+  console.log(isPayrollApproved, "isPayrollApproved");
+  console.log(isPayslipGenerated, "isPayslipGenerated");
   // State management
   let isGenerating = writable(false);
   let isSending = writable(false);
@@ -115,6 +117,13 @@
   console.log(employeeList);
   console.log(payslips, "payslips");
   console.log(employeeList, "*****");
+
+  // Button state logic
+  $: generateButtonDisabled =
+    !isPayrollApproved || isPayslipGenerated || $isGenerating || $isSending;
+  $: sendButtonDisabled =
+    !isPayrollApproved || !isPayslipGenerated || $isSending || $isGenerating;
+
   // Generate Payslips
   const generatePayslips = async () => {
     isGenerating.set(true);
@@ -180,6 +189,9 @@
         : [...selected, employeeId]
     );
   };
+  //if both   isPayrollApproved , isPayslipGenerated  true - generate is disable , send is enable
+  // if isPayrollApproved true,  isPayslipGenerated false - generate is enable, send is disable
+  //if both isPayrollApproved , isPayslipGenerated false - generate is disable, send is disable
 </script>
 
 <div class="payslip-container">
@@ -187,7 +199,7 @@
     <button
       class="action-card generate-card"
       on:click={generatePayslips}
-      disabled={$isGenerating || !isPayslipGenerated}
+      disabled={generateButtonDisabled}
     >
       {#if $isGenerating}
         <LoaderNew />
@@ -206,11 +218,15 @@
     <button
       class="action-card send-card"
       on:click={openSendOptionsModal}
-      disabled={!isPayslipGenerated || $isSending}
+      disabled={sendButtonDisabled}
     >
-      <div class="action-icon">
-        <Send />
-      </div>
+      {#if $isSending}
+        <LoaderNew />
+      {:else}
+        <div class="action-icon">
+          <Send />
+        </div>
+      {/if}
 
       <div class="action-text">
         <h3>Send Payslips</h3>
@@ -218,6 +234,7 @@
       </div>
     </button>
   </div>
+
   {#if payslips.length > 0}
     <Table {columns} data={newData} searchable={false} />
   {:else}
@@ -228,6 +245,7 @@
       </p>
     </div>
   {/if}
+
   {#if $showSendOptionsModal}
     <Modal
       title="Send Payslips"
@@ -240,7 +258,11 @@
           on:click={sendToAllEmployees}
           disabled={$isSending}
         >
-          <Users class="mr-2" />
+          {#if $isSending}
+            <LoaderNew />
+          {:else}
+            <Users class="mr-2" />
+          {/if}
           Send to All Employees
         </button>
 
@@ -257,6 +279,7 @@
                   type="checkbox"
                   checked={$selectedEmployees.includes(employee.id)}
                   on:change={() => toggleEmployeeSelection(employee.id)}
+                  disabled={$isSending}
                 />
                 <span>{employee.name}</span>
               </label>
@@ -280,109 +303,6 @@
     </Modal>
   {/if}
 </div>
-
-<!--   /* .search-filter-section {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  @media (min-width: 768px) {
-    .search-filter-section {
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-    }
-  }
-
-  .search-box {
-    display: flex;
-    align-items: center;
-    background: #f7fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 10px 16px;
-    width: 100%;
-    max-width: 320px;
-  }
-
-  .search-box svg {
-    color: #718096;
-    margin-right: 10px;
-  }
-
-  .search-box input {
-    border: none;
-    outline: none;
-    background: transparent;
-    width: 100%;
-    font-size: 14px;
-    color: #4a5568;
-  }
-
-  .filters {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .filter {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .filter label {
-    font-size: 12px;
-    color: #718096;
-    font-weight: 500;
-  }
-
-  .filter select {
-    padding: 8px 12px;
-    border-radius: 6px;
-    border: 1px solid #e2e8f0;
-    background: white;
-    font-size: 14px;
-    color: #4a5568;
-    outline: none;
-    cursor: pointer;
-    min-width: 100px;
-  }
-    
-   /* Dropdown styles */
-  .dropdown-parent {
-    position: relative;
-  }
-
-  .dropdown-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    z-index: 10;
-    display: none;
-    overflow: hidden;
-  }
-
-  .dropdown-parent:hover .dropdown-menu {
-    display: block;
-  }
-
-  .dropdown-item {
-    padding: 12px 16px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background 0.15s ease;
-  }
-
-  .dropdown-item:hover {
-    background: #f7fafc;
-  }*/
- -->
 
 <style lang="postcss">
   .payslip-container {
