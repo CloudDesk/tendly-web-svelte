@@ -1,6 +1,7 @@
 import { fetchApi, uploadFiles } from "./base";
 import type { ApiResponse } from "$lib/types/api";
 import type { User } from "$lib/types/user";
+import { monthsInYear } from "date-fns";
 
 export type EmployeeFilters = {
   role?: string;
@@ -35,6 +36,15 @@ export const employeesApi = {
     });
 
     return await fetchApi(`/users?${params.toString()}`);
+  },
+
+  mysubordinates: async(filters:EmployeeFilters):Promise<ApiResponse<Employee[]>>=>{
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined) params.append(key, String(value));
+    });
+
+    return await fetchApi(`/users/my-subordinates?${params.toString()}`);
   },
 
   getById: async (id: string): Promise<ApiResponse<User>> => {

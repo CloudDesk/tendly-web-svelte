@@ -4,16 +4,27 @@
   import type { User } from "$lib/types_old";
   import Modal from "$lib/components/common/Modal.svelte";
   import { lovs } from "$lib/stores/lovs";
+    import EmployeeForm from "./EmployeeForm.svelte";
+    import { toast } from "../common/stores/toast.store";
+    import LoaderNew from "../common/LoaderNew.svelte";
 
   export let employeeId: string;
+  export let employee : User | null = null;
 
-  let user: User | null = null;
+  let user: User | null = employee;
   let loading = true;
   let error: string | null = null;
   let showEditModal = false;
   let managerSearchTerm = "";
   let managerSearchResults: User[] = [];
   let managerSearchLoading = false;
+
+  onMount(() => {
+    const timer = setTimeout(() => {
+      loading = false; 
+    }, 2000);
+ return () => clearTimeout(timer);
+  });
 
   type EditingUser = Partial<User> & {
     joiningDate?: string;
@@ -103,18 +114,6 @@
     });
   });
 
-  onMount(async () => {
-    try {
-      loading = true;
-      const response: any = await employeesApi.getById(employeeId);
-      user = response.data;
-    } catch (e: any) {
-      error = e.message;
-    } finally {
-      loading = false;
-    }
-  });
-
   function handleEdit() {
     if (user) {
       // Format date fields to YYYY-MM-DD for input[type="date"]
@@ -161,29 +160,37 @@
     managerSearchResults = [];
   }
 
-  async function handleSubmit() {
-    /*
+  async function handleEditSubmit(event: CustomEvent) {
+    let data = event.detail;
+
+// Remove unnecessary fields
+delete data.createdAt;
+delete data.updatedAt;
+delete data.currentShiftAssignmentData;
+delete data.upcomingShiftAssignmentData;
+if (!data.dateOfBirth) {
+      delete data.dateOfBirth;
+    }
+
     try {
       loading = true;
-      // Convert dates back to ISO format for API
-      const userData: Partial<User> = {
-        ...editingUser,
-        joiningDate: editingUser.joiningDate
-          ? new Date(editingUser.joiningDate).toISOString()
-          : undefined,
-        dateOfBirth: editingUser.dateOfBirth
-          ? new Date(editingUser.dateOfBirth).toISOString()
-          : undefined,
-      };
-      await employeesApi.update(employeeId, userData);
-      const updated: any = await employeesApi.getById(employeeId);
-      user = updated.data;
-      showEditModal = false;
-    } catch (e: any) {
-      error = e.message;
+      if (!employee) {
+        throw new Error("Employee data is not available");
+      }
+      const response = await employeesApi.update(employee._id, event.detail);
+      if (response.success) {
+        toast.success("Profile updated successfully");
+        showEditModal = false;
+        user = response.data ?? null;
+      } else {
+        toast.error("Failed to update profile");
+      }
+    } catch (error) {
+      toast.error("Failed to update profile");
+      console.error("Error updating profile:", error);
     } finally {
       loading = false;
-    }*/
+    }
   }
 
   let debouncedSearch: NodeJS.Timeout;
@@ -227,17 +234,18 @@
 </script>
 
 <div class="space-y-6">
-  <div class="flex justify-between items-center">
-    <h3 class="text-lg font-semibold">Employee Details</h3>
-    <button class="btn btn-primary btn-sm" on:click={handleEdit}>
-      Edit Details
+  <div class="flex justify-end items-center">
+    {#if !loading && user}
+    <button class="btn btn-secondary btn-sm mr-2" on:click={handleEdit}>
+      Edit
     </button>
+  {/if}
   </div>
 
   {#if error}
     <div class="alert alert-error">{error}</div>
   {:else if loading}
-    <div class="loading">Loading employee details...</div>
+    <LoaderNew/>
   {:else if user}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {#each fields as field}
@@ -263,108 +271,13 @@
   title="Edit Employee Details"
   onClose={() => (showEditModal = false)}
 >
-  <form on:submit|preventDefault={handleSubmit} class="space-y-6">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {#each fields as field}
-        <div class="form-control">
-          <label class="label" for={field.key}>
-            <span class="label-text">{field.label}</span>
-            {#if field.required}
-              <span class="text-error">*</span>
-            {/if}
-          </label>
-
-          {#if field.inputType === "textarea"}
-            <textarea
-              class="textarea textarea-bordered h-24"
-              bind:value={editingUser[field.key]}
-              required={field.required}
-            ></textarea>
-          {:else if field.inputType === "manager-lookup"}
-            <div class="relative">
-              <input
-                type="text"
-                class="input input-bordered w-full"
-                placeholder="Search manager..."
-                bind:value={managerSearchTerm}
-              />
-              {#if managerSearchResults.length > 0}
-                <div
-                  class="manager-search-results absolute z-10 w-full mt-1 bg-base-100 rounded-md shadow-lg"
-                >
-                  <ul class="py-1">
-                    {#each managerSearchResults as manager}
-                      <li>
-                        <button
-                          type="button"
-                          class="w-full px-4 py-2 text-left hover:bg-base-200"
-                          on:click={() => handleSelectManager(manager)}
-                        >
-                          {manager.name}
-                        </button>
-                      </li>
-                    {/each}
-                  </ul>
-                </div>
-              {/if}
-            </div>
-          {:else if field.inputType === "select"}
-            <select
-              class="select select-bordered w-full"
-              bind:value={editingUser[field.key]}
-              required={field.required}
-            >
-              <option value="">Select {field.label}</option>
-              {#each field.options || [] as option}
-                <option value={option.value}>{option.label}</option>
-              {/each}
-            </select>
-          {:else if field.inputType === "date"}
-            <input
-              type="date"
-              class="input input-bordered"
-              bind:value={editingUser[field.key]}
-              required={field.required}
-            />
-          {:else if field.inputType === "email"}
-            <input
-              type="email"
-              class="input input-bordered"
-              bind:value={editingUser[field.key]}
-              required={field.required}
-            />
-          {:else if field.inputType === "tel"}
-            <input
-              type="tel"
-              class="input input-bordered"
-              bind:value={editingUser[field.key]}
-              required={field.required}
-            />
-          {:else}
-            <input
-              type="text"
-              class="input input-bordered"
-              bind:value={editingUser[field.key]}
-              required={field.required}
-            />
-          {/if}
-        </div>
-      {/each}
-    </div>
-
-    <div class="flex justify-end gap-2">
-      <button
-        type="button"
-        class="btn btn-ghost"
-        on:click={() => (showEditModal = false)}
-      >
-        Cancel
-      </button>
-      <button type="submit" class="btn btn-primary" disabled={loading}>
-        {loading ? "Saving..." : "Save Changes"}
-      </button>
-    </div>
-  </form>
+ <EmployeeForm
+ mode="update"
+ {loading}
+ initialValues={employee || user}
+ on:update={handleEditSubmit}
+  on:cancel={() => (showEditModal = false)}
+ />
 </Modal>
 
 <style>

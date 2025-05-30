@@ -10,62 +10,52 @@
   import DetailPageTemplate from "$lib/components/templates/DetailPageTemplate.svelte";
   import ContentCard from "$lib/components/common/ContentCard.svelte";
   import LoaderNew from "$lib/components/common/LoaderNew.svelte";
+    import LeavesList from "$lib/components/leave/LeavesList.svelte";
+    import EmployeeTrainingAttendance from "$lib/components/attendance/EmployeeTrainingAttendance.svelte";
 
   const employeeId = $page.params.id;
-  let user: User | null = null;
-  let loading = true;
-  let error: string | null = null;
+  export let data: { employee?: any } | undefined;
 
   const tabs = [
     { id: "details", label: "Employee Details" },
     { id: "leaves", label: "Leaves" },
     { id: "attendance", label: "Attendance" },
+    {id: "training", label: "Training" }
   ];
 
   $: activeTab = $page.url.searchParams.get("tab") || tabs[0]?.id;
 
-  onMount(async () => {
-    try {
-      const response: any = await employeesApi.getById(employeeId);
-      user = response.data;
-    } catch (e: any) {
-      error = e.message;
-    } finally {
-      loading = false;
-    }
-  });
 </script>
 
 <DetailPageTemplate
   title=''
-  description="View and manage employee details"
+  subtitle=""
   backLink="/manager/employees"
 >
 <ContentCard>
 <div class="p-4">
-  {#if loading}
-    <LoaderNew/>
-  {:else if error}
-    <div class="alert alert-error">{error}</div>
-  {:else if user}
+
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-neutral">{user.name}</h1>
+      <h1 class="text-2xl font-bold text-neutral">{data?.employee.name}</h1>
     </div>
 
     <div class="card">
       <div class="card-body">
         <Tabs {tabs}>
           {#if activeTab === "details"}
-            <EmployeeDetails {employeeId} />
+            <EmployeeDetails {employeeId}   employee={data?.employee}/>
           {:else if activeTab === "attendance"}
             <EmployeeAttendance {employeeId} />
           {:else if activeTab === "leaves"}
-            <EmployeeLeaves {employeeId} />
+            <!-- <EmployeeLeaves {employeeId} /> -->
+             <LeavesList userId={employeeId} />
+          {:else if activeTab === "training"}
+          <EmployeeTrainingAttendance {employeeId} />
           {/if}
         </Tabs>
       </div>
     </div>
-  {/if}
+
 </div>
 </ContentCard>
 </DetailPageTemplate>
