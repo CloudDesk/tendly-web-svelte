@@ -74,6 +74,8 @@
     };
     approvedDate: string | Date | null;
     comments: string | null;
+    userName?: string; // For manager/admin view
+    userId?: string; // For manager/admin view
   }
 
   let isLoading = true;
@@ -625,13 +627,48 @@
                 </div>
               </div>
 
-              <div class="flex items-center">
+              {#if viewType === 'user'}
+  <div class="flex items-center">
+    <User class="w-5 h-5 mr-2 text-indigo-500" />
+    <div>
+      <div class="text-xs text-gray-500">Approver</div>
+      <div class="font-medium">{record.approver.name}</div>
+    </div>
+  </div>
+{:else if viewType === 'manager'}
+  <div class="flex items-center">
+    <User class="w-5 h-5 mr-2 text-green-500" />
+    <div>
+      <div class="text-xs text-gray-500">Applied By</div>
+      <div class="font-medium">{record.userName}</div>
+    </div>
+  </div>
+{:else if viewType === 'admin'}
+  <div class="flex flex-col gap-1">
+    <div class="flex items-center">
+      <User class="w-5 h-5 mr-2 text-green-500" />
+      <div>
+        <div class="text-xs text-gray-500">Applied By</div>
+        <div class="font-medium">{record.userName}</div>
+      </div>
+    </div>
+    <div class="flex items-center">
+      <User class="w-5 h-5 mr-2 text-indigo-500" />
+      <div>
+        <div class="text-xs text-gray-500">Approver</div>
+        <div class="font-medium">{record.approver.name}</div>
+      </div>
+    </div>
+  </div>
+{/if}
+
+              <!-- <div class="flex items-center">
                 <User class="w-5 h-5 mr-2 text-indigo-500" />
                 <div>
                   <div class="text-xs text-gray-500">Approver</div>
                   <div class="font-medium">{record.approver.name}</div>
                 </div>
-              </div>
+              </div> -->
 
               {#if record.approvedDate}
                 <div class="flex items-center">

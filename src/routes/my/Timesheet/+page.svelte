@@ -144,8 +144,8 @@
     try {
       const response: any = await holidayCalendarApi.getByUserId(employeeId);
       console.log(response, "response getHolidays);");
-      if (response.success && response.data) {
-        let holidaysData = response.data.holidays.map((h: any) => ({
+      if (response.success && Object.keys( response.data).length>0) {
+        let holidaysData = response.data?.holidays.map((h: any) => ({
           date: h.date,
           name: h.name,
           type: h.type,

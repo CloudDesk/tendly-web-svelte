@@ -15,6 +15,8 @@ export type AttendanceRegularization = {
     };
     approvedDate: string | null;
     comments: string | null;
+    userId?: string;
+    userName?: string;
 };
 
 type RegularizationFilters = {
