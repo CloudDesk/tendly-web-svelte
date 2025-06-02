@@ -84,7 +84,14 @@
 
   // Utility functions
   function getDateString(date: Date): string {
-    return date.toISOString().split("T")[0];
+    // Using local date methods to avoid timezone issues completely
+    // Ensure we're working with the actual calendar date displayed to the user
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const result = `${year}-${month}-${day}`;
+    console.log(`Converting date object to string: ${date} → ${result}`);
+    return result;
   }
 
   function getRegularizationRecord(
@@ -104,43 +111,62 @@
     );
     return regularizationRecords[dateStr] || null;
   }
-  // New function to get leave record for a specific date
+  // Function to get leave record for a specific date
   function getLeaveRecord(date: Date): LeaveRecord | null {
+    // Get date string in YYYY-MM-DD format using our local method
     const dateStr = getDateString(date);
-    console.log(dateStr, "dateStr in getLeaveRecord");
-    console.log(leaveRecords, "leaveRecords in getLeaveRecord");
-    return (
-      leaveRecords.find((leave) => {
-        // Only consider leaves with Pending or Approved status
-        if (leave.status !== "Pending" && leave.status !== "Approved") {
-          return false;
-        }
+    
+    // Debug logging
+    console.log(`[LEAVE CHECK] Checking if date ${dateStr} has leave records among ${leaveRecords.length} records`);
+    
+    // Compare using direct string equality to avoid any timezone issues
+    const result = leaveRecords.find((leave) => {
+      // Only consider leaves with Pending or Approved status
+      if (leave.status !== "Pending" && leave.status !== "Approved") {
+        return false;
+      }
 
-        // Normalize dates to UTC and reset time to start of day for comparison
-        const startDate = new Date(leave.startDate + "T00:00:00.000Z");
-        const endDate = new Date(leave.endDate + "T00:00:00.000Z");
-        const checkDate = new Date(dateStr + "T00:00:00.000Z");
-
-        // Ensure time is reset to avoid timezone issues
-        startDate.setUTCHours(0, 0, 0, 0);
-        endDate.setUTCHours(23, 59, 59, 999); // End of day for inclusivity
-        checkDate.setUTCHours(0, 0, 0, 0);
-        // Debug logging to verify dates
-        console.log(
-          `Checking date ${dateStr}: startDate=${startDate.toISOString()}, endDate=${endDate.toISOString()}, checkDate=${checkDate.toISOString()}`
-        );
-        // Check if the date falls within the leave period (inclusive)
-        return checkDate >= startDate && checkDate <= endDate;
-      }) || null
-    );
+      // Get start and end date strings directly from the leave record
+      const startDateStr = leave.startDate;
+      const endDateStr = leave.endDate;
+      
+      // Check if the dateStr is exactly equal to any day in the range
+      // Convert everything to date objects to iterate through each day
+      const checkDate = new Date(dateStr);
+      const startDate = new Date(startDateStr);
+      const endDate = new Date(endDateStr);
+      
+      // Reset hours to avoid timezone issues
+      checkDate.setHours(0, 0, 0, 0);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
+      
+      // Check if checkDate is between startDate and endDate (inclusive)
+      const isInRange = checkDate >= startDate && checkDate <= endDate;
+      
+      console.log(`[LEAVE CHECK DETAIL] ${dateStr} comparing to leave from ${startDateStr} to ${endDateStr}: ${isInRange ? 'MATCH' : 'NO MATCH'}`);
+      
+      return isInRange;
+    }) || null;
+    
+    console.log(`[LEAVE RESULT] Date ${dateStr}: ${result ? 'HAS LEAVE' : 'NO LEAVE'}`);
+    return result;
   }
 
-  // New function to check if date has blocking leave status
+  // Function to check if date has blocking leave status
   function hasBlockingLeaveStatus(date: Date): boolean {
+    const dateStr = getDateString(date);
+    console.log(`[BLOCKING CHECK] Testing if ${dateStr} is blocked by leave`);
+    
     const leaveRecord = getLeaveRecord(date);
-    return leaveRecord
+    const result = leaveRecord
       ? leaveRecord.status === "Pending" || leaveRecord.status === "Approved"
       : false;
+    
+    // Always log the result for debugging
+    console.log(`[BLOCKING RESULT] Date ${dateStr} is ${result ? 'BLOCKED' : 'NOT BLOCKED'} by leave ${leaveRecord ? `(${leaveRecord.status})` : ''}`);
+    
+    return result;
   }
 
   function hasBlockingStatus(date: Date): boolean {
@@ -151,7 +177,13 @@
   }
   // Enhanced function to check if date is blocked by either regularization or leave
   function hasAnyBlockingStatus(date: Date): boolean {
-    return hasBlockingStatus(date) || hasBlockingLeaveStatus(date);
+    const dateStr = getDateString(date);
+    const isRegBlocked = hasBlockingStatus(date);
+    const isLeaveBlocked = hasBlockingLeaveStatus(date);
+    const result = isRegBlocked || isLeaveBlocked;
+    
+    console.log(`[FINAL BLOCK CHECK] Date ${dateStr}: Reg=${isRegBlocked}, Leave=${isLeaveBlocked}, Final=${result}`);
+    return result;
   }
 
   function getStatusInfo(status: AttendanceRegularization["status"]) {
@@ -539,8 +571,11 @@
             class:blocked={hasBlocking}
             class:hover-effect={selectable && !selected && !hasBlocking}
             class:has-regularization={!!regularizationRecord}
-            title={regularizationRecord
-              ? `${regularizationRecord.status} - ${regularizationRecord.reason}`
+            class:has-leave={!!leaveRecord}
+            title={leaveRecord 
+              ? `Leave: ${leaveRecord.status} - ${leaveRecord.leaveType || ''} - ${leaveRecord.reason || 'No reason provided'}`
+              : regularizationRecord
+              ? `Regularization: ${regularizationRecord.status} - ${regularizationRecord.reason}`
               : ""}
             on:click={() => toggleDateSelection(day)}
           >
@@ -563,10 +598,19 @@
               </div>
             {/if}
             {#if leaveStatusInfo}
+              <!-- Leave status indicator -->
+              <div class="leave-indicator absolute top-0 left-0 p-0.5">
+                <svelte:component
+                  this={leaveStatusInfo.icon}
+                  size={10}
+                  class={leaveStatusInfo.color}
+                />
+              </div>
+              <!-- Leave status badge -->
               <div
-                class="leave-status-badge text-xs {leaveStatusInfo.bgColor} {leaveStatusInfo.color} px-1 py-0.5 rounded mt-0.5"
+                class="leave-badge status-badge text-xs {leaveStatusInfo.bgColor} {leaveStatusInfo.color} px-1 py-0.5 rounded mt-0.5"
               >
-                {leaveStatusInfo.label.charAt(0)}
+                L
               </div>
             {/if}
           </div>
@@ -784,15 +828,38 @@
     background-color: #fbbf24;
   }
 
-  /* Regularization status styling */
-  .calendar-day.has-regularization .day-number {
+  /* Regularization and leave status styling */
+  .calendar-day.has-regularization .day-number,
+  .calendar-day.has-leave .day-number {
     margin-bottom: 0;
+  }
+  
+  /* Ensure leave-related days have a subtle border */
+  .calendar-day.has-leave:not(.selected) {
+    border: 1px solid #f97316;
+  }
+  
+  .calendar-day.has-leave:hover:not(.selected):not(.blocked) {
+    background-color: #fff7ed;
   }
 
   .status-indicator {
     position: absolute;
     top: 2px;
     right: 2px;
+  }
+  
+  .leave-indicator {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    z-index: 2;
+  }
+  
+  .leave-badge {
+    background-color: #ffedd5;
+    color: #c2410c;
+    border: 1px solid #fb923c;
   }
 
   .status-badge {
