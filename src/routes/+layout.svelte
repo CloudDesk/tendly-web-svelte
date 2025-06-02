@@ -9,7 +9,7 @@
   import FcmToast from "$lib/components/common/FCMToast.svelte";
   import { auth } from "$lib/stores/auth";
   import { getFCMToken } from "$lib/firebase/getFCMToken";
-  import { employeesApi } from "$lib/services/api";
+    import { employeesApi } from "$lib/services/api";
 
   export let data;
   $: ({ isAuthenticated } = data);
@@ -25,6 +25,8 @@
   $: if (browser && isAuthenticated && $auth.user?._id) {
     initializeFCM($auth.user._id);
   }
+
+
 
   onMount(() => {
     if (browser) {
@@ -46,49 +48,34 @@
     }
   }
 
-  const isSidebarCollapsed = writable(false);
-  const isMobileSidebarOpen = writable(false);
+  const isSidebarOpen = writable(false);
 
   function handleSidebarToggle(event: CustomEvent) {
-    isSidebarCollapsed.set(event.detail);
-  }
-
-  function handleMobileSidebarToggle(event: CustomEvent) {
-    isMobileSidebarOpen.set(event.detail);
+    isSidebarOpen.set(event.detail);
   }
 </script>
 
-<div
-  class="min-h-screen max-h-screen bg-surface-muted overflow-hidden"
-  data-theme="tendlyPro"
->
+<div class="min-h-screen bg-surface-muted" data-theme="tendlyPro">
   {#if !isPublicPage}
-    <div class="flex h-screen">
+    <div class="flex">
       {#if isAuthenticated}
-        <Sidebar
-          on:toggleSidebar={handleSidebarToggle}
-          on:toggleSidebar2={handleMobileSidebarToggle}
-        />
+        <Sidebar on:toggleSidebar={handleSidebarToggle} />
       {/if}
       <div
-        class="flex-1 transition-all duration-300 ease-in-out overflow-hidden {isAuthenticated
-          ? $isSidebarCollapsed
-            ? 'lg:ml-20 ml-0' /* Collapsed sidebar on desktop, no margin on mobile */
-            : 'lg:ml-64 ml-0' /* Full sidebar on desktop, no margin on mobile */
+        class="flex-1 transition-all duration-300 ease-in-out {isAuthenticated
+          ? $isSidebarOpen
+            ? 'ml-20 lg:ml-20' /* Sidebar open */
+            : 'ml-0 lg:ml-64' /* Sidebar closed */
           : ''}"
       >
-        <div class="h-full overflow-y-auto">
-          <div class="p-4 md:p-6 lg:p-8 min-h-full">
-            <slot />
-            <Toast />
-          </div>
+        <div class="p-4 md:p-6 lg:p-8">
+          <slot />
+          <Toast />
         </div>
       </div>
     </div>
   {:else}
-    <div class="h-screen overflow-y-auto">
-      <slot />
-    </div>
+    <slot />
   {/if}
   {#if isAuthenticated}
     <FcmToast />
@@ -99,34 +86,9 @@
   :global(body) {
     font-family: Inter, system-ui, sans-serif;
     color: #111827;
-    overflow: hidden; /* Prevent body scroll */
   }
 
   :global(.bg-surface-muted) {
     background-color: #f6f7fb;
-  }
-
-  /* Ensure proper mobile viewport handling */
-  :global(html) {
-    height: 100%;
-    overflow: hidden;
-  }
-
-  /* Custom scrollbar for content areas */
-  :global(.overflow-y-auto::-webkit-scrollbar) {
-    width: 6px;
-  }
-
-  :global(.overflow-y-auto::-webkit-scrollbar-track) {
-    background: transparent;
-  }
-
-  :global(.overflow-y-auto::-webkit-scrollbar-thumb) {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 3px;
-  }
-
-  :global(.overflow-y-auto::-webkit-scrollbar-thumb:hover) {
-    background: rgba(0, 0, 0, 0.2);
   }
 </style>

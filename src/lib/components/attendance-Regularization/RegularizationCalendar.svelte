@@ -9,6 +9,7 @@
     CheckCircle,
     XCircle,
     AlertCircle,
+    Calendar,
   } from "lucide-svelte";
   import type { AttendanceRegularization } from "$lib/services/api/attendance-regularization";
 
@@ -32,6 +33,25 @@
       swipes: any[];
     };
   }
+  // New interface for Leave records
+  interface LeaveRecord {
+    _id: string;
+    userId: string;
+    leaveTypeId: string;
+    leaveType: string;
+    startDate: string; // YYYY-MM-DD format
+    endDate: string; // YYYY-MM-DD format
+    status: string;
+    noOfDays: number;
+    reason: string;
+    appliedTo: any;
+    createdAt: string;
+    updatedAt: string;
+    user: {
+      name: string;
+      email: string;
+    };
+  }
 
   // Props
   export let selectedDates: Date[] = []; // Array of selected dates
@@ -40,9 +60,12 @@
   export let month: number = new Date().getMonth(); // 0-based index for months
   export let allowFutureDates: boolean = false; // Control whether future dates can be selected
   export let maxFutureDays: number = 30; // How many days in the future can be selected
-  export let regularizationRecords: Record<string, AttendanceRegularization> = {}; // Regularization records
+  export let regularizationRecords: Record<string, AttendanceRegularization> =
+    {}; // Regularization records
   export let isLoading: boolean = false; // Loading state
+  export let leaveRecords: LeaveRecord[] = [];
 
+  console.log(leaveRecords, " leaveRecords");
   const dispatch = createEventDispatcher();
   const user = ($auth.user as User) || {};
   console.log(user, "users");
@@ -64,23 +87,74 @@
     return date.toISOString().split("T")[0];
   }
 
-  function getRegularizationRecord(date: Date): AttendanceRegularization | null {
+  function getRegularizationRecord(
+    date: Date
+  ): AttendanceRegularization | null {
     // Format date to YYYY-MM-DD without timezone conversion
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     const dateStr = `${year}-${month}-${day}`;
-    
-    console.log('Looking for record for date:', dateStr, 'Available records:', regularizationRecords);
+
+    console.log(
+      "Looking for record for date:",
+      dateStr,
+      "Available records:",
+      regularizationRecords
+    );
     return regularizationRecords[dateStr] || null;
+  }
+  // New function to get leave record for a specific date
+  function getLeaveRecord(date: Date): LeaveRecord | null {
+    const dateStr = getDateString(date);
+    console.log(dateStr, "dateStr in getLeaveRecord");
+    console.log(leaveRecords, "leaveRecords in getLeaveRecord");
+    return (
+      leaveRecords.find((leave) => {
+        // Only consider leaves with Pending or Approved status
+        if (leave.status !== "Pending" && leave.status !== "Approved") {
+          return false;
+        }
+
+        // Normalize dates to UTC and reset time to start of day for comparison
+        const startDate = new Date(leave.startDate + "T00:00:00.000Z");
+        const endDate = new Date(leave.endDate + "T00:00:00.000Z");
+        const checkDate = new Date(dateStr + "T00:00:00.000Z");
+
+        // Ensure time is reset to avoid timezone issues
+        startDate.setUTCHours(0, 0, 0, 0);
+        endDate.setUTCHours(23, 59, 59, 999); // End of day for inclusivity
+        checkDate.setUTCHours(0, 0, 0, 0);
+        // Debug logging to verify dates
+        console.log(
+          `Checking date ${dateStr}: startDate=${startDate.toISOString()}, endDate=${endDate.toISOString()}, checkDate=${checkDate.toISOString()}`
+        );
+        // Check if the date falls within the leave period (inclusive)
+        return checkDate >= startDate && checkDate <= endDate;
+      }) || null
+    );
+  }
+
+  // New function to check if date has blocking leave status
+  function hasBlockingLeaveStatus(date: Date): boolean {
+    const leaveRecord = getLeaveRecord(date);
+    return leaveRecord
+      ? leaveRecord.status === "Pending" || leaveRecord.status === "Approved"
+      : false;
   }
 
   function hasBlockingStatus(date: Date): boolean {
     const record = getRegularizationRecord(date);
-    return record ? (record.status === "Pending" || record.status === "Approved") : false;
+    return record
+      ? record.status === "Pending" || record.status === "Approved"
+      : false;
+  }
+  // Enhanced function to check if date is blocked by either regularization or leave
+  function hasAnyBlockingStatus(date: Date): boolean {
+    return hasBlockingStatus(date) || hasBlockingLeaveStatus(date);
   }
 
-  function getStatusInfo(status: AttendanceRegularization['status']) {
+  function getStatusInfo(status: AttendanceRegularization["status"]) {
     switch (status) {
       case "Pending":
         return {
@@ -117,6 +191,28 @@
     }
   }
 
+  // New function to get leave status info
+  function getLeaveStatusInfo(status: string) {
+    switch (status) {
+      case "Pending":
+        return {
+          icon: Calendar,
+          color: "text-orange-600",
+          bgColor: "bg-orange-100",
+          label: "Leave Pending",
+        };
+      case "Approved":
+        return {
+          icon: Calendar,
+          color: "text-purple-600",
+          bgColor: "bg-purple-100",
+          label: "Leave Approved",
+        };
+      default:
+        return null;
+    }
+  }
+
   // Generate days for the current month
   function generateDays(year: number, month: number) {
     const firstDayOfMonth = new Date(year, month, 1);
@@ -132,7 +228,10 @@
     }
 
     daysInMonth.set(days);
-    console.log('Days generated:', days.map(d => d.toISOString()));
+    console.log(
+      "Days generated:",
+      days.map((d) => d.toISOString())
+    );
   }
 
   // Handle month navigation
@@ -180,14 +279,23 @@
       );
       return;
     }
-
+    // Check for blocking leave status
+    if (hasBlockingLeaveStatus(date)) {
+      const leaveRecord = getLeaveRecord(date);
+      console.log(
+        `Date ${getDateString(date)} is blocked due to leave ${leaveRecord?.status} status`
+      );
+      return;
+    }
     const index = selectedDates.findIndex(
       (selectedDate) => selectedDate.toDateString() === date.toDateString()
     );
 
     if (index === -1) {
+      // Add the date
       selectedDates = [...selectedDates, date];
     } else {
+      // Remove the date but preserve form data in parent component
       selectedDates = selectedDates.filter(
         (selectedDate) => selectedDate.toDateString() !== date.toDateString()
       );
@@ -195,7 +303,10 @@
 
     // Force a UI update by reassigning selectedDates
     selectedDates = [...selectedDates];
-    dispatch("dateSelect", { selectedDates });
+
+    // Use consistent cloned array to prevent reference issues
+    const selectedDatesClone = [...selectedDates];
+    dispatch("dateSelect", { selectedDates: selectedDatesClone });
   }
 
   // Enhanced date selectability check
@@ -205,6 +316,9 @@
 
     // Check for blocking regularization status first
     if (hasBlockingStatus(date)) return false;
+
+    // Check for blocking leave status
+    if (hasBlockingLeaveStatus(date)) return false;
 
     // Always allow past dates (if not blocked by regularization)
     if (dateToCheck <= currentDate) return true;
@@ -288,24 +402,59 @@
 
     return summary;
   }
+  // New function to get leave summary
+  function getLeaveSummary() {
+    const summary = {
+      pending: 0,
+      approved: 0,
+      total: leaveRecords.length,
+    };
 
+    leaveRecords.forEach((leave) => {
+      switch (leave.status) {
+        case "Pending":
+          summary.pending++;
+          break;
+        case "Approved":
+          summary.approved++;
+          break;
+      }
+    });
+
+    return summary;
+  }
   // Watch for changes in regularizationRecords
   $: {
-    if (regularizationRecords && Object.keys(regularizationRecords).length > 0) {
-      console.log('RegularizationCalendar records updated:', regularizationRecords);
+    if (
+      regularizationRecords &&
+      Object.keys(regularizationRecords).length > 0
+    ) {
+      console.log(
+        "RegularizationCalendar records updated:",
+        regularizationRecords
+      );
       // Force calendar update
-      daysInMonth.update(days => [...days]);
+      daysInMonth.update((days) => [...days]);
     }
   }
-
+  // Watch for changes in leaveRecords
+  $: {
+    if (leaveRecords && leaveRecords.length > 0) {
+      console.log("Leave records updated:", leaveRecords);
+      // Force calendar update
+      daysInMonth.update((days) => [...days]);
+    }
+  }
   // Initialize days on mount and when month/year changes
   $: {
     generateDays(year, month);
-    console.log('Calendar days generated:', $daysInMonth);
+    console.log("Calendar days generated:", $daysInMonth);
   }
 
   // Get regularization records summary
   $: regularizationSummary = getRegularizationSummary();
+  // Get leave records summary
+  $: leaveSummary = getLeaveSummary();
 </script>
 
 <div class="flex flex-col gap-3">
@@ -371,9 +520,14 @@
           {@const selectable = isDateSelectable(day)}
           {@const selected = isSelected(day)}
           {@const regularizationRecord = getRegularizationRecord(day)}
-          {@const statusInfo = regularizationRecord ? getStatusInfo(regularizationRecord.status) : null}
-          {@const hasBlocking = hasBlockingStatus(day)}
-
+          {@const statusInfo = regularizationRecord
+            ? getStatusInfo(regularizationRecord.status)
+            : null}
+          {@const hasBlocking = hasAnyBlockingStatus(day)}
+          {@const leaveRecord = getLeaveRecord(day)}
+          {@const leaveStatusInfo = leaveRecord
+            ? getLeaveStatusInfo(leaveRecord.status)
+            : null}
           <div
             class="calendar-day p-1 text-center cursor-pointer transition-colors relative"
             class:selected
@@ -408,6 +562,13 @@
                 {regularizationRecord.status.charAt(0)}
               </div>
             {/if}
+            {#if leaveStatusInfo}
+              <div
+                class="leave-status-badge text-xs {leaveStatusInfo.bgColor} {leaveStatusInfo.color} px-1 py-0.5 rounded mt-0.5"
+              >
+                {leaveStatusInfo.label.charAt(0)}
+              </div>
+            {/if}
           </div>
         {/each}
 
@@ -421,37 +582,65 @@
   </div>
 
   <!-- Regularization Summary -->
-  {#if regularizationSummary.total > 0}
-    <div class="regularization-summary p-3 bg-blue-50 rounded border">
-      <p class="text-sm font-medium mb-2 text-blue-800">
-        Month Summary ({regularizationSummary.total} records)
-      </p>
-      <div class="grid grid-cols-2 gap-2 text-xs">
-        {#if regularizationSummary.pending > 0}
-          <div class="flex items-center gap-1 text-yellow-700">
-            <Clock size={12} />
-            <span>Pending: {regularizationSummary.pending}</span>
+  {#if regularizationSummary.total > 0 || leaveSummary.total > 0}
+    <div class="summary-section">
+      <!-- Regularization Summary -->
+      {#if regularizationSummary.total > 0}
+        <div class="regularization-summary p-3 bg-blue-50 rounded border mb-2">
+          <p class="text-sm font-medium mb-2 text-blue-800">
+            Regularization Summary ({regularizationSummary.total} records)
+          </p>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            {#if regularizationSummary.pending > 0}
+              <div class="flex items-center gap-1 text-yellow-700">
+                <Clock size={12} />
+                <span>Pending: {regularizationSummary.pending}</span>
+              </div>
+            {/if}
+            {#if regularizationSummary.approved > 0}
+              <div class="flex items-center gap-1 text-green-700">
+                <CheckCircle size={12} />
+                <span>Approved: {regularizationSummary.approved}</span>
+              </div>
+            {/if}
+            {#if regularizationSummary.rejected > 0}
+              <div class="flex items-center gap-1 text-red-700">
+                <XCircle size={12} />
+                <span>Rejected: {regularizationSummary.rejected}</span>
+              </div>
+            {/if}
+            {#if regularizationSummary.withdrawn > 0}
+              <div class="flex items-center gap-1 text-gray-700">
+                <AlertCircle size={12} />
+                <span>Withdrawn: {regularizationSummary.withdrawn}</span>
+              </div>
+            {/if}
           </div>
-        {/if}
-        {#if regularizationSummary.approved > 0}
-          <div class="flex items-center gap-1 text-green-700">
-            <CheckCircle size={12} />
-            <span>Approved: {regularizationSummary.approved}</span>
+        </div>
+      {/if}
+
+      <!-- Leave Summary -->
+      {#if leaveSummary.total > 0}
+        <div class="leave-summary p-3 bg-orange-50 rounded border">
+          <p class="text-sm font-medium mb-2 text-orange-800">
+            Leave Summary ({leaveSummary.total} records)
+          </p>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            {#if leaveSummary.pending > 0}
+              <div class="flex items-center gap-1 text-orange-700">
+                <Calendar size={12} />
+                <span>Pending: {leaveSummary.pending}</span>
+              </div>
+            {/if}
+            {#if leaveSummary.approved > 0}
+              <div class="flex items-center gap-1 text-purple-700">
+                <Calendar size={12} />
+                <span>Approved: {leaveSummary.approved}</span>
+              </div>
+            {/if}
           </div>
-        {/if}
-        {#if regularizationSummary.rejected > 0}
-          <div class="flex items-center gap-1 text-red-700">
-            <XCircle size={12} />
-            <span>Rejected: {regularizationSummary.rejected}</span>
-          </div>
-        {/if}
-        {#if regularizationSummary.withdrawn > 0}
-          <div class="flex items-center gap-1 text-gray-700">
-            <AlertCircle size={12} />
-            <span>Withdrawn: {regularizationSummary.withdrawn}</span>
-          </div>
-        {/if}
-      </div>
+        </div>
+      {/if}
     </div>
   {/if}
 
@@ -639,5 +828,13 @@
   /* Regularization summary styling */
   .regularization-summary {
     border-left: 4px solid #3b82f6;
+  }
+  /* Summary styling */
+  .regularization-summary {
+    border-left: 4px solid #3b82f6;
+  }
+
+  .leave-summary {
+    border-left: 4px solid #f97316;
   }
 </style>

@@ -162,6 +162,8 @@
   async function fetchRecordsData() {
     if (selectedDates.length === 0) return;
 
+    // Store current form values before loading new data
+    const existingFormData = { ...recordsData };
     isLoading = true;
 
     try {
@@ -180,8 +182,9 @@
         // Process the response data
         const { attendanceRecords, shiftAssignments } = response.data;
 
-        // Build records data with combined information
-        const newRecordsData: Record<string, RecordData> = {};
+        // Build records data with combined information, preserving existing values
+        // Create a copy of the current records data to preserve user entries
+        const newRecordsData: Record<string, RecordData> = { ...recordsData };
 
         selectedDates.forEach((date) => {
           const dateStr = formatDateForApi(date);
@@ -256,26 +259,54 @@
               ? shiftAssignment.shiftId.shiftWindowEnd
               : "18:30";
 
-          newRecordsData[dateStr] = {
-            date,
-            dayStr,
-            fromTime: shiftStartTime,
-            toTime: shiftEndTime,
-            windowFromTime: windowshiftStartTime,
-            windowToTime: windowshiftEndTime,
-            actualFromTime: firstSwipe
-              ? formatTimeFromTimestamp(firstSwipe)
-              : null,
-            actualToTime: lastSwipe ? formatTimeFromTimestamp(lastSwipe) : null,
-            reason: "",
-            shiftCode: shiftCode,
-            hasSwipes,
-            attendanceId: attendanceRecord?._id || null,
-            approver: {
-              id: managerId,
-              name: managerName,
-            },
-          };
+          // Only initialize if we don't already have data for this date
+          // or preserve user entered values while updating other fields
+          if (!newRecordsData[dateStr]) {
+            newRecordsData[dateStr] = {
+              date,
+              dayStr,
+              fromTime: shiftStartTime,
+              toTime: shiftEndTime,
+              windowFromTime: windowshiftStartTime,
+              windowToTime: windowshiftEndTime,
+              actualFromTime: firstSwipe
+                ? formatTimeFromTimestamp(firstSwipe)
+                : null,
+              actualToTime: lastSwipe
+                ? formatTimeFromTimestamp(lastSwipe)
+                : null,
+              reason: "",
+              shiftCode: shiftCode,
+              hasSwipes,
+              attendanceId: attendanceRecord?._id || null,
+              approver: {
+                id: managerId,
+                name: managerName,
+              },
+            };
+          } else {
+            // Update only the reference fields while preserving user entries
+            newRecordsData[dateStr] = {
+              ...newRecordsData[dateStr],
+              date,
+              dayStr,
+              windowFromTime: windowshiftStartTime,
+              windowToTime: windowshiftEndTime,
+              actualFromTime: firstSwipe
+                ? formatTimeFromTimestamp(firstSwipe)
+                : newRecordsData[dateStr].actualFromTime,
+              actualToTime: lastSwipe
+                ? formatTimeFromTimestamp(lastSwipe)
+                : newRecordsData[dateStr].actualToTime,
+              shiftCode: shiftCode,
+              hasSwipes,
+              attendanceId: attendanceRecord?._id || null,
+              approver: {
+                id: managerId,
+                name: managerName,
+              },
+            };
+          }
         });
 
         console.log(newRecordsData, "newRecordData");
@@ -357,31 +388,40 @@
     let hasErrors = false;
     validationErrors = {};
 
-    // Validate all records
-    Object.entries(recordsData).forEach(([dateStr, record]) => {
-      validationErrors[dateStr] = { fromTime: "", toTime: "", reason: "" };
+    // Only validate records for currently selected dates
+    const selectedDatesStr = selectedDates.map((date) =>
+      formatDateForApi(date)
+    );
 
-      // Validate times
-      if (!validateTime(record.fromTime)) {
-        validationErrors[dateStr].fromTime =
-          "Please enter a valid time (HH:MM)";
-        hasErrors = true;
-      }
-      if (!validateTime(record.toTime)) {
-        validationErrors[dateStr].toTime = "Please enter a valid time (HH:MM)";
-        hasErrors = true;
-      }
-      if (!validateTimeRange(record.fromTime, record.toTime)) {
-        validationErrors[dateStr].toTime = "End time must be after start time";
-        hasErrors = true;
-      }
+    // Validate only the selected records
+    Object.entries(recordsData)
+      .filter(([dateStr, _]) => selectedDatesStr.includes(dateStr))
+      .forEach(([dateStr, record]) => {
+        validationErrors[dateStr] = { fromTime: "", toTime: "", reason: "" };
 
-      // Validate reason
-      if (!record.reason && !remarks) {
-        validationErrors[dateStr].reason = "Please provide a reason";
-        hasErrors = true;
-      }
-    });
+        // Validate times
+        if (!validateTime(record.fromTime)) {
+          validationErrors[dateStr].fromTime =
+            "Please enter a valid time (HH:MM)";
+          hasErrors = true;
+        }
+        if (!validateTime(record.toTime)) {
+          validationErrors[dateStr].toTime =
+            "Please enter a valid time (HH:MM)";
+          hasErrors = true;
+        }
+        if (!validateTimeRange(record.fromTime, record.toTime)) {
+          validationErrors[dateStr].toTime =
+            "End time must be after start time";
+          hasErrors = true;
+        }
+
+        // Validate reason
+        if (!record.reason && !remarks) {
+          validationErrors[dateStr].reason = "Please provide a reason";
+          hasErrors = true;
+        }
+      });
 
     // Force update of validation errors
     validationErrors = { ...validationErrors };
@@ -393,9 +433,12 @@
 
     isSubmitting = true;
 
-    // Prepare data for submission
-    const regularizationData = Object.entries(recordsData).map(
-      ([dateStr, record]) => ({
+    // Prepare data for submission - only for selected dates
+    // const selectedDatesStr = selectedDates.map(date => formatDateForApi(date));
+
+    const regularizationData = Object.entries(recordsData)
+      .filter(([dateStr, _]) => selectedDatesStr.includes(dateStr))
+      .map(([dateStr, record]) => ({
         userId,
         date: dateStr,
         fromTime: record.fromTime,
@@ -404,8 +447,7 @@
         shiftType: record.shiftCode,
         attendanceId: record.attendanceId,
         approver: record.approver,
-      })
-    );
+      }));
     remarks = "";
     console.log(regularizationData, "regularizationData");
     dispatch("submit", regularizationData);
@@ -418,6 +460,8 @@
 
   // Cancel handler
   function handleCancel() {
+    // We don't clear recordsData here to preserve form entries
+    // The parent component will just reset selectedDates
     dispatch("cancel");
   }
 
@@ -425,7 +469,12 @@
   function removeDate(dateStr: string) {
     const date = selectedDates.find((d) => formatDateForApi(d) === dateStr);
     if (date) {
+      // Only remove from selectedDates, but keep data in recordsData to preserve form values
       dispatch("removeDate", { date });
+
+      // Note: We intentionally don't delete the record data here
+      // This allows us to preserve form values if the user re-selects this date
+      console.log(`Removed date ${dateStr} but preserved form data`);
     }
   }
 

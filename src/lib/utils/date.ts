@@ -160,4 +160,21 @@ export function getCurrentFinancialYear(): string {
   return `${startYear}-${endYear}`;
 }
 
+export function getMonthBoundaries(year: number, monthNumber: number) {
+  const firstDay = new Date(year, monthNumber - 1, 1);
+  const lastDay = new Date(year, monthNumber, 0);
+
+  const formatDate = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  return {
+    firstDay: formatDate(firstDay),
+    lastDay: formatDate(lastDay),
+    daysInMonth: lastDay.getDate(),
+  };
+}
 

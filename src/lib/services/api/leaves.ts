@@ -56,6 +56,19 @@ export type LeaveFilters = {
     sortOrder?: 'asc' | 'desc';
     status?: string;
     leaveType?: string;
+    startDate?: string; // Format: YYYY-MM-DD
+    endDate?: string;   // Format: YYYY-MM-DD
+};
+
+export type LeaveApiResponse<T> = {
+    success: boolean;
+    data: T;
+    meta: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+    };
 };
 
 export const leavesApi = {
@@ -131,6 +144,7 @@ export const leavesApi = {
         return fetchApi(`/leaves/userId/${employeeId}?${params.toString()}`)
     },
 
+
     getLeavesByAssignedId: (assignedId: string, filters: LeaveFilters): Promise<ApiResponse<LeaveRequest[]>> => {
         const params = new URLSearchParams();
         Object.entries(filters).forEach(([key, value]) => {
@@ -140,4 +154,32 @@ export const leavesApi = {
         return fetchApi(`/leaves/applied-to/${assignedId}?${params.toString()}`)
     }
 
-} 
+}
+
+/*myListWithDateRange
+
+// API Usage Examples
+
+// 1. Get all leaves for a user (original functionality)
+GET /userId/507f1f77bcf86cd799439011
+
+// 2. Get leaves for a user within a date range
+GET /userId/507f1f77bcf86cd799439011?startDate=2025-01-01&endDate=2025-01-31
+
+// 3. Get approved leaves for a user
+GET /userId/507f1f77bcf86cd799439011?status=Approved
+
+// 4. Get leaves by leave type
+GET /userId/507f1f77bcf86cd799439011?leaveType=Annual
+
+// 5. Combined filters - get approved annual leaves in January 2025
+GET /userId/507f1f77bcf86cd799439011?startDate=2025-01-01&endDate=2025-01-31&status=Approved&leaveType=Annual
+
+// 6. Pagination with filters
+GET /userId/507f1f77bcf86cd799439011?page=1&limit=5&status=Pending
+
+// 7. Get leaves that overlap with a specific date
+GET /userId/507f1f77bcf86cd799439011?startDate=2025-01-15&endDate=2025-01-15
+
+
+*/

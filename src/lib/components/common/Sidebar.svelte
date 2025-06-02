@@ -23,7 +23,6 @@
     GraduationCap,
     CalendarRange,
     Menu,
-    X,
   } from "lucide-svelte";
   import PayrollIcon from "./icon/PayrollIcon.svelte";
   import { fly, slide } from "svelte/transition";
@@ -297,14 +296,6 @@
     });
   }
 
-  function toggleMobileSidebar() {
-    isSidebarOpen.update((v) => {
-      const newValue = !v;
-      dispatch("toggleSidebar2", newValue);
-      return newValue;
-    });
-  }
-
   async function handleLogout() {
     isLoggingOut.set(true);
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -313,38 +304,20 @@
   }
 </script>
 
-<!-- Mobile menu trigger - integrated with container background -->
-<div class="fixed top-0 right-0 z-50 lg:hidden">
-  <div class="p-3">
-    <button
-      class="p-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
-      on:click={toggleMobileSidebar}
-      aria-label="Toggle Sidebar"
-    >
-      {#if $isSidebarOpen}
-        <!-- <X size={20} class="text-gray-700" /> -->
-      {:else}
-        <Menu size={20} class="text-gray-700" />
-      {/if}
-    </button>
-  </div>
-</div>
-
-<!-- Mobile overlay -->
-{#if $isSidebarOpen}
-  <div
-    class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-    on:click={toggleMobileSidebar}
-    transition:fly={{ duration: 200, opacity: 0 }}
-  ></div>
-{/if}
+<!-- Mobile menu trigger -->
+<button
+  class="fixed top-4 left-4 z-50 p-2 bg-white rounded-md shadow-md lg:hidden"
+  on:click={toggleSidebar}
+  aria-label="Toggle Sidebar"
+>
+  <Menu size={20} />
+</button>
 
 <aside
   class="fixed left-0 top-0 h-screen bg-gradient-to-b from-[#F8FAFF] to-[#EDF3FF]
-  border-r border-surface-border shadow-sm transition-all duration-300 ease-in-out z-50 flex flex-col
-  w-64 lg:w-64
-  {$isSidebarOpen ? 'translate-x-0' : 'lg:translate-x-0 -translate-x-full'}
-  {$isCollapsed && 'lg:w-20'}"
+  border-r border-surface-border shadow-sm transition-all duration-300 ease-in-out z-30 flex flex-col
+  {$isCollapsed ? 'w-20' : 'w-64'} 
+  {$isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}"
 >
   <!-- Header -->
   <div
@@ -369,10 +342,9 @@
         />
       {/if}
     </div>
-    <!-- Desktop collapse button - only visible on lg+ screens -->
     <button
       class="w-8 h-8 flex items-center justify-center text-text-muted hover:text-primary
-      rounded-lg hover:bg-white/80 transition-colors hidden lg:flex"
+      rounded-lg hover:bg-white/80 transition-colors"
       on:click={toggleSidebar}
       aria-label={$isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
     >
@@ -451,12 +423,6 @@
                     class="flex items-center gap-3 px-4 py-2 text-sm {isActive
                       ? 'bg-white/70 text-primary font-medium shadow-sm'
                       : 'text-text-muted hover:text-text hover:bg-white/50'} transition-all"
-                    on:click={() => {
-                      // Close mobile sidebar when clicking a nav item
-                      if (window.innerWidth < 1024) {
-                        toggleMobileSidebar();
-                      }
-                    }}
                   >
                     <svelte:component this={item.icon} size={20} />
                     {#if !$isCollapsed}
@@ -478,12 +444,6 @@
                         class="block py-2 text-sm {isChildActive
                           ? 'text-primary font-medium'
                           : 'text-text-muted hover:text-text'} transition-colors"
-                        on:click={() => {
-                          // Close mobile sidebar when clicking a nav item
-                          if (window.innerWidth < 1024) {
-                            toggleMobileSidebar();
-                          }
-                        }}
                       >
                         {child.label}
                       </a>
@@ -505,12 +465,6 @@
     <a
       href="/my/profile"
       class="flex items-center gap-2 p-2 rounded-md hover:bg-blue-50 transition-colors flex-1"
-      on:click={() => {
-        // Close mobile sidebar when clicking profile link
-        if (window.innerWidth < 1024) {
-          toggleMobileSidebar();
-        }
-      }}
     >
       <div
         class="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full text-base font-semibold"

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { attendanceRegularizeApi } from "$lib/services/api";
+  import { attendanceRegularizeApi, leavesApi } from "$lib/services/api";
   import type { AttendanceRegularization } from "$lib/services/api/attendance-regularization";
   import { toast } from "../common/stores/toast.store";
   import { writable } from "svelte/store";
@@ -7,9 +7,32 @@
   import { auth } from "$lib/stores/auth";
   import RegularizationCalendar from "./RegularizationCalendar.svelte";
   import RegularizationForm from "./RegularizationFormBulk.svelte";
-  import { formatDate } from "$lib/utils/date";
+  import { formatDate, getMonthBoundaries } from "$lib/utils/date";
+
+  interface LeaveRecord {
+    _id: string;
+    userId: string;
+    leaveTypeId: string;
+    leaveType: string;
+    startDate: string; // YYYY-MM-DD format
+    endDate: string; // YYYY-MM-DD format
+    status: string;
+    noOfDays: number;
+    reason: string;
+    appliedTo: any;
+    createdAt: string;
+    updatedAt: string;
+    user: {
+      name: string;
+      email: string;
+    };
+  }
+
+  const userId = $auth.user?._id || "";
 
   const isLoading = writable(false);
+  let leaveDays: Record<string, { status: string; leaveType: string }> =
+    {} as Record<string, { status: string; leaveType: string }>; //leave days with status
   let selectedDates: Date[] = [];
   let expandedDates: Record<string, boolean> = {};
   let isRegularizationLoading = false;
@@ -17,6 +40,7 @@
   let regularizationRecords = writable<
     Record<string, AttendanceRegularization>
   >({});
+  let leaveRecords = writable<LeaveRecord[]>([]);
 
   // Form data for regularization
   let shiftData: Record<
@@ -41,22 +65,12 @@
   }
 
   // Fetch attendance records for the selected month
-  async function fetchAttendanceRecords(year?: number, month?: number) {
+  async function fetchAttendanceRecords(year: number, month: number) {
     isLoading.set(true);
     try {
-      // Calculate first and last day of the month correctly
-      const currentYear = year || new Date().getFullYear();
-      const currentMonth = month || new Date().getMonth() + 1; // Adding 1 since getMonth() is 0-based
+      const { firstDay, lastDay } = getMonthBoundaries(year, month);
 
-      // First day of the month
-      const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1);
-      // Last day of the month
-      const lastDayOfMonth = new Date(currentYear, currentMonth, 0);
-
-      const startDate = formatDate(firstDayOfMonth);
-      const endDate = formatDate(lastDayOfMonth);
-
-      console.log("Fetching records from:", startDate, "to:", endDate);
+      console.log("Fetching records from:", firstDay, "to:", lastDay);
 
       // Fetch regularization records
       const userId = $auth.user?._id;
@@ -65,8 +79,8 @@
           userId,
           {
             allStatus: true,
-            startDate,
-            endDate,
+            startDate: firstDay,
+            endDate: lastDay,
           }
         );
 
@@ -84,8 +98,6 @@
             },
             {} as Record<string, AttendanceRegularization>
           );
-
-          console.log("Processed records:", newRecords);
           regularizationRecords.set(newRecords);
         }
       }
@@ -96,6 +108,26 @@
       isLoading.set(false);
     }
   }
+  // Fetch leave days for the selected month
+  const fetchLeaveDays = async (year: number, month: number) => {
+    console.log(year, month, "year, month in getLeavesByDates");
+    const { firstDay, lastDay } = getMonthBoundaries(year, month);
+    console.log(firstDay, lastDay, "firstDay, lastDay");
+
+    try {
+      let response: any = await leavesApi.myList(userId, {
+        startDate: firstDay,
+        endDate: lastDay,
+      });
+      console.log(response, "response in getLeavesByDates");
+      if (response.success && response.data) {
+        leaveRecords.set(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch leave days:", error);
+      toast.error("Failed to fetch leave days");
+    }
+  };
 
   // Handle date selection
   function handleDateSelect(event: CustomEvent<{ selectedDates: Date[] }>) {
@@ -103,15 +135,15 @@
 
     // Store existing shiftData to preserve user inputs
     const previousShiftData = { ...shiftData };
-    selectedDates = newSelectedDates;
 
     console.log(selectedDates, "selectedDates in handleDateSelect");
     console.log(
       event.detail.selectedDates,
       "event.detail.selectedDates in handleDateSelect"
     );
-    // Initialize data for each selected date
-    selectedDates.forEach((date) => {
+
+    // Initialize data for each new date without affecting existing ones
+    newSelectedDates.forEach((date) => {
       const dateStr = date.toISOString().split("T")[0];
       if (!shiftData[dateStr]) {
         shiftData[dateStr] = {
@@ -132,16 +164,11 @@
       }
     });
 
-    // Remove data for dates that are no longer selected
-    Object.keys(shiftData).forEach((dateStr) => {
-      const stillSelected = selectedDates.some(
-        (date) => date.toISOString().split("T")[0] === dateStr
-      );
-      if (!stillSelected) {
-        delete shiftData[dateStr];
-        delete expandedDates[dateStr];
-      }
-    });
+    // Only update the selectedDates array after initializing shiftData
+    selectedDates = newSelectedDates;
+
+    // Do NOT remove data for unselected dates to preserve form entries
+    // This is the key change - we keep all form data even when dates are deselected
 
     // Force a UI update by reassigning shiftData
     shiftData = { ...shiftData };
@@ -151,6 +178,7 @@
   function handleRemoveDate(event: CustomEvent<{ date: Date }>) {
     const dateToRemove = event.detail.date;
     selectedDates = selectedDates.filter((d) => d !== dateToRemove);
+    // We intentionally keep the shiftData for this date to preserve entered values
   }
 
   // Handle month change
@@ -159,6 +187,7 @@
   ) {
     const { year, month } = event.detail;
     fetchAttendanceRecords(year, month);
+    fetchLeaveDays(year, month);
   }
 
   // Handle form submission
@@ -206,12 +235,19 @@
       selectedDates = [];
       handleFormCancel();
       isRegularizationLoading = false;
+
+      // After successful submission, we can clear the shiftData for the submitted dates
+      selectedDates.forEach((date) => {
+        const dateStr = date.toISOString().split("T")[0];
+        delete shiftData[dateStr];
+      });
     }
   }
 
   // Handle form cancellation
   function handleFormCancel() {
     selectedDates = []; // Clear selected dates
+    // We're intentionally NOT clearing shiftData to preserve entered values
   }
 
   onMount(async () => {
@@ -221,6 +257,7 @@
       currentDate.getFullYear(),
       currentDate.getMonth() + 1
     );
+    await fetchLeaveDays(currentDate.getFullYear(), currentDate.getMonth() + 1);
   });
 </script>
 
@@ -230,6 +267,7 @@
     <div class="md:col-span-4 xl:col-span-3">
       <RegularizationCalendar
         bind:selectedDates
+        leaveRecords={$leaveRecords}
         weekendDays={[]}
         allowFutureDates={false}
         maxFutureDays={0}
