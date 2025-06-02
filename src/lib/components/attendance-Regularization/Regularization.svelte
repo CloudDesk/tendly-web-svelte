@@ -13,7 +13,10 @@
   let selectedDates: Date[] = [];
   let expandedDates: Record<string, boolean> = {};
   let isRegularizationLoading = false;
-  let regularizationRecords: Record<string, AttendanceRegularization> = {};
+  // let regularizationRecords: Record<string, AttendanceRegularization> = {};
+  let regularizationRecords = writable<
+    Record<string, AttendanceRegularization>
+  >({});
 
   // Form data for regularization
   let shiftData: Record<
@@ -44,7 +47,7 @@
       // Calculate first and last day of the month correctly
       const currentYear = year || new Date().getFullYear();
       const currentMonth = month || new Date().getMonth() + 1; // Adding 1 since getMonth() is 0-based
-      
+
       // First day of the month
       const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1);
       // Last day of the month
@@ -53,31 +56,37 @@
       const startDate = formatDate(firstDayOfMonth);
       const endDate = formatDate(lastDayOfMonth);
 
-      console.log('Fetching records from:', startDate, 'to:', endDate);
+      console.log("Fetching records from:", startDate, "to:", endDate);
 
       // Fetch regularization records
       const userId = $auth.user?._id;
       if (userId) {
-        const response = await attendanceRegularizeApi.getRegularizationRecords(userId, {
-          allStatus: true,
-          startDate,
-          endDate
-        });
+        const response = await attendanceRegularizeApi.getRegularizationRecords(
+          userId,
+          {
+            allStatus: true,
+            startDate,
+            endDate,
+          }
+        );
 
-        console.log('API Response:', response);
+        console.log("API Response:", response);
 
         if (response.success && response.data) {
           // Convert array to record object with date as key
-          const newRecords = response.data.reduce((acc, record) => {
-            // Extract the date part from shiftDay without timezone conversion
-            const [dateStr] = record.shiftDay.split('T');
-            console.log('Processing record for date:', dateStr, record);
-            acc[dateStr] = record;
-            return acc;
-          }, {} as Record<string, AttendanceRegularization>);
+          const newRecords = response.data.reduce(
+            (acc, record) => {
+              // Extract the date part from shiftDay without timezone conversion
+              const [dateStr] = record.shiftDay.split("T");
+              console.log("Processing record for date:", dateStr, record);
+              acc[dateStr] = record;
+              return acc;
+            },
+            {} as Record<string, AttendanceRegularization>
+          );
 
-          console.log('Processed records:', newRecords);
-          regularizationRecords = newRecords;
+          console.log("Processed records:", newRecords);
+          regularizationRecords.set(newRecords);
         }
       }
     } catch (error) {
@@ -90,11 +99,20 @@
 
   // Handle date selection
   function handleDateSelect(event: CustomEvent<{ selectedDates: Date[] }>) {
-    selectedDates = [...event.detail.selectedDates];
+    const newSelectedDates = [...event.detail.selectedDates];
 
+    // Store existing shiftData to preserve user inputs
+    const previousShiftData = { ...shiftData };
+    selectedDates = newSelectedDates;
+
+    console.log(selectedDates, "selectedDates in handleDateSelect");
+    console.log(
+      event.detail.selectedDates,
+      "event.detail.selectedDates in handleDateSelect"
+    );
     // Initialize data for each selected date
     selectedDates.forEach((date) => {
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = date.toISOString().split("T")[0];
       if (!shiftData[dateStr]) {
         shiftData[dateStr] = {
           date,
@@ -117,7 +135,7 @@
     // Remove data for dates that are no longer selected
     Object.keys(shiftData).forEach((dateStr) => {
       const stillSelected = selectedDates.some(
-        (date) => date.toISOString().split('T')[0] === dateStr
+        (date) => date.toISOString().split("T")[0] === dateStr
       );
       if (!stillSelected) {
         delete shiftData[dateStr];
@@ -136,19 +154,11 @@
   }
 
   // Handle month change
-  function handleMonthChange(event: CustomEvent<{ year: number; month: number }>) {
+  function handleMonthChange(
+    event: CustomEvent<{ year: number; month: number }>
+  ) {
     const { year, month } = event.detail;
     fetchAttendanceRecords(year, month);
-  }
-
-  // Update shift data
-  function updateShiftData(dateStr: string, field: string, value: string) {
-    if (shiftData[dateStr]) {
-      shiftData[dateStr] = {
-        ...shiftData[dateStr],
-        [field]: value,
-      };
-    }
   }
 
   // Handle form submission
@@ -167,8 +177,11 @@
 
       if (result.success) {
         if (Array.isArray(result.data)) {
+          const newRecords = { ...$regularizationRecords };
+          regularizationRecords.set(newRecords);
+
           toast.success("Regularization requests submitted successfully");
-          selectedDates = [];
+          // selectedDates = [];
         } else {
           throw new Error("Invalid response format: data is not an array");
         }
@@ -183,6 +196,15 @@
         "Unable to submit regularization requests. Please try again later."
       );
     } finally {
+      console.log(selectedDates, "selectedDates after form submit");
+
+      let date = new Date(selectedDates[0]);
+      let year = date.getUTCFullYear();
+      let month = date.getUTCMonth() + 1;
+      // console.log("Fetching records for year:", year, "month:", month);
+      await fetchAttendanceRecords(year, month);
+      selectedDates = [];
+      handleFormCancel();
       isRegularizationLoading = false;
     }
   }
@@ -193,9 +215,12 @@
   }
 
   onMount(async () => {
-    console.log('Component mounted, fetching records...');
+    console.log("Component mounted, fetching records...");
     const currentDate = new Date();
-    await fetchAttendanceRecords(currentDate.getFullYear(), currentDate.getMonth() + 1);
+    await fetchAttendanceRecords(
+      currentDate.getFullYear(),
+      currentDate.getMonth() + 1
+    );
   });
 </script>
 
@@ -208,7 +233,7 @@
         weekendDays={[]}
         allowFutureDates={false}
         maxFutureDays={0}
-        {regularizationRecords}
+        regularizationRecords={$regularizationRecords}
         isLoading={$isLoading}
         on:dateSelect={handleDateSelect}
         on:monthChange={handleMonthChange}

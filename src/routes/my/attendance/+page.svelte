@@ -1,8 +1,7 @@
 <script lang="ts">
   import ToggleView from "$lib/components/attendance/ToggleView.svelte";
   import RegularizationList from "$lib/components/attendance-Regularization/RegularizationList.svelte";
-  import FiltersSearch from "$lib/components/attendance/FiltersSearch.svelte";
-  import { writable } from "svelte/store";
+  import { derived, writable } from "svelte/store";
   import { onMount } from "svelte";
   import { auth } from "$lib/stores/auth";
   import { getMonthStartEnd } from "$lib/utils/date";
@@ -11,11 +10,24 @@
   import type { AttendanceRecord } from "$lib/types";
   import Regularization from "$lib/components/attendance-Regularization/Regularization.svelte";
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
+  import { page } from "$app/stores";
+  import Tabs from "$lib/components/common/Tabs.svelte";
 
   const viewMode = writable<"calendar" | "list" | "heat">("calendar");
   const userId: string = $auth.user?._id ?? "";
   const attendanceRecords = writable<AttendanceRecord[]>([]);
   const isLoading = writable(false);
+
+  const tabs = [
+    { id: "calendar", label: "My Calendar" },
+    { id: "regularize", label: "Request Regularization" },
+    { id: "history", label: "Regularization History" },
+  ];
+  // Reactive derived store to update the active tab based on the URL
+  const activeTab = derived(
+    page,
+    ($page) => $page.url.searchParams.get("tab") || tabs[0]?.id
+  );
 
   // Function to initialize and refresh data
   async function initializeData() {
@@ -95,34 +107,37 @@
     initializeData();
   });
 </script>
+
 <IndexPageTemplate
   title="Attendance"
   subtitle="Attendance records and regularization"
-  >
-  <div class="p-6">
-  <div class="flex justify-end">
-    <ToggleView
-      bind:viewMode={$viewMode}
-      on:viewModeChange={(e) => viewMode.set(e.detail)}
-    />
-  </div>
+>
   <div class="mt-4">
-    <FiltersSearch />
+    <Tabs {tabs}>
+      {#if $activeTab === "calendar"}
+        <AttendanceDashboard
+          bind:attendanceRecords={$attendanceRecords}
+          bind:isLoading={$isLoading}
+          on:refresh={initializeData}
+          on:monthChange={handleMonthChange}
+        />
+      {:else if $activeTab === "regularize"}
+        <Regularization />
+      {:else if $activeTab === "history"}
+        <RegularizationList viewType="user" />
+      {/if}
+    </Tabs>
+    <!-- {#if $viewMode === "calendar"}
+        <AttendanceDashboard
+          bind:attendanceRecords={$attendanceRecords}
+          bind:isLoading={$isLoading}
+          on:refresh={initializeData}
+          on:monthChange={handleMonthChange}
+        />
+      {:else if $viewMode === "list"}
+        <Regularization />
+      {:else}
+        <RegularizationList viewType="user" />
+      {/if} -->
   </div>
-
-  <div class="mt-4">
-    {#if $viewMode === "calendar"}
-      <AttendanceDashboard
-        bind:attendanceRecords={$attendanceRecords}
-        bind:isLoading={$isLoading}
-        on:refresh={initializeData}
-        on:monthChange={handleMonthChange}
-      />
-    {:else if $viewMode === "list"}
-      <Regularization />
-    {:else}
-      <RegularizationList viewType="user" />
-    {/if}
-  </div>
-</div>
 </IndexPageTemplate>

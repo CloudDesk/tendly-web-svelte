@@ -88,6 +88,7 @@
   // Props
   export let selectedDates: Date[] = [];
 
+  console.log(selectedDates, "SelectedDates");
   // Component state
   let isLoading = false;
   let isSubmitting = false;
@@ -405,6 +406,7 @@
         approver: record.approver,
       })
     );
+    remarks = "";
     console.log(regularizationData, "regularizationData");
     dispatch("submit", regularizationData);
 
