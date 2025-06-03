@@ -22,18 +22,46 @@
     Clock,
     GraduationCap,
     CalendarRange,
-    Menu,
+    X,
   } from "lucide-svelte";
   import PayrollIcon from "./icon/PayrollIcon.svelte";
-  import { fly, slide } from "svelte/transition";
+  import { fly, slide, fade } from "svelte/transition";
   import { writable } from "svelte/store";
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
+  import { browser } from "$app/environment";
   export const ssr = false;
+
+  // Props for responsive behavior
+  export let isOpen = false;
+  export let isMobileView = false;
 
   const isCollapsed = writable(false);
   const isLoggingOut = writable(false);
-  const isSidebarOpen = writable(false);
+  const isMobile = writable(false);
   const dispatch = createEventDispatcher();
+
+  // Update the internal mobile state when the prop changes
+  $: isMobile.set(isMobileView);
+
+  // Check for mobile view on component mount and window resize
+  onMount(() => {
+    if (browser) {
+      const checkMobile = () => {
+        isMobile.set(window.innerWidth < 1024);
+      };
+
+      // Initial check
+      checkMobile();
+
+      // Add resize listener
+      window.addEventListener("resize", checkMobile);
+
+      // Cleanup
+      return () => {
+        window.removeEventListener("resize", checkMobile);
+      };
+    }
+  });
 
   function initializeCollapsedSections(sections: NavigationSection[]) {
     const initialState: { [key: string]: boolean } = {};
@@ -284,16 +312,50 @@
   };
 
   function toggleSidebar() {
+    // On mobile, toggle open/closed state
+    if ($isMobile) {
+      dispatch("toggleSidebar", !isOpen);
+      return;
+    }
+
+    // On desktop, toggle collapsed/expanded state
     isCollapsed.update((v) => {
       const newValue = !v;
       dispatch("toggleSidebar", newValue);
       return newValue;
     });
-    isSidebarOpen.update((v2) => {
-      const newValuev2 = !v2;
-      dispatch("toggleSidebar2", newValuev2);
-      return newValuev2;
-    });
+  }
+
+  function closeSidebar() {
+    if ($isMobile) {
+      dispatch("toggleSidebar", false);
+    }
+  }
+
+  // Handle navigation item click - close sidebar on mobile
+  function handleNavItemClick() {
+    if ($isMobile) {
+      closeSidebar();
+    }
+  }
+
+  // Handle clicks outside the sidebar to close it on mobile
+  function handleClickOutside(node: HTMLElement) {
+    if (!browser) return {};
+
+    const handleClick = (event: MouseEvent) => {
+      if ($isMobile && isOpen && node && !node.contains(event.target as Node)) {
+        closeSidebar();
+      }
+    };
+
+    document.addEventListener("click", handleClick, true);
+
+    return {
+      destroy() {
+        document.removeEventListener("click", handleClick, true);
+      },
+    };
   }
 
   async function handleLogout() {
@@ -304,20 +366,26 @@
   }
 </script>
 
-<!-- Mobile menu trigger -->
-<button
-  class="fixed top-4 left-4 z-50 p-2 bg-white rounded-md shadow-md lg:hidden"
-  on:click={toggleSidebar}
-  aria-label="Toggle Sidebar"
->
-  <Menu size={20} />
-</button>
+<!-- Sidebar backdrop for mobile - only visible when sidebar is open on mobile -->
+{#if $isMobile && isOpen}
+  <div
+    class="fixed inset-0 bg-black/30 z-40"
+    on:click|stopPropagation={closeSidebar}
+    transition:fade={{ duration: 200 }}
+  ></div>
+{/if}
 
 <aside
   class="fixed left-0 top-0 h-screen bg-gradient-to-b from-[#F8FAFF] to-[#EDF3FF]
-  border-r border-surface-border shadow-sm transition-all duration-300 ease-in-out z-30 flex flex-col
-  {$isCollapsed ? 'w-20' : 'w-64'} 
-  {$isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}"
+border-r border-surface-border shadow-sm transition-all duration-300 ease-in-out flex flex-col
+{$isCollapsed && !$isMobile ? 'w-20' : 'w-64'} 
+{$isMobile ? 'z-50' : 'z-30'}
+{$isMobile
+    ? isOpen
+      ? 'translate-x-0'
+      : '-translate-x-full'
+    : 'translate-x-0'}"
+  use:handleClickOutside
 >
   <!-- Header -->
   <div
@@ -344,11 +412,17 @@
     </div>
     <button
       class="w-8 h-8 flex items-center justify-center text-text-muted hover:text-primary
-      rounded-lg hover:bg-white/80 transition-colors"
+    rounded-lg hover:bg-white/80 transition-colors"
       on:click={toggleSidebar}
-      aria-label={$isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+      aria-label={$isMobile
+        ? "Close sidebar"
+        : $isCollapsed
+          ? "Expand sidebar"
+          : "Collapse sidebar"}
     >
-      {#if $isCollapsed}
+      {#if $isMobile}
+        <X size={18} />
+      {:else if $isCollapsed}
         <ChevronRight size={18} />
       {:else}
         <ChevronLeft size={18} />
@@ -423,9 +497,10 @@
                     class="flex items-center gap-3 px-4 py-2 text-sm {isActive
                       ? 'bg-white/70 text-primary font-medium shadow-sm'
                       : 'text-text-muted hover:text-text hover:bg-white/50'} transition-all"
+                    on:click={handleNavItemClick}
                   >
                     <svelte:component this={item.icon} size={20} />
-                    {#if !$isCollapsed}
+                    {#if !$isCollapsed || $isMobile}
                       <span>{item.label}</span>
                     {/if}
                   </a>
@@ -444,6 +519,7 @@
                         class="block py-2 text-sm {isChildActive
                           ? 'text-primary font-medium'
                           : 'text-text-muted hover:text-text'} transition-colors"
+                        on:click={handleNavItemClick}
                       >
                         {child.label}
                       </a>
@@ -537,5 +613,35 @@
   /* Add box-shadow to sidebar for subtle elevation */
   aside {
     box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Mobile sidebar has stronger elevation */
+  @media (max-width: 1023px) {
+    aside {
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  /* Fix for dropdowns and other components */
+  :global(.dropdown-menu),
+  :global(.modal),
+  :global(.dialog),
+  :global(.popup) {
+    z-index: 60 !important; /* Higher than sidebar on mobile */
+  }
+
+  /* Mobile sidebar has stronger elevation */
+  @media (max-width: 1023px) {
+    aside {
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  /* Fix for dropdowns and other components */
+  :global(.dropdown-menu),
+  :global(.modal),
+  :global(.dialog),
+  :global(.popup) {
+    z-index: 60 !important; /* Higher than sidebar on mobile */
   }
 </style>

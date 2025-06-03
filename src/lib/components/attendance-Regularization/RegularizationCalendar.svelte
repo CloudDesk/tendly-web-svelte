@@ -87,8 +87,8 @@
     // Using local date methods to avoid timezone issues completely
     // Ensure we're working with the actual calendar date displayed to the user
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     const result = `${year}-${month}-${day}`;
     console.log(`Converting date object to string: ${date} → ${result}`);
     return result;
@@ -115,41 +115,48 @@
   function getLeaveRecord(date: Date): LeaveRecord | null {
     // Get date string in YYYY-MM-DD format using our local method
     const dateStr = getDateString(date);
-    
-    // Debug logging
-    console.log(`[LEAVE CHECK] Checking if date ${dateStr} has leave records among ${leaveRecords.length} records`);
-    
-    // Compare using direct string equality to avoid any timezone issues
-    const result = leaveRecords.find((leave) => {
-      // Only consider leaves with Pending or Approved status
-      if (leave.status !== "Pending" && leave.status !== "Approved") {
-        return false;
-      }
 
-      // Get start and end date strings directly from the leave record
-      const startDateStr = leave.startDate;
-      const endDateStr = leave.endDate;
-      
-      // Check if the dateStr is exactly equal to any day in the range
-      // Convert everything to date objects to iterate through each day
-      const checkDate = new Date(dateStr);
-      const startDate = new Date(startDateStr);
-      const endDate = new Date(endDateStr);
-      
-      // Reset hours to avoid timezone issues
-      checkDate.setHours(0, 0, 0, 0);
-      startDate.setHours(0, 0, 0, 0);
-      endDate.setHours(0, 0, 0, 0);
-      
-      // Check if checkDate is between startDate and endDate (inclusive)
-      const isInRange = checkDate >= startDate && checkDate <= endDate;
-      
-      console.log(`[LEAVE CHECK DETAIL] ${dateStr} comparing to leave from ${startDateStr} to ${endDateStr}: ${isInRange ? 'MATCH' : 'NO MATCH'}`);
-      
-      return isInRange;
-    }) || null;
-    
-    console.log(`[LEAVE RESULT] Date ${dateStr}: ${result ? 'HAS LEAVE' : 'NO LEAVE'}`);
+    // Debug logging
+    console.log(
+      `[LEAVE CHECK] Checking if date ${dateStr} has leave records among ${leaveRecords.length} records`
+    );
+
+    // Compare using direct string equality to avoid any timezone issues
+    const result =
+      leaveRecords.find((leave) => {
+        // Only consider leaves with Pending or Approved status
+        if (leave.status !== "Pending" && leave.status !== "Approved") {
+          return false;
+        }
+
+        // Get start and end date strings directly from the leave record
+        const startDateStr = leave.startDate;
+        const endDateStr = leave.endDate;
+
+        // Check if the dateStr is exactly equal to any day in the range
+        // Convert everything to date objects to iterate through each day
+        const checkDate = new Date(dateStr);
+        const startDate = new Date(startDateStr);
+        const endDate = new Date(endDateStr);
+
+        // Reset hours to avoid timezone issues
+        checkDate.setHours(0, 0, 0, 0);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(0, 0, 0, 0);
+
+        // Check if checkDate is between startDate and endDate (inclusive)
+        const isInRange = checkDate >= startDate && checkDate <= endDate;
+
+        console.log(
+          `[LEAVE CHECK DETAIL] ${dateStr} comparing to leave from ${startDateStr} to ${endDateStr}: ${isInRange ? "MATCH" : "NO MATCH"}`
+        );
+
+        return isInRange;
+      }) || null;
+
+    console.log(
+      `[LEAVE RESULT] Date ${dateStr}: ${result ? "HAS LEAVE" : "NO LEAVE"}`
+    );
     return result;
   }
 
@@ -157,15 +164,17 @@
   function hasBlockingLeaveStatus(date: Date): boolean {
     const dateStr = getDateString(date);
     console.log(`[BLOCKING CHECK] Testing if ${dateStr} is blocked by leave`);
-    
+
     const leaveRecord = getLeaveRecord(date);
     const result = leaveRecord
       ? leaveRecord.status === "Pending" || leaveRecord.status === "Approved"
       : false;
-    
+
     // Always log the result for debugging
-    console.log(`[BLOCKING RESULT] Date ${dateStr} is ${result ? 'BLOCKED' : 'NOT BLOCKED'} by leave ${leaveRecord ? `(${leaveRecord.status})` : ''}`);
-    
+    console.log(
+      `[BLOCKING RESULT] Date ${dateStr} is ${result ? "BLOCKED" : "NOT BLOCKED"} by leave ${leaveRecord ? `(${leaveRecord.status})` : ""}`
+    );
+
     return result;
   }
 
@@ -181,8 +190,10 @@
     const isRegBlocked = hasBlockingStatus(date);
     const isLeaveBlocked = hasBlockingLeaveStatus(date);
     const result = isRegBlocked || isLeaveBlocked;
-    
-    console.log(`[FINAL BLOCK CHECK] Date ${dateStr}: Reg=${isRegBlocked}, Leave=${isLeaveBlocked}, Final=${result}`);
+
+    console.log(
+      `[FINAL BLOCK CHECK] Date ${dateStr}: Reg=${isRegBlocked}, Leave=${isLeaveBlocked}, Final=${result}`
+    );
     return result;
   }
 
@@ -572,11 +583,11 @@
             class:hover-effect={selectable && !selected && !hasBlocking}
             class:has-regularization={!!regularizationRecord}
             class:has-leave={!!leaveRecord}
-            title={leaveRecord 
-              ? `Leave: ${leaveRecord.status} - ${leaveRecord.leaveType || ''} - ${leaveRecord.reason || 'No reason provided'}`
+            title={leaveRecord
+              ? `Leave: ${leaveRecord.status} - ${leaveRecord.leaveType || ""} - ${leaveRecord.reason || "No reason provided"}`
               : regularizationRecord
-              ? `Regularization: ${regularizationRecord.status} - ${regularizationRecord.reason}`
-              : ""}
+                ? `Regularization: ${regularizationRecord.status} - ${regularizationRecord.reason}`
+                : ""}
             on:click={() => toggleDateSelection(day)}
           >
             <div class="day-number text-sm font-medium">{day.getDate()}</div>
@@ -625,10 +636,8 @@
     </div>
   </div>
 
-  <!-- Regularization Summary -->
-  {#if regularizationSummary.total > 0 || leaveSummary.total > 0}
+  <!-- {#if regularizationSummary.total > 0 || leaveSummary.total > 0}
     <div class="summary-section">
-      <!-- Regularization Summary -->
       {#if regularizationSummary.total > 0}
         <div class="regularization-summary p-3 bg-blue-50 rounded border mb-2">
           <p class="text-sm font-medium mb-2 text-blue-800">
@@ -663,7 +672,6 @@
         </div>
       {/if}
 
-      <!-- Leave Summary -->
       {#if leaveSummary.total > 0}
         <div class="leave-summary p-3 bg-orange-50 rounded border">
           <p class="text-sm font-medium mb-2 text-orange-800">
@@ -686,7 +694,7 @@
         </div>
       {/if}
     </div>
-  {/if}
+  {/if} -->
 
   <!-- Selected dates section -->
   {#if selectedDates.length > 0}
@@ -833,12 +841,12 @@
   .calendar-day.has-leave .day-number {
     margin-bottom: 0;
   }
-  
+
   /* Ensure leave-related days have a subtle border */
   .calendar-day.has-leave:not(.selected) {
     border: 1px solid #f97316;
   }
-  
+
   .calendar-day.has-leave:hover:not(.selected):not(.blocked) {
     background-color: #fff7ed;
   }
@@ -848,14 +856,14 @@
     top: 2px;
     right: 2px;
   }
-  
+
   .leave-indicator {
     position: absolute;
     top: 2px;
     left: 2px;
     z-index: 2;
   }
-  
+
   .leave-badge {
     background-color: #ffedd5;
     color: #c2410c;

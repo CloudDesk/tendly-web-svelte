@@ -1,5 +1,6 @@
 <script lang="ts">
   import "../app.css";
+  import "../fix-titles.css";
   import Sidebar from "$lib/components/common/Sidebar.svelte";
   import { page } from "$app/stores";
   import Toast from "$lib/components/common/Toast.svelte";
@@ -9,24 +10,19 @@
   import FcmToast from "$lib/components/common/FCMToast.svelte";
   import { auth } from "$lib/stores/auth";
   import { getFCMToken } from "$lib/firebase/getFCMToken";
-    import { employeesApi } from "$lib/services/api";
+  import { employeesApi } from "$lib/services/api";
+  import { Menu, ChevronLeft } from "lucide-svelte";
+  import logo from "$lib/assets/Tendly_logo_Full.png";
 
   export let data;
   $: ({ isAuthenticated } = data);
   $: isPublicPage = ["/login"].includes($page.url.pathname);
 
-  const userId = $auth.user?._id || "";
   export const ssr = false;
-  let notifications: { id: string; title: string; body: string }[] = [];
-
-  // src/lib/service-worker.ts
-
   // Initialize FCM when user is authenticated
   $: if (browser && isAuthenticated && $auth.user?._id) {
     initializeFCM($auth.user._id);
   }
-
-
 
   onMount(() => {
     if (browser) {
@@ -48,34 +44,146 @@
     }
   }
 
+  // State for sidebar - use localStorage to make it globally accessible
   const isSidebarOpen = writable(false);
+  const isSidebarCollapsed = writable(false);
+
+  // Handle viewport size
+  const isMobile = writable(false);
+
+  onMount(() => {
+    if (browser) {
+      // Check if mobile on load
+      checkMobileView();
+
+      // Listen for window resize
+      window.addEventListener("resize", checkMobileView);
+
+      // Set up localStorage sync for sidebar state
+      isSidebarOpen.subscribe((value) => {
+        localStorage.setItem("sidebarOpen", String(value));
+        // Dispatch custom event for other components
+        window.dispatchEvent(
+          new StorageEvent("storage", {
+            key: "sidebarOpen",
+            newValue: String(value),
+          })
+        );
+      });
+
+      return () => {
+        window.removeEventListener("resize", checkMobileView);
+      };
+    }
+  });
+
+  function checkMobileView() {
+    const isSmallScreen = window.innerWidth < 1024;
+    isMobile.set(isSmallScreen);
+
+    // On desktop, sidebar should be visible by default
+    if (!isSmallScreen) {
+      isSidebarOpen.set(true);
+    } else {
+      // On mobile, sidebar should be hidden by default
+      isSidebarOpen.set(false);
+
+      // Reset any scroll locks
+      document.body.style.overflow = "";
+    }
+  }
 
   function handleSidebarToggle(event: CustomEvent) {
-    isSidebarOpen.set(event.detail);
+    if ($isMobile) {
+      // On mobile, this toggles visibility
+      isSidebarOpen.set(event.detail);
+    } else {
+      // On desktop, this toggles collapsed state
+      isSidebarCollapsed.set(event.detail);
+    }
+  }
+
+  function toggleMobileSidebar() {
+    isSidebarOpen.update((v) => {
+      const newValue = !v;
+      // When opening sidebar on mobile, prevent body scroll
+      if (newValue && $isMobile) {
+        document.body.style.overflow = "hidden";
+      } else {
+        document.body.style.overflow = "";
+      }
+      return newValue;
+    });
   }
 </script>
 
-<div class="min-h-screen bg-surface-muted" data-theme="tendlyPro">
+<!-- UPDATED: Added overflow-x-hidden and max-width constraints -->
+<div class="min-h-screen bg-surface-muted overflow-x-hidden max-w-full">
   {#if !isPublicPage}
-    <div class="flex">
-      {#if isAuthenticated}
-        <Sidebar on:toggleSidebar={handleSidebarToggle} />
-      {/if}
+    <!-- Mobile top navigation bar (only visible on small screens) -->
+    {#if isAuthenticated && $isMobile}
       <div
-        class="flex-1 transition-all duration-300 ease-in-out {isAuthenticated
-          ? $isSidebarOpen
-            ? 'ml-20 lg:ml-20' /* Sidebar open */
-            : 'ml-0 lg:ml-64' /* Sidebar closed */
-          : ''}"
+        class="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-50 flex items-center
+        justify-between px-4 lg:hidden overflow-hidden max-w-full"
       >
-        <div class="p-4 md:p-6 lg:p-8">
+        <div class="flex items-center min-w-0 flex-1">
+          {#if $isSidebarOpen}
+            <button
+              class="p-2 mr-2 rounded-md hover:bg-gray-100 flex-shrink-0"
+              on:click={toggleMobileSidebar}
+              aria-label="Close Sidebar"
+            >
+              <ChevronLeft size={20} />
+            </button>
+          {/if}
+          <div class="logo-container flex-shrink-0">
+            <img src={logo} alt="Tendly" class="max-w-full h-auto" />
+          </div>
+        </div>
+        {#if !$isSidebarOpen}
+          <button
+            class="p-2 rounded-md hover:bg-gray-100 flex-shrink-0"
+            on:click={toggleMobileSidebar}
+            aria-label="Toggle Sidebar"
+          >
+            <Menu size={20} />
+          </button>
+        {/if}
+      </div>
+    {/if}
+
+    <!-- UPDATED: Added overflow-x-hidden and max-width constraints -->
+    <div class="flex overflow-x-hidden max-w-full">
+      {#if isAuthenticated}
+        <Sidebar
+          isOpen={$isSidebarOpen}
+          isMobileView={$isMobile}
+          on:toggleSidebar={handleSidebarToggle}
+        />
+      {/if}
+      <!-- UPDATED: Added overflow-x-hidden and improved responsive classes -->
+      <div
+        class="flex-1 transition-all duration-300 ease-in-out overflow-x-hidden max-w-full {isAuthenticated
+          ? $isMobile
+            ? 'ml-0 pt-16' /* Top padding for mobile nav bar */
+            : $isSidebarCollapsed
+              ? 'ml-20'
+              : 'ml-64' /* Desktop margins */
+          : ''}"
+        class:content-when-sidebar-open={$isMobile && $isSidebarOpen}
+      >
+        <!-- UPDATED: Added responsive padding and overflow constraints -->
+        <div class="p-4 md:p-6 lg:p-8 overflow-x-hidden max-w-full">
           <slot />
           <Toast />
         </div>
       </div>
     </div>
   {:else}
-    <slot />
+    <!-- UPDATED: Added overflow constraints for public pages -->
+    <div class="overflow-x-hidden max-w-full">
+      <slot />
+    </div>
   {/if}
   {#if isAuthenticated}
     <FcmToast />
@@ -86,9 +194,66 @@
   :global(body) {
     font-family: Inter, system-ui, sans-serif;
     color: #111827;
+    overflow-x: hidden; /* Prevent horizontal scrolling when sidebar is open */
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  :global(html) {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
   }
 
   :global(.bg-surface-muted) {
     background-color: #f6f7fb;
+  }
+
+  /* Mobile navbar styles */
+  @media (max-width: 1023px) {
+    .pt-16 {
+      padding-top: 4rem; /* 64px to match the height of the top navbar */
+    }
+
+    .content-when-sidebar-open {
+      opacity: 0.8;
+      pointer-events: none;
+      max-height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Logo container styles - UPDATED with better responsive handling */
+    .logo-container {
+      max-width: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      overflow: hidden;
+    }
+
+    .logo-container img {
+      width: 100%;
+      height: auto;
+      max-width: 100%;
+      object-fit: contain;
+    }
+  }
+
+  /* Add custom overlay when sidebar is open on mobile */
+  :global(body.sidebar-open) {
+    overflow: hidden;
+  }
+
+  /* UPDATED: Additional mobile-specific fixes */
+  @media (max-width: 767px) {
+    .logo-container {
+      max-width: 120px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .logo-container {
+      max-width: 100px;
+    }
   }
 </style>

@@ -150,4 +150,170 @@
     @apply bg-gray-200 text-gray-800;
   }
   
+
+/* 1. Global body and html fixes */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+}
+
+/* 2. Layout container fixes */
+.min-h-screen {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+}
+
+/* 3. Page wrapper improvements */
+.page-wrapper {
+ overflow-x: hidden;
+  max-width: 100vw;
+}
+
+.page-wrapper.mobile-adjusted {
+
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* 4. Mobile sidebar open state fixes */
+.mobile-sidebar-open {
+  overflow-x: hidden;
+  max-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+}
+
+@media (max-width: 1023px) {
+  .mobile-sidebar-open {
+    transform: none; /* Remove the translateX that might cause overflow */
+    opacity: 0.9;
+    pointer-events: none;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+  }
+  
+  /* Ensure content doesn't exceed viewport width */
+  .content-container {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  
+  /* Fix header responsiveness */
+  .page-header {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  
+  /* Ensure buttons and elements don't overflow */
+  .header-right {
+    flex-wrap: wrap;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Fix potential table overflow */
+  .table {
+    overflow-x: auto;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Fix sidebar positioning */
+  aside {
+    max-width: 16rem; /* 64 * 0.25rem = 16rem */
+    width: 16rem;
+  }
+}
+
+/* Fix title and subtitle visibility on all screen sizes */
+@media (min-width: 1024px) {
+  .page-header {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  .header-left, 
+  .title-section, 
+  .title-content {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 5 !important;
+  }
+  
+  .title-section h1,
+  .title-content h1,
+  .title-section p,
+  .title-content p {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+
+/* 5. Additional utility fixes */
+.w-full {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* 6. Flex container fixes */
+.flex {
+  min-width: 0; /* Allows flex items to shrink below their content size */
+}
+
+/* Fix for title sections in templates */
+#index-page-template .title-section,
+#detail-page-template .title-section,
+#index-page-template .title-section h1,
+#detail-page-template .title-content h1,
+#index-page-template .title-section p,
+#detail-page-template .title-content p {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* 7. Text truncation for long content */
+.truncate-mobile {
+  @apply truncate;
+}
+
+@media (max-width: 640px) {
+  .truncate-mobile {
+    max-width: calc(100vw - 8rem); /* Account for padding and margins */
+  }
+}
+
+/* 8. Form and input fixes */
+@media (max-width: 1023px) {
+  .form-input,
+  .input {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Button responsive fixes */
+  .btn {
+    white-space: nowrap;
+    min-width: 0;
+  }
+  
+  /* Card responsive fixes */
+  .card {
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
 } 

@@ -14,7 +14,7 @@
 
   let today = new Date();
   let year = today.getFullYear();
-  let month = getMonthFormats(today.getMonth() + 1);
+  let month = getMonthFormats(today.getMonth());
   let reviewPayrollData: any;
 
   let payrollInitiateResponse: any = null; // New variable for initiation response
@@ -67,7 +67,7 @@
   const getPayrolls = async () => {
     try {
       let result: any = await payrollApi.payrollApprovalSummary(
-        today.getMonth() + 1,
+        today.getMonth(),
         year
       );
       console.log(result, "result getpayrolls");

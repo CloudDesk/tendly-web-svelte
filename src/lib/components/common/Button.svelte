@@ -49,11 +49,11 @@
   // Width classes
   const widthClass = fullWidth ? "w-full" : "";
 
-  // Calculate the final class string
+  // Calculate the final class string, including passed class prop
   $: classes = `${baseClasses} ${variantClasses[variant]} ${
     iconOnly ? iconOnlySizeClasses[size] : sizeClasses[size]
-  } ${widthClass}`;
-
+  } ${widthClass} ${$$props.class || ""}`.trim();
+  console.log(classes, "classes", $$props.class);
   // Function to handle click with additional logic if needed
   function handleClick(event: MouseEvent) {
     if (!disabled) {
