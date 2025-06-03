@@ -214,7 +214,8 @@
   /* Responsive adjustments */
   @media (max-width: 640px) {
     .content-container {
-      margin: 0 -0.5rem;
+      border-radius: 0.5rem;
+      /* margin: 0 -0.5rem; */
     }
 
     .info-banner {

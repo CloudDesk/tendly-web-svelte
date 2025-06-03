@@ -1,6 +1,5 @@
 <script lang="ts">
   import "../app.css";
-  import "../fix-titles.css";
   import Sidebar from "$lib/components/common/Sidebar.svelte";
   import { page } from "$app/stores";
   import Toast from "$lib/components/common/Toast.svelte";

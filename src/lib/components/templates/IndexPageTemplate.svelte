@@ -67,7 +67,7 @@
 
     <!-- Action Buttons - Single Row with Flex -->
     {#if showFilter || showView || showExport || showAdd}
-      <div class="flex items-center gap-2 overflow-x-auto pb-1">
+      <div class="flex items-center gap-2 overflow-x-auto pb-1 ps-2">
         <!-- Left-aligned actions (Filter, View) -->
         <div class="flex items-center gap-2 flex-shrink-0">
           {#if showFilter}

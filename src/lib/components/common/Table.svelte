@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
   import type { PaginationMeta } from "$lib/types";
-  // import "../../../Mobileview.css"; // Import responsive CSS for mobile view
 
   type Column<T> = {
     key: keyof T;
@@ -25,8 +24,19 @@
   let sortDirection: "asc" | "desc" = "asc";
   let currentPage = 1;
   let itemsPerPage = 10;
+  let isMobile = false;
 
   const dispatch = createEventDispatcher();
+
+  onMount(() => {
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  });
+
+  function checkMobile() {
+    isMobile = window.innerWidth < 640;
+  }
 
   $: if (serverSide && meta) {
     currentPage = meta.page;
@@ -84,11 +94,12 @@
       searchQuery = query;
     }
   }
-  console.log(searchQuery, "searchquery");
+
   function handlePageChange(page: number) {
-    console.log(serverSide, page, "handlePageChange");
     if (serverSide) {
       dispatch("page", { page });
+    } else {
+      currentPage = page;
     }
   }
 
@@ -107,6 +118,26 @@
       event.stopPropagation();
       dispatch("action", { action, id });
     }
+  }
+  
+  // Determine if a column is an action column
+  function isActionColumn(column: Column<any>) {
+    return column.key === '_id' || 
+           String(column.key).toLowerCase().includes('action');
+  }
+
+  // Get unique key for item in list
+  function getItemKey(item: any, index: number) {
+    if (item._id) return item._id;
+    if (item.id) return item.id;
+    return index;
+  }
+  
+  // Get display name for item (for accessibility)
+  function getItemName(item: any, index: number): string {
+    if (item.name) return item.name;
+    if (item.title) return item.title;
+    return `Item ${index + 1}`;
   }
 </script>
 
@@ -135,46 +166,92 @@
   {:else if sortedData.length === 0}
     <div class="empty">No data available</div>
   {:else}
-    <table>
-      <thead>
-        <tr>
-          {#each columns as column}
-            <th
-              class:sortable={column.sortable}
-              class:sorted={sortKey === column.key}
-              class:asc={sortKey === column.key && sortDirection === "asc"}
-              class:desc={sortKey === column.key && sortDirection === "desc"}
-              on:click={() => handleSort(column)}
-            >
-              <div class="th-content">
-                {column.label}
-                {#if column.sortable}
-                  <div class="sort-indicator">
-                    <i class="sort-arrow up"></i>
-                    <i class="sort-arrow down"></i>
-                  </div>
-                {/if}
-              </div>
-            </th>
-          {/each}
-        </tr>
-      </thead>
-      <tbody>
-        {#each sortedData as item}
-          <tr on:click={() => handleRowClick(item)} class="clickable">
+    <!-- Desktop Table View -->
+    <div class="hidden sm:block">
+      <table>
+        <thead>
+          <tr>
             {#each columns as column}
-              <td data-label={column.label} on:click={handleActionClick}>
-                {#if column.render}
-                  {@html column.render(item)}
-                {:else}
-                  {item[column.key]}
-                {/if}
-              </td>
+              <th
+                class:sortable={column.sortable}
+                class:sorted={sortKey === column.key}
+                class:asc={sortKey === column.key && sortDirection === "asc"}
+                class:desc={sortKey === column.key && sortDirection === "desc"}
+                on:click={() => handleSort(column)}
+              >
+                <div class="th-content">
+                  {column.label}
+                  {#if column.sortable}
+                    <div class="sort-indicator">
+                      <i class="sort-arrow up"></i>
+                      <i class="sort-arrow down"></i>
+                    </div>
+                  {/if}
+                </div>
+              </th>
             {/each}
           </tr>
-        {/each}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {#each sortedData as item}
+            <tr on:click={() => handleRowClick(item)} class="clickable">
+              {#each columns as column}
+                <td data-label={column.label} on:click={handleActionClick}>
+                  {#if column.render}
+                    {@html column.render(item)}
+                  {:else}
+                    {item[column.key]}
+                  {/if}
+                </td>
+              {/each}
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile Card View -->
+    <div class="sm:hidden space-y-4">
+      {#each sortedData as item, i (getItemKey(item, i))}
+        <button 
+          class="mobile-card"
+          type="button"
+          aria-label={`View details for ${getItemName(item, i)}`}
+          on:click={() => handleRowClick(item)}
+        >
+          <!-- Card Content -->
+          <div class="mobile-card-content">
+            {#each columns.filter(col => !isActionColumn(col)) as column}
+              <div class="mobile-card-row">
+                <div class="mobile-card-label">{column.label}</div>
+                <div class="mobile-card-value">
+                  {#if column.render}
+                    {@html column.render(item)}
+                  {:else}
+                    {item[column.key] ?? '—'}
+                  {/if}
+                </div>
+              </div>
+            {/each}
+          </div>
+          
+          <!-- Action buttons section -->
+          {#if columns.some(col => isActionColumn(col))}
+            <div 
+              class="mobile-card-actions" 
+              role="group"
+              aria-label="Row actions"
+            >
+              {#each columns.filter(col => isActionColumn(col)) as column}
+                {#if column.render}
+                  {@html column.render(item)}
+                {/if}
+              {/each}
+            </div>
+          {/if}
+        </button>
+      {/each}
+    </div>
 
     {#if meta}
       <div class="pagination">
@@ -205,11 +282,8 @@
 
 <style>
   .table-container {
-    /* background: white;
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    padding: 1rem; */
-    /* min-width: 100%; */
+    width: 100%;
+    overflow-x: auto;
   }
 
   .search-container {
@@ -308,6 +382,74 @@
     background: #f9fafb;
   }
 
+  /* Mobile card styles */
+  .mobile-card {
+    cursor: pointer;
+    transition: all 0.2s;
+    background-color: white;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    outline: none;
+    display: block;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    font-size: inherit;
+    padding: 0;
+  }
+
+  .mobile-card:hover, .mobile-card:focus {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-color: #d1d5db;
+  }
+
+  .mobile-card-content {
+    padding: 1rem;
+  }
+
+  .mobile-card-row {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .mobile-card-row:last-of-type {
+    border-bottom: none;
+  }
+
+  .mobile-card-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+  }
+
+  .mobile-card-value {
+    color: #1f2937;
+    word-break: break-word;
+  }
+
+  .mobile-card-value :global(.avatar),
+  .mobile-card-value :global(.role-badge),
+  .mobile-card-value :global(.status-badge) {
+    display: inline-flex;
+    margin-top: 0.25rem;
+  }
+
+  .mobile-card-actions {
+    margin-top: 0;
+    padding: 0.75rem 1rem;
+    background-color: #f9fafb;
+    border-top: 1px solid #f3f4f6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
   .loading,
   .error,
   .empty {
@@ -375,5 +517,41 @@
   .total-items {
     margin-left: 0.5rem;
     color: #9ca3af;
+  }
+
+  /* Mobile card actions styling */
+  .mobile-card-actions :global(button) {
+    transition: transform 0.15s ease;
+  }
+  
+  .mobile-card-actions :global(button:hover) {
+    transform: scale(1.1);
+  }
+
+  /* Custom styling for different types of badges in mobile view */
+  .mobile-card-value :global(.role-badge),
+  .mobile-card-value :global(.status-badge) {
+    display: inline-block;
+    margin-top: 0.25rem;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 639px) {
+    .pagination {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    .page-info {
+      order: -1;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+    
+    /* Better button layout on mobile */
+    .pagination button {
+      flex: 1;
+    }
   }
 </style>
