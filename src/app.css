@@ -261,8 +261,8 @@ html, body {
 
 /* 5. Additional utility fixes */
 .w-full {
-  width: 100% !important;
-  max-width: 100% !important;
+  width: 100% ;
+  max-width: 100% ;
 }
 
 /* 6. Flex container fixes */

@@ -8,14 +8,14 @@ export type TimesheetEntry = {
 };
 
 type TimesheetPayload = {
-  employeeId: string;
+  userId: string;
   dateUTC: Date;
   entries: TimesheetEntry[];
 };
 
 export type Timesheet = {
   _id?: number;
-  employeeId: string;
+  userId: string;
   dateUTC: string;
   entries: TimesheetEntry[];
   totalDuration?: number;
@@ -28,21 +28,21 @@ export const timesheetApi = {
       body: JSON.stringify(payload),
     });
   },
-  getbyDate: async (employeeId: string, startDate: string, endDate: string) => {
-    return fetchApi(`/timesheet?employeeId=${employeeId}&startDate=${startDate}&endDate=${endDate}`, {
+  getbyDate: async (userId: string, startDate: string, endDate: string) => {
+    return fetchApi(`/timesheet?userId=${userId}&startDate=${startDate}&endDate=${endDate}`, {
       method: 'GET',
     });
   },
-  getbyMonth: async (employeeId: string, month: number, year: number) => {
+  getbyMonth: async (userId: string, month: number, year: number) => {
     // month, year, startDate, endDate } = data;
-    return fetchApi(`/timesheet?employeeId=${employeeId}&month=${month}&year=${year}`, {
+    return fetchApi(`/timesheet?userId=${userId}&month=${month}&year=${year}`, {
       method: 'GET',
     });
   },
-  generate: async (employeeId: string, month: number, year: number) => {
+  generate: async (userId: string, month: number, year: number) => {
     return fetchApi(`/timesheet/generate`, {
       method: 'POST',
-      body: JSON.stringify({ employeeId, month, year }),
+      body: JSON.stringify({ userId, month, year }),
     })
   }
 
