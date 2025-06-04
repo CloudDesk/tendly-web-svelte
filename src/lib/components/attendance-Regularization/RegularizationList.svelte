@@ -26,6 +26,8 @@
 
   export let viewType: "user" | "manager" | "admin" = "user";
   export let isAdmin: boolean = false;
+  export let hideHeader: boolean = false;
+
   const user = $auth.user;
 
   interface ApiRegularizationRecord {
@@ -364,50 +366,52 @@
 <div
   class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100"
 >
-  <div
-    class="bg-gradient-to-r from-indigo-600 to-blue-500 px-6 py-4 text-white"
-  >
-    <div class="flex justify-between items-center">
-      <div>
-        <h3 class="text-lg font-semibold leading-6">
-          {#if viewType === "user"}
-            My Regularization History
-          {:else if viewType === "manager"}
-            Team Regularization Requests
-          {:else}
-            All Regularization Requests
-          {/if}
-        </h3>
-        <p class="mt-1 text-sm text-indigo-100">
-          {#if viewType === "user"}
-            Your attendance regularization requests
-          {:else}
-            Manage attendance regularization requests
-          {/if}
-        </p>
-      </div>
+  {#if !hideHeader}
+    <div
+      class="bg-gradient-to-r from-indigo-600 to-blue-500 px-6 py-4 text-white"
+    >
+      <div class="flex justify-between items-center">
+        <div>
+          <h3 class="text-lg font-semibold leading-6">
+            {#if viewType === "user"}
+              My Regularization History
+            {:else if viewType === "manager"}
+              Team Regularization Requests
+            {:else}
+              All Regularization Requests
+            {/if}
+          </h3>
+          <p class="mt-1 text-sm text-indigo-100">
+            {#if viewType === "user"}
+              Your attendance regularization requests
+            {:else}
+              Manage attendance regularization requests
+            {/if}
+          </p>
+        </div>
 
-      <div class="flex space-x-2">
-        <button
-          on:click={toggleFilters}
-          class="flex items-center space-x-1 bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-1.5 rounded-md text-sm transition-colors duration-200"
-        >
-          <Filter class="w-4 h-4" />
-          <span>Filter</span>
-          <ChevronDown class="w-4 h-4" />
-        </button>
+        <div class="flex space-x-2">
+          <button
+            on:click={toggleFilters}
+            class="flex items-center space-x-1 bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-1.5 rounded-md text-sm transition-colors duration-200"
+          >
+            <Filter class="w-4 h-4" />
+            <span>Filter</span>
+            <ChevronDown class="w-4 h-4" />
+          </button>
 
-        <button
-          on:click={fetchRegularizations}
-          class="flex items-center space-x-1 bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-1.5 rounded-md text-sm transition-colors duration-200"
-          disabled={isLoading}
-        >
-          <RefreshCw class="w-4 h-4 {isLoading ? 'animate-spin' : ''}" />
-          <span>Refresh</span>
-        </button>
+          <button
+            on:click={fetchRegularizations}
+            class="flex items-center space-x-1 bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-1.5 rounded-md text-sm transition-colors duration-200"
+            disabled={isLoading}
+          >
+            <RefreshCw class="w-4 h-4 {isLoading ? 'animate-spin' : ''}" />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
     </div>
-  </div>
+  {/if}
 
   {#if showFilters}
     <div
@@ -627,40 +631,40 @@
                 </div>
               </div>
 
-              {#if viewType === 'user'}
-  <div class="flex items-center">
-    <User class="w-5 h-5 mr-2 text-indigo-500" />
-    <div>
-      <div class="text-xs text-gray-500">Approver</div>
-      <div class="font-medium">{record.approver.name}</div>
-    </div>
-  </div>
-{:else if viewType === 'manager'}
-  <div class="flex items-center">
-    <User class="w-5 h-5 mr-2 text-green-500" />
-    <div>
-      <div class="text-xs text-gray-500">Applied By</div>
-      <div class="font-medium">{record.userName}</div>
-    </div>
-  </div>
-{:else if viewType === 'admin'}
-  <div class="flex flex-col gap-1">
-    <div class="flex items-center">
-      <User class="w-5 h-5 mr-2 text-green-500" />
-      <div>
-        <div class="text-xs text-gray-500">Applied By</div>
-        <div class="font-medium">{record.userName}</div>
-      </div>
-    </div>
-    <div class="flex items-center">
-      <User class="w-5 h-5 mr-2 text-indigo-500" />
-      <div>
-        <div class="text-xs text-gray-500">Approver</div>
-        <div class="font-medium">{record.approver.name}</div>
-      </div>
-    </div>
-  </div>
-{/if}
+              {#if viewType === "user"}
+                <div class="flex items-center">
+                  <User class="w-5 h-5 mr-2 text-indigo-500" />
+                  <div>
+                    <div class="text-xs text-gray-500">Approver</div>
+                    <div class="font-medium">{record.approver.name}</div>
+                  </div>
+                </div>
+              {:else if viewType === "manager"}
+                <div class="flex items-center">
+                  <User class="w-5 h-5 mr-2 text-green-500" />
+                  <div>
+                    <div class="text-xs text-gray-500">Applied By</div>
+                    <div class="font-medium">{record.userName}</div>
+                  </div>
+                </div>
+              {:else if viewType === "admin"}
+                <div class="flex flex-col gap-1">
+                  <div class="flex items-center">
+                    <User class="w-5 h-5 mr-2 text-green-500" />
+                    <div>
+                      <div class="text-xs text-gray-500">Applied By</div>
+                      <div class="font-medium">{record.userName}</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center">
+                    <User class="w-5 h-5 mr-2 text-indigo-500" />
+                    <div>
+                      <div class="text-xs text-gray-500">Approver</div>
+                      <div class="font-medium">{record.approver.name}</div>
+                    </div>
+                  </div>
+                </div>
+              {/if}
 
               <!-- <div class="flex items-center">
                 <User class="w-5 h-5 mr-2 text-indigo-500" />

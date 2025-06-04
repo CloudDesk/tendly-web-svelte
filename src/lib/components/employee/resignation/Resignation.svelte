@@ -6,7 +6,7 @@
   import { UserMinus } from "lucide-svelte";
 
   export let viewMode: "employee" | "manager" | "admin" = "employee";
-
+  export let hideHeader: boolean = false;
   $: user = $auth.user;
   console.log(user);
 
@@ -28,10 +28,13 @@
 <div
   class="bg-white rounded-lg shadow-sm overflow-hidden border p-4 border-gray-100"
 >
-  <h2 class="text-lg font-semibold text-gray-800 flex items-center">
-    <UserMinus class="inline mr-2 text-blue-600" size={18} />
-    Resignation Hub
-  </h2>
+  {#if !hideHeader}<h2
+      class="text-lg font-semibold text-gray-800 flex items-center"
+    >
+      <UserMinus class="inline mr-2 text-blue-600" size={18} />
+      Resignation Hub
+    </h2>{/if}
+
   <div class="resignation-flow">
     <!-- Role-based view rendering -->
     {#if viewMode === "employee"}
