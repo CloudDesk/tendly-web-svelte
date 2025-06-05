@@ -151,6 +151,42 @@
               {formatCurrency(taxDeclaration.initialTaxBreakdown.taxAmount)}
             </span>
           </div>
+          <!-- {#if !taxDeclaration.initialTaxBreakdown?.isRebateApplicable} -->
+          <div
+            class="flex justify-between items-center hover:bg-gray-50 p-2 rounded transition-colors"
+          >
+            <span class="text-sm text-gray-600"> Tax Rebate 87A(a) </span>
+            <span class="text-base font-medium text-red-600">
+              - {formatCurrency(
+                taxDeclaration.initialTaxBreakdown.rebateAmount
+              )}
+            </span>
+          </div>
+          <!-- {/if}
+          {#if taxDeclaration.initialTaxBreakdown?.isMarginalReliefApplicable} -->
+          <div
+            class="flex justify-between items-center hover:bg-gray-50 p-2 rounded transition-colors"
+          >
+            <span class="text-sm text-gray-600"> Tax Relief 87A(b) </span>
+            <span class="text-base font-medium text-red-600">
+              - {formatCurrency(
+                taxDeclaration.initialTaxBreakdown.marginalReliefAmount
+              )}
+            </span>
+          </div>
+          <!-- {/if} -->
+
+          <div
+            class="flex justify-between items-center hover:bg-gray-50 p-2 rounded transition-colors"
+          >
+            <span class="text-sm text-gray-600"> Net Tax after Rebate</span>
+            <span class="text-base font-medium text-gray-900">
+              {formatCurrency(
+                taxDeclaration.initialTaxBreakdown.totalTaxAmount
+              )}
+            </span>
+          </div>
+
           <div
             class="flex justify-between items-center hover:bg-gray-50 p-2 rounded transition-colors group relative"
           >
@@ -171,7 +207,9 @@
           >
             <span class="text-sm font-semibold text-gray-700">Total Tax</span>
             <span class="text-base font-bold text-gray-900">
-              {formatCurrency(taxDeclaration.calculatedTaxAmount)}
+              {formatCurrency(
+                taxDeclaration.initialTaxBreakdown.finalTaxWithCess
+              )}
             </span>
           </div>
         </div>

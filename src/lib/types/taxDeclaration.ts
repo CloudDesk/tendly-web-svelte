@@ -7,11 +7,16 @@ export interface ISlabwiseTax {
 }
 
 export interface ITaxBreakdown {
-    taxAmount: number;
+    taxAmount: number; //SBT
     slabwiseTax: ISlabwiseTax[];
     cessAmount: number;
-    totalTaxAmount: number;
+    totalTaxAmount: number; //taxAmount after the rebate/relief
     taxableIncome: number;
+    rebateAmount: number; // Added for Rebate 87A(a)
+    isRebateApplicable: boolean; // Flag for rebate eligibility
+    marginalReliefAmount: number; // Added for Marginal Relief 87A(b)
+    isMarginalReliefApplicable: boolean; // Flag for marginal relief eligibility
+    finalTaxWithCess: number; // Final tax after rebate/relief and cess
 }
 export interface IDocument {
     documentName: string;
