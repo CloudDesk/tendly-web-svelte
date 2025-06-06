@@ -26,6 +26,9 @@
   let isShowModal = false;
   const dispatch = createEventDispatcher();
 
+  // Add reactive statement for hasValidationErrors
+  $: hasValidationErrors = Object.values(editErrors).some(error => error && error.trim() !== '');
+
   $: {
     if (editMode) {
       const activeErrors = Object.values(editErrors).filter(Boolean);
@@ -277,7 +280,7 @@
     if (!sectionObj) return;
 
     // Clear previous error for this field
-    delete editErrors[key];
+    editErrors[key] = "";
 
     // Set the value first
     editValues[key] = parsedValue;
@@ -319,11 +322,15 @@
           editErrors[key] =
             `Section limit reached. Adjusted to ${formatCurrency(newValue)}`;
         }
-      }
+    }
     }
 
+    // Trigger reactive updates by reassigning the objects
+    editValues = { ...editValues };
+    editErrors = { ...editErrors };
+
     // Update the errors store
-    const activeErrors = Object.values(editErrors).filter(Boolean);
+    const activeErrors = Object.values(editErrors).filter(error => error && error.trim() !== '');
     if (activeErrors.length > 0) {
       errors.set(activeErrors);
     } else {
@@ -601,7 +608,7 @@
         <button
           class="btn flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           on:click={saveChanges}
-          disabled={Object.keys(editErrors).length > 0}
+          disabled={hasValidationErrors}
         >
           <IconSave size={16} />
           Save Changes
@@ -772,7 +779,7 @@
                               handleInputChange(section.id, subsection.id, e);
                             }}
                           />
-                          {#if editErrors[`${section.id}_${subsection.id}`]}
+                          {#if editErrors[`${section.id}_${subsection.id}`] && editErrors[`${section.id}_${subsection.id}`].trim() !== ''}
                             <span class="text-red-600 text-xs mt-1"
                               >{editErrors[
                                 `${section.id}_${subsection.id}`
