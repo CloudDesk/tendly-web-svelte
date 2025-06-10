@@ -1,7 +1,6 @@
 import { fetchApi, uploadFiles } from "./base";
 import type { ApiResponse } from "$lib/types/api";
 import type { User } from "$lib/types/user";
-import { monthsInYear } from "date-fns";
 
 export type EmployeeFilters = {
   role?: string;
@@ -10,6 +9,7 @@ export type EmployeeFilters = {
   search?: string;
   page?: number;
   limit?: number;
+  departmentId?: string;
 };
 
 export type Employee = {
@@ -23,6 +23,115 @@ export type EmployeeListResponse = {
   page: number;
   limit: number;
 };
+/*
+export const employeesApi = {
+  me: async (): Promise<ApiResponse<User>> => {
+    return await fetchApi<ApiResponse<User>>("/users/me");
+  },
+
+  list: async (filters: EmployeeFilters): Promise<ApiResponse<Employee[]>> => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined) params.append(key, String(value));
+    });
+
+    return await fetchApi(`/users?${params.toString()}`);
+  },
+
+  mysubordinates: async (filters: EmployeeFilters): Promise<ApiResponse<Employee[]>> => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined) params.append(key, String(value));
+    });
+
+    return await fetchApi(`/users?${params.toString()}`);
+  },
+
+  getById: async (id: string): Promise<ApiResponse<User>> => {
+    return await fetchApi<ApiResponse<User>>(`/users/${id}`);
+  },
+
+  create: async (employee: Omit<User, "id">): Promise<ApiResponse<User>> => {
+    return await fetchApi<ApiResponse<User>>("/users", {
+      method: "POST",
+      body: JSON.stringify(employee),
+    });
+  },
+
+  update: async (
+    id: string,
+    updates: Partial<User>
+  ): Promise<ApiResponse<User>> => {
+    return await fetchApi<ApiResponse<User>>(`/users/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    });
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    return await fetchApi<ApiResponse<void>>(`/users/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  getRoles: async (role: string): Promise<ApiResponse<User>> => {
+    return await fetchApi<ApiResponse<User>>(`/users?role/${role}`);
+  },
+  search: async (query: string): Promise<ApiResponse<User[]>> => {
+    return await fetchApi<ApiResponse<User[]>>(`/users?search=${query}`);
+  },
+  getUserByRoleDepartment: async (
+    role: string,
+    department: string
+  ): Promise<ApiResponse<User[]>> => {
+    const params = new URLSearchParams({ role, departmentId: department });
+    return await fetchApi<ApiResponse<User[]>>(
+      `/users?${params.toString()}`
+    );
+  },
+  filesUpload: async (id: string, file: File): Promise<ApiResponse<User>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return await fetchApi<ApiResponse<User>>(`/users/${id}/upload-info`, {
+      method: "POST",
+      body: formData,
+    });
+  },
+  updateGovernmentIdFile: async (id: string, formData: FormData) => {
+    console.log("formData entries:", [...formData.entries()]); // Debug: Log FormData
+    return await uploadFiles(`/users/${id}/government-ids/files`, formData);
+  },
+  updateGovernmentId: async (id: string, values: any) => {
+    return await fetchApi(`/users/${id}/government-ids`, {
+      method: "PATCH",
+      body: JSON.stringify(values),
+    });
+  },
+
+  updateAcademicId: async (id: string, values: any) => {
+    return await fetchApi(`/users/${id}/academic-details`, {
+      method: "PATCH",
+      body: JSON.stringify(values),
+    });
+  },
+  updateExperienceDetails: async (id: string, values: any) => {
+    return await fetchApi(`/users/${id}/experience-details`, {
+      method: "PATCH",
+      body: JSON.stringify(values),
+    });
+  },
+
+  fcmToken: async (id: string, fcmToken: string) => {
+    return await fetchApi(`/users/${id}/fcm-token`, {
+      method: "PATCH",
+      body: JSON.stringify({ fcmToken }),
+    });
+  },
+
+  // /users/:id/government-ids
+};
+*/
 
 export const employeesApi = {
   me: async (): Promise<ApiResponse<User>> => {
@@ -38,7 +147,7 @@ export const employeesApi = {
     return await fetchApi(`/users?${params.toString()}`);
   },
 
-  mysubordinates: async(filters:EmployeeFilters):Promise<ApiResponse<Employee[]>>=>{
+  mysubordinates: async (filters: EmployeeFilters): Promise<ApiResponse<Employee[]>> => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined) params.append(key, String(value));
@@ -126,7 +235,8 @@ export const employeesApi = {
       method: "PATCH",
       body: JSON.stringify({ fcmToken }),
     });
-  },  
+  },
 
   // /users/:id/government-ids
 };
+
