@@ -12,6 +12,8 @@
   export let month: { full: string; short: string; numeric: string };
   export let isPayrollApproved: boolean;
   export let isPayslipGenerated: boolean;
+  export let isGenerating: boolean;
+  export let isSending: boolean;
   export let payslips: {
     employeeId: string;
     employeeName: string;
@@ -24,8 +26,6 @@
   console.log(isPayrollApproved, "isPayrollApproved");
   console.log(isPayslipGenerated, "isPayslipGenerated");
   // State management
-  let isGenerating = writable(false);
-  let isSending = writable(false);
   // let isPayslipGenerated = writable(false);
   let showSendOptionsModal = writable(false);
   let selectedEmployees = writable<string[]>([]);
@@ -120,20 +120,13 @@
 
   // Button state logic
   $: generateButtonDisabled =
-    !isPayrollApproved || isPayslipGenerated || $isGenerating || $isSending;
+    !isPayrollApproved || isPayslipGenerated || isGenerating || isSending;
   $: sendButtonDisabled =
-    !isPayrollApproved || !isPayslipGenerated || $isSending || $isGenerating;
+    !isPayrollApproved || !isPayslipGenerated || isSending || isGenerating;
 
   // Generate Payslips
   const generatePayslips = async () => {
-    isGenerating.set(true);
-    try {
-      dispatch("payslip-generated");
-    } catch (error) {
-      console.error("Payslip generation failed", error);
-    } finally {
-      isGenerating.set(false);
-    }
+    dispatch("payslip-generated");
   };
 
   // Send Payslips
@@ -142,20 +135,15 @@
   };
 
   const sendToAllEmployees = async () => {
-    isSending.set(true);
+
     const payload = {
       month,
       year,
       recipients: payslips.map((p) => p.employeeId),
     };
-    try {
-      dispatch("payslip-sent", payload);
-      showSendOptionsModal.set(false);
-    } catch (error) {
-      console.error("Sending payslips failed", error);
-    } finally {
-      isSending.set(false);
-    }
+    dispatch("payslip-sent", payload);
+    showSendOptionsModal.set(false);
+
   };
 
   const sendToSelectedEmployees = async () => {
@@ -164,22 +152,15 @@
       alert("Please select employees to send payslips");
       return;
     }
-    isSending.set(true);
     const payload = {
       month,
       year,
       recipients: $selectedEmployees,
     };
-
-    try {
       dispatch("payslip-sent", payload);
       selectedEmployees.set([]);
       showSendOptionsModal.set(false);
-    } catch (error) {
-      console.error("Sending selected payslips failed", error);
-    } finally {
-      isSending.set(false);
-    }
+   
   };
 
   const toggleEmployeeSelection = (employeeId: string) => {
@@ -201,7 +182,7 @@
       on:click={generatePayslips}
       disabled={generateButtonDisabled}
     >
-      {#if $isGenerating}
+      {#if isGenerating}
         <LoaderNew />
       {:else}
         <div class="action-icon">
@@ -220,7 +201,7 @@
       on:click={openSendOptionsModal}
       disabled={sendButtonDisabled}
     >
-      {#if $isSending}
+      {#if isSending}
         <LoaderNew />
       {:else}
         <div class="action-icon">
@@ -256,9 +237,9 @@
         <button
           class="send-option"
           on:click={sendToAllEmployees}
-          disabled={$isSending}
+          disabled={isSending}
         >
-          {#if $isSending}
+          {#if isSending}
             <LoaderNew />
           {:else}
             <Users class="mr-2" />
@@ -279,7 +260,7 @@
                   type="checkbox"
                   checked={$selectedEmployees.includes(employee.id)}
                   on:change={() => toggleEmployeeSelection(employee.id)}
-                  disabled={$isSending}
+                  disabled={isSending}
                 />
                 <span>{employee.name}</span>
               </label>
@@ -289,9 +270,9 @@
           <button
             class="send-selected-btn"
             on:click={sendToSelectedEmployees}
-            disabled={$isSending || $selectedEmployees.length === 0}
+            disabled={isSending || $selectedEmployees.length === 0}
           >
-            {#if $isSending}
+            {#if isSending}
               <LoaderNew />
             {:else}
               <UserCheck class="mr-2" />

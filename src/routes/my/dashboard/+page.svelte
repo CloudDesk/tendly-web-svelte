@@ -1,8 +1,7 @@
 <script lang="ts">
   import SwipesTracking from "$lib/components/attendance/SwipesTracking.svelte";
   import Resignation from "$lib/components/employee/resignation/Resignation.svelte";
-  import { BellRing, Gauge } from "lucide-svelte";
-  import { onMount } from "svelte";
+  import { BellRing} from "lucide-svelte";
   import { auth } from "$lib/stores/auth";
   import UpcomingHolidays from "$lib/components/dashboard/UpcomingHolidays.svelte";
   import PayslipSummary from "$lib/components/dashboard/PayslipSummary.svelte";
@@ -37,7 +36,7 @@
   title="My Dashboard"
   subtitle="Welcome, {user?.name}!"
   >
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div class=" p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <!-- Attendance Swipes (Existing Component) -->
     <div
       class="col-span-1 md:col-span-2 bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100"

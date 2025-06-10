@@ -1,3 +1,4 @@
+
 <script lang="ts">
   import { toast } from "$lib/components/common/stores/toast.store";
   import Tabs from "$lib/components/common/Tabs.svelte";
@@ -15,17 +16,17 @@
   let today = new Date();
   let year = today.getFullYear();
   let month = getMonthFormats(today.getMonth());
-  let reviewPayrollData: any;
+  let reviewPayrollData: any = null;
 
-  let payrollInitiateResponse: any = null; // New variable for initiation response
-  let showModal = false; // Control modal visibility
+  let payrollInitiateResponse: any = null;
+  let showModal = false;
   let showConfirmDialog = false;
   let needsAdminApproval: boolean = false;
   let canApprove: boolean = false;
   let canInitiate: boolean = false;
   let isLoading = false;
   let isPayslipGenerated: boolean = false;
-  let isPayrollApproved: boolean = false; // New variable to track if payroll is approved
+  let isPayrollApproved: boolean = false;
   let payslips: {
     employeeId: string;
     employeeName: string;
@@ -37,10 +38,20 @@
   }[] = [];
   let startDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     .toISOString()
-    .split("T")[0]; // Default to the first day of the current month
-  let endDate = new Date().toISOString().split("T")[0]; // Default to today
+    .split("T")[0];
+  let endDate = new Date().toISOString().split("T")[0];
   let page = 1;
   let limit = 10;
+
+  // Loading states for each action
+  let loadingStates = {
+    payrollInitiate: false,
+    payrollApproval: false,
+    adminApproval: false,
+    cancelDraft: false,
+    payslipGenerate: false,
+    payslipSend: false
+  };
 
   const handleFilterChange = (event: CustomEvent) => {
     const {
@@ -53,7 +64,6 @@
     page = newPage || page;
   };
 
-  // Fix 4: Add state validation function
   const validateFlowState = () => {
     console.log("=== FLOW STATE DEBUG ===");
     console.log("canInitiate:", canInitiate);
@@ -93,7 +103,6 @@
       if (statusResponse.success) {
         let payrollSummary = statusResponse.data;
 
-        // Ensure statusBreakdown exists and totalRecords is a valid number
         if (
           payrollSummary.statusBreakdown &&
           typeof payrollSummary.totalRecords === "number"
@@ -104,25 +113,19 @@
           let failedCount = payrollSummary.statusBreakdown.Failed || 0;
 
           let nonProcessedCount = draftCount + cancelledCount + failedCount;
-          // ✅ Scenario 1: If all values are 0, proceed to approve/initiate response checks
+          
           if (totalRecords === 0) {
             console.log("All records are zero, proceeding to next checks.");
-          }
-          // ✅ Scenario 2: If Draft count equals Total Records, restrict processing
-          else if (totalRecords === draftCount) {
+          } else if (totalRecords === draftCount) {
             needsAdminApproval = true;
             return;
-          }
-          // ✅ Scenario 3: If Draft + Cancelled = Total Records, restrict processing
-          else if (
+          } else if (
             totalRecords === draftCount + cancelledCount &&
             draftCount > 0
           ) {
             needsAdminApproval = true;
             return;
-          }
-          // ✅ Scenario 4: If all records are Cancelled and no Draft exists, proceed
-          else if (totalRecords === cancelledCount && draftCount === 0) {
+          } else if (totalRecords === cancelledCount && draftCount === 0) {
             console.log(
               "All records are Cancelled, proceeding to next checks."
             );
@@ -136,7 +139,7 @@
           }
         }
       }
-      //if reApprove true breake  below
+
       const initiateResponse: any = await payrollApi.canInitiatePayroll(
         months,
         year
@@ -154,10 +157,12 @@
       if (approveResponse.success) {
         canApprove = approveResponse.data.canApprove;
       }
-    } catch (error) {}
+    } catch (error) {
+      console.log(error, "error checkPayrollStatus");
+    }
   };
+
   const checkPayslipGeneration = async () => {
-    isLoading = true;
     try {
       const result: any = await payslipApi.checkPayslipStatus(
         Number(month.numeric),
@@ -171,9 +176,16 @@
       console.log(payslips);
     } catch (error) {
       console.error("Error checking payslip generation status:", error);
-    } finally {
-      isLoading = false;
     }
+  };
+
+  // Refresh all data after major state changes
+  const refreshAllData = async () => {
+    await Promise.all([
+      getPayrolls(),
+      checkPayrollStatus(),
+      checkPayslipGeneration()
+    ]);
   };
 
   // Action handlers
@@ -182,7 +194,8 @@
     console.log(year, month, "year month");
     const formattedDate = `${year}-${month.numeric}`;
     console.log("Formatted Date:", formattedDate);
-    isLoading = true;
+    
+    loadingStates.payrollInitiate = true;
     try {
       let result: any = await payrollApi.payrollInitiate({
         monthYear: formattedDate,
@@ -191,19 +204,21 @@
       if (result.success) {
         payrollInitiateResponse = result.data;
         showModal = true;
+        // Immediately refresh data to get the latest state
+        await refreshAllData();
+        toast.success("Payroll initiated successfully");
       }
     } catch (error) {
       console.log(error);
-      toast.error("error in Pyroll initate ");
+      toast.error("Error in Payroll initiate");
     } finally {
-      await checkPayrollStatus();
-      isLoading = false;
+      loadingStates.payrollInitiate = false;
     }
   };
 
   const approvalPayroll = async () => {
     console.log("approvalPayroll");
-    isLoading = true;
+    loadingStates.payrollApproval = true;
     try {
       let result: any = await payrollApi.updateStatus(
         Number(month.numeric),
@@ -213,18 +228,20 @@
       console.log(result, "Result approvalPayroll");
       if (result.success) {
         isPayrollApproved = true;
-        toast.success(result.data?.message);
+        toast.success(result.data?.message || "Payroll approved successfully");
+        // Refresh data to get the latest state
+        await refreshAllData();
       }
     } catch (error) {
       console.log(error, "error approvalPayroll");
+      toast.error("Failed to approve payroll");
     } finally {
-      await checkPayrollStatus();
-      isLoading = false;
+      loadingStates.payrollApproval = false;
     }
   };
 
   const handleAdminApproval = async () => {
-    isLoading = true;
+    loadingStates.adminApproval = true;
     try {
       const result: any = await payrollApi.updateStatus(
         Number(month.numeric),
@@ -236,18 +253,19 @@
         toast.success("Payroll approved for further processing");
         needsAdminApproval = false;
         isPayrollApproved = true;
+        // Refresh data to get the latest state
+        await refreshAllData();
       }
     } catch (error) {
       console.log(error);
       toast.error("Failed to approve payroll");
     } finally {
-      await checkPayrollStatus();
-      isLoading = false;
+      loadingStates.adminApproval = false;
     }
   };
 
   const handleCancelDraft = async () => {
-    isLoading = true;
+    loadingStates.cancelDraft = true;
     try {
       const result = await payrollApi.updateStatus(
         Number(month.numeric),
@@ -257,17 +275,18 @@
       console.log(result, "Cancel draft result");
       toast.success("Draft payroll cancelled");
       needsAdminApproval = false;
+      // Refresh data to get the latest state
+      await refreshAllData();
     } catch (error) {
       console.log(error);
       toast.error("Failed to cancel payroll");
     } finally {
-      await checkPayrollStatus();
-      isLoading = false;
+      loadingStates.cancelDraft = false;
     }
   };
 
   const generatePayslip = async () => {
-    isLoading = true;
+    loadingStates.payslipGenerate = true;
     try {
       let result: any = await payslipApi.bulkGenerate({
         month: Number(month.numeric),
@@ -276,22 +295,25 @@
       if (result.success) {
         isPayslipGenerated = true;
         toast.success("Payslips generated successfully");
-        // ✅ Refresh payslips data after generation
+        // Refresh payslip data immediately
         await checkPayslipGeneration();
       } else {
         toast.error(result?.message || "Failed to generate payslips");
       }
     } catch (error) {
       console.log(error, "error generatePayslip");
+      toast.error("Failed to generate payslips");
+    } finally {
+      loadingStates.payslipGenerate = false;
     }
   };
 
   const sendPayslip = async (event: CustomEvent) => {
     console.log("sendPayslip", event.detail);
-    isLoading = true;
-    const { month, year, recipients } = event.detail;
+    loadingStates.payslipSend = true;
+    const { month: eventMonth, year: eventYear, recipients } = event.detail;
     let obj = {
-      year,
+      year: eventYear,
       month: Number(month.numeric),
       recipients,
     };
@@ -299,13 +321,17 @@
       let result: any = await payslipApi.sendPayslips(obj);
       console.log(result, "sendPayslip");
       if (result.success) {
+        toast.success("Payslips sent successfully");
+        // Immediately refresh payslip data to show updated status
         await checkPayslipGeneration();
-        toast.success("Payslip send");
+      } else {
+        toast.error(result?.message || "Failed to send payslips");
       }
     } catch (error) {
       console.log("error", error);
+      toast.error("Failed to send payslips");
     } finally {
-      isLoading = false;
+      loadingStates.payslipSend = false;
     }
   };
 
@@ -317,18 +343,18 @@
     { id: "trends", label: "Trends" },
   ];
 
+  // Reactive statements for debugging
   $: payslips;
   $: isPayslipGenerated;
   console.log(isPayslipGenerated, "isPayslipGenerated");
   console.log(payslips, "payslip");
 
   onMount(() => {
-    getPayrolls();
-    checkPayrollStatus();
-    checkPayslipGeneration();
+    refreshAllData();
     validateFlowState();
   });
-  // Fix 6: Add reactive statement to track state changes
+
+  // Reactive statement to track state changes
   $: {
     if (isPayrollApproved || isPayslipGenerated || canInitiate || canApprove) {
       validateFlowState();
@@ -340,13 +366,13 @@
   title="Payroll"
   subtitle="Centralized Payroll Management for All Employees"
 >
-  <Tabs {tabs} let:activeTab>
+  <Tabs {tabs} let:activeTab >
     {#if activeTab === "processing"}
       <PayrollProcess
         {month}
         {year}
         payrollData={reviewPayrollData}
-        {isLoading}
+        isLoading={loadingStates.payrollInitiate || loadingStates.payrollApproval}
         {canInitiate}
         {canApprove}
         on:initiate={processPayroll}
@@ -374,16 +400,26 @@
             <div class="flex space-x-4">
               <button
                 on:click={handleAdminApproval}
-                class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 shadow-md"
+                disabled={loadingStates.adminApproval}
+                class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Check class="h-5 w-5" />
+                {#if loadingStates.adminApproval}
+                  <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                {:else}
+                  <Check class="h-5 w-5" />
+                {/if}
                 <span>Approve for Processing</span>
               </button>
               <button
                 on:click={handleCancelDraft}
-                class="px-6 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center space-x-2 shadow-md"
+                disabled={loadingStates.cancelDraft}
+                class="px-6 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center space-x-2 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <X class="h-5 w-5" />
+                {#if loadingStates.cancelDraft}
+                  <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                {:else}
+                  <X class="h-5 w-5" />
+                {/if}
                 <span>Cancel Draft</span>
               </button>
             </div>
@@ -397,21 +433,15 @@
         {isPayrollApproved}
         {isPayslipGenerated}
         {payslips}
+        isGenerating={loadingStates.payslipGenerate}
+        isSending={loadingStates.payslipSend}
         on:payslip-generated={generatePayslip}
         on:payslip-sent={sendPayslip}
       />
     {:else if activeTab === "history"}
-      <!-- <PayslipHistory
-        {startDate}
-        {endDate}
-        {page}
-        {limit}
-        on:filterChange={handleFilterChange}
-      /> -->
     {/if}
   </Tabs>
 </IndexPageTemplate>
-
 <!-- 
   const dashboardStats = [
     {

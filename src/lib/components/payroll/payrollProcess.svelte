@@ -1,3 +1,4 @@
+
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import { writable } from "svelte/store";
@@ -13,13 +14,17 @@
   export let month: { full: string; short: string; numeric: string };
   export let payrollData: any;
   export let isLoading = false;
-  export let canInitiate;
-  export let canApprove;
+  export let canInitiate: boolean;
+  export let canApprove: boolean;
 
   let isDownloaded = false;
   let showModal = writable(false);
   let showConfirmationModal = writable(false);
+  let isProcessing = false;
+  let isApproving = false;
+
   console.log(payrollData, "payrollData");
+
   const columns = [
     {
       key: "employeeName",
@@ -35,14 +40,24 @@
       label: "IFSC Code",
     },
     {
+      key: "bankName",
+      label: "Bank Name",
+    },
+    {
       key: "netSalary",
       label: "Net Salary",
       sortable: true,
       render: (item: any) => formatCurrency(item.netSalary),
     },
   ];
+
   const processPayroll = async () => {
-    dispatch("initiate");
+    isProcessing = true;
+    try {
+      dispatch("initiate");
+    } finally {
+      isProcessing = false;
+    }
   };
 
   const reviewPayroll = async () => {
@@ -51,6 +66,8 @@
 
   const closeModal = () => {
     showModal.set(false);
+    // Reset download state when modal closes
+    isDownloaded = false;
   };
 
   const exportToCSV = () => {
@@ -59,6 +76,7 @@
       alert("No payroll data available.");
       return;
     }
+
     // Extract headers dynamically and convert to uppercase
     const headers = Object.keys(payrollData.exportableDetails[0]).map((key) =>
       key.toUpperCase()
@@ -75,7 +93,7 @@
       return formattedRow;
     });
 
-    //  Create a worksheet and apply headers
+    // Create a worksheet and apply headers
     const worksheet = XLSX.utils.json_to_sheet(formattedData, {
       header: headers,
     });
@@ -97,7 +115,7 @@
     // Trigger file download
     XLSX.writeFile(workbook, fileName);
 
-    // Simulate CSV export
+    // Set download state
     isDownloaded = true;
   };
 
@@ -106,11 +124,23 @@
   };
 
   const confirmApproval = () => {
-    // Actual approval logic here
+    isApproving = true;
     showConfirmationModal.set(false);
     showModal.set(false);
-    dispatch("approval");
+    
+    try {
+      dispatch("approval");
+    } finally {
+      // Reset states
+      isDownloaded = false;
+      isApproving = false;
+    }
   };
+
+  // Reset download state when payrollData changes
+  $: if (payrollData) {
+    isDownloaded = false;
+  }
 </script>
 
 <div class="payroll-container">
@@ -119,26 +149,48 @@
       type="button"
       class="action-card"
       on:click={processPayroll}
-      disabled={!canInitiate || isLoading || canApprove}
+      disabled={!canInitiate || isLoading || canApprove || isProcessing}
     >
-      <div class="action-icon">💰</div>
+      <div class="action-icon">
+        {#if isProcessing}
+          <Loader2 class="animate-spin" />
+        {:else}
+          💰
+        {/if}
+      </div>
       <div class="action-text">
         <h3>Process Payroll for {month.short} {year}</h3>
-        <p>Calculate payroll for all employees</p>
+        <p>
+          {#if isProcessing}
+            Processing payroll...
+          {:else}
+            Calculate payroll for all employees
+          {/if}
+        </p>
       </div>
     </button>
 
     <button
       class="action-card"
       on:click={reviewPayroll}
-      disabled={!canApprove || isLoading}
+      disabled={!canApprove || isLoading || isApproving}
     >
       <div class="action-icon">
-        <CircleCheck />
+        {#if isApproving}
+          <Loader2 class="animate-spin" />
+        {:else}
+          <CircleCheck />
+        {/if}
       </div>
       <div class="action-text">
         <h3>Review Payroll {month.short} {year}</h3>
-        <p>Approve or reject payroll</p>
+        <p>
+          {#if isApproving}
+            Approving payroll...
+          {:else}
+            Approve or reject payroll
+          {/if}
+        </p>
       </div>
     </button>
   </div>
@@ -149,24 +201,24 @@
         <div class="summary-grid">
           <div class="summary-card">
             <h3>Total Employees</h3>
-            <div class="summary-value">{payrollData?.totalEmployees}</div>
+            <div class="summary-value">{payrollData?.totalEmployees || 0}</div>
           </div>
           <div class="summary-card">
             <h3>Gross Salary</h3>
             <div class="summary-value">
-              {formatCurrency(payrollData?.totalGrossSalary)}
+              {formatCurrency(payrollData?.totalGrossSalary || 0)}
             </div>
           </div>
           <div class="summary-card">
             <h3>Total Deductions</h3>
             <div class="summary-value">
-              {formatCurrency(payrollData?.totalDeductions)}
+              {formatCurrency(payrollData?.totalDeductions || 0)}
             </div>
           </div>
           <div class="summary-card">
             <h3>Net Salary</h3>
             <div class="summary-value">
-              {formatCurrency(payrollData?.totalNetSalary)}
+              {formatCurrency(payrollData?.totalNetSalary || 0)}
             </div>
           </div>
         </div>
@@ -175,7 +227,7 @@
           <button
             on:click={exportToCSV}
             class="download-btn"
-            disabled={isDownloaded}
+            disabled={isDownloaded || !payrollData?.exportableDetails?.length}
           >
             <Download class="mr-2" />
             {isDownloaded ? "Downloaded" : "Export to CSV"}
@@ -183,20 +235,29 @@
           <button
             on:click={initiateApproval}
             class="approve-btn"
-            disabled={!isDownloaded}
+            disabled={!isDownloaded || isApproving}
           >
-            <CircleCheck class="mr-2" />
-            Approve Payroll
+            {#if isApproving}
+              <Loader2 class="animate-spin mr-2" />
+            {:else}
+              <CircleCheck class="mr-2" />
+            {/if}
+            {isApproving ? "Approving..." : "Approve Payroll"}
           </button>
         </div>
 
-        <!-- <div class="employee-details"> -->
         <div class="table-container">
-          <Table
-            {columns}
-            data={payrollData?.exportableDetails}
-            searchable={false}
-          />
+          {#if payrollData?.exportableDetails?.length > 0}
+            <Table
+              {columns}
+              data={payrollData.exportableDetails}
+              searchable={false}
+            />
+          {:else}
+            <div class="no-data">
+              <p class="text-gray-600">No payroll data available for review.</p>
+            </div>
+          {/if}
         </div>
       </div>
     </Modal>
@@ -217,11 +278,21 @@
           <button
             class="cancel-btn"
             on:click={() => showConfirmationModal.set(false)}
+            disabled={isApproving}
           >
             Cancel
           </button>
-          <button class="confirm-btn" on:click={confirmApproval}>
-            Confirm Approval
+          <button 
+            class="confirm-btn" 
+            on:click={confirmApproval}
+            disabled={isApproving}
+          >
+            {#if isApproving}
+              <Loader2 class="animate-spin mr-2" />
+              Approving...
+            {:else}
+              Confirm Approval
+            {/if}
           </button>
         </div>
       </div>
@@ -306,15 +377,22 @@
 
   .cancel-btn {
     @apply px-6 py-3 bg-gray-200 text-gray-700 rounded-lg 
-           hover:bg-gray-300 transition-colors;
+           hover:bg-gray-300 transition-colors
+           disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .confirm-btn {
     @apply px-6 py-3 bg-blue-600 text-white rounded-lg 
-           hover:bg-blue-700 transition-colors;
+           hover:bg-blue-700 transition-colors
+           disabled:opacity-50 disabled:cursor-not-allowed
+           flex items-center justify-center;
   }
 
   .table-container {
     @apply bg-white rounded-xl shadow-md overflow-hidden;
+  }
+
+  .no-data {
+    @apply p-8 text-center;
   }
 </style>

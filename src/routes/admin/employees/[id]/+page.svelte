@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import EmployeeAttendance from "$lib/components/attendance/EmployeeAttendance.svelte";
   import EmployeeLeaves from "$lib/components/employee/EmployeeLeaves.svelte";
   import EmployeeTrainingAttendance from "$lib/components/attendance/EmployeeTrainingAttendance.svelte";
@@ -166,33 +165,21 @@
           on:changeTab={(e) => (activeTab = e.detail)}
         >
           {#if activeTab === "overview"}
-            <div class="p-6">
               <EmployeeInfo employeeId={employee._id} {employee} />
-            </div>
           {:else if activeTab === "leaves"}
-            <div class="p-6">
               <EmployeeLeaves employeeId={employee._id} />
-            </div>
-          {:else if activeTab === "attendance"}
-            <div class="p-6">
+          {:else if activeTab === "attendance"} 
               <EmployeeAttendance employeeId={employee._id} />
-            </div>
-          {:else if activeTab === "training"}
-            <div class="p-6">
-              <EmployeeTrainingAttendance employeeId={employee._id} />
-            </div>
+          {:else if activeTab === "training"}           
+              <EmployeeTrainingAttendance employeeId={employee._id} />          
           {:else if activeTab === "salary"}
-            <div class="p-6">
               <EmployeeSalary employeeId={employee._id} />
-            </div>
           {:else if activeTab === "it-declaration"}
-            <div class="p-6">
               <ITDeclarationApproval employeeId={employee._id} />
-            </div>
           {:else if activeTab === "shifts"}
-            <div class="p-6">
+            <!-- <div class="p-6"> -->
               <EmployeeShiftAssignment employeeId={employee._id} />
-            </div>
+            <!-- </div> -->
           {/if}
         </Tabs>
       </div>

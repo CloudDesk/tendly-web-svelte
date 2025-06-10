@@ -21,9 +21,12 @@
   const getEmployee = async () => {
     try {
       let res = await employeesApi.getById(employeeId);
-      employee = res.data;
+      console.log(res,"employee Response")
+      if(res.success && res.data){
+        employee = res.data;
+      }
     } catch (e) {
-      console.log(e);
+      console.log(e,"fetchemployee error");
     }
   };
 
@@ -31,7 +34,9 @@
     try {
       let res = await shiftsApi.getPastShifts(employeeId);
       console.log(res, "pastShifts");
-      pastShifts = res.data;
+      if(res.success && res.data){
+        pastShifts = res.data;
+      }
     } catch (e) {
       console.log(e);
     }
@@ -41,7 +46,9 @@
     try {
       let res = await shiftsApi.current(employeeId);
       console.log(res, "currentShift");
-      currentShift = res.data;
+      if(res.success && res.data){
+        currentShift = res.data;
+      }
     } catch (e) {
       console.log(e);
     }
@@ -51,7 +58,9 @@
     try {
       let res = await shiftsApi.upcoming(employeeId);
       console.log(res, "upcomingShift");
-      upcomingShift = res.data;
+      if(res.success && res.data){
+        upcomingShift = res.data;
+      }
     } catch (e) {
       console.log(e);
     }
@@ -122,211 +131,178 @@
     } finally {
       showEditModal = false;
       selectedShiftAssignment = null;
-      await getUpcomingShift();
-      await getCurrentShift();
+      await fetchData();
     }
+  };
+  const fetchData = async () => {
+    await getEmployee();
+    await getPastShifts();
+    await getCurrentShift();
+    await getUpcomingShift();
   };
   onMount(() => {
     if (employeeId) {
-      getEmployee();
-      getPastShifts();
-      getCurrentShift();
-      getUpcomingShift();
+     fetchData();
     }
   });
 </script>
 
-<div class="space-y-6 p-6 bg-white rounded-lg shadow-lg">
-  <div class="grid grid-cols-3 gap-6 p-6 h-[60vh]">
-    <!-- Current Shift Column -->
-    <div
-      class="flex flex-col border-2 border-gray-200 rounded-md bg-white overflow-auto"
-      role="region"
-    >
-      <div
-        class="bg-blue-500 text-white p-4 rounded-t-md font-semibold text-center"
-      >
-        Current Shift
+<div class="container mx-auto px-4 py-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Current Shift Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-200 hover:shadow-md">
+      <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-4">
+        <h2 class="text-white text-lg font-semibold">Current Shift</h2>
       </div>
-      <div class="p-4 space-y-4 overflow-y-auto">
+      <div class="p-4">
         {#if currentShift}
-          <div class="bg-white p-4 rounded-lg shadow-md border border-gray-300">
-            <div class="space-y-4">
-              <div>
-                <span class="text-gray-500 font-medium">Start Date:</span>
-                <p class="text-gray-800 text-base">
-                  {fromUTCDate(currentShift.startDate)}
-                </p>
-              </div>
-              <div>
-                <span class="text-gray-500 font-medium">End Date:</span>
-                <p class="text-gray-800 text-base">
-                  {fromUTCDate(currentShift.endDate)}
-                </p>
-              </div>
-              <div>
-                <span class="text-gray-500 font-medium">Shift Code:</span>
-                <p class="text-gray-800 text-base">{currentShift.shiftCode}</p>
-              </div>
-              <div>
-                <span class="text-gray-500 font-medium"
-                  >Shift Assignment ID:</span
-                >
-                <p class="text-gray-800 text-base">{currentShift._id}</p>
-              </div>
-              <!-- Edit Button -->
-              <div class="flex justify-end space-x-2">
-                <button
-                  on:click={() => currentShift && editShift(currentShift)}
-                  class="text-blue-500 hover:text-blue-700"
-                  disabled={!currentShift}
-                >
-                  <Pencil class="w-5 h-5" />
-                </button>
-              </div>
+          <div class="space-y-4">
+            <div class="flex flex-col space-y-1">
+              <span class="text-sm text-gray-500">Start Date</span>
+              <p class="text-gray-800 font-medium">{fromUTCDate(currentShift.startDate)}</p>
+            </div>
+            <div class="flex flex-col space-y-1">
+              <span class="text-sm text-gray-500">End Date</span>
+              <p class="text-gray-800 font-medium">{fromUTCDate(currentShift.endDate)}</p>
+            </div>
+            <div class="flex flex-col space-y-1">
+              <span class="text-sm text-gray-500">Shift Code</span>
+              <p class="text-gray-800 font-medium">{currentShift.shiftCode}</p>
+            </div>
+            <div class="pt-4 flex justify-end">
+              <button
+                on:click={() => currentShift && editShift(currentShift)}
+                class="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                disabled={!currentShift}
+              >
+                <Pencil class="w-4 h-4 mr-2" />
+                Edit
+              </button>
             </div>
           </div>
         {:else}
-          <div
-            class="bg-gray-100 p-4 rounded-lg shadow-md border border-gray-300 text-gray-700"
-          >
-            <p class="text-lg font-medium">No Current Shift Assigned</p>
+          <div class="text-center py-8">
+            <p class="text-gray-500 font-medium">No Current Shift Assigned</p>
           </div>
         {/if}
       </div>
     </div>
 
-    <!-- Upcoming Shift Column -->
-    <div
-      class="flex flex-col border-2 border-gray-200 rounded-md bg-white overflow-auto"
-      role="region"
-    >
-      <div
-        class="bg-yellow-500 text-white p-4 rounded-t-md font-semibold text-center"
-      >
-        Upcoming Shift
+    <!-- Upcoming Shift Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-200 hover:shadow-md">
+      <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 p-4">
+        <h2 class="text-white text-lg font-semibold">Upcoming Shift</h2>
       </div>
-      <div class="p-4 space-y-4 overflow-y-auto">
+      <div class="p-4">
         {#if upcomingShift}
-          <div class="bg-white p-4 rounded-lg shadow-md border border-gray-300">
-            <div class="space-y-4">
-              <div>
-                <span class="text-gray-500 font-medium">Start Date:</span>
-                <p class="text-gray-800 text-base">
-                  {fromUTCDate(upcomingShift.startDate)}
-                </p>
-              </div>
-              <div>
-                <span class="text-gray-500 font-medium">End Date:</span>
-                <p class="text-gray-800 text-base">
-                  {fromUTCDate(upcomingShift.endDate)}
-                </p>
-              </div>
-              <div>
-                <span class="text-gray-500 font-medium">Shift Code:</span>
-                <p class="text-gray-800 text-base">{upcomingShift.shiftCode}</p>
-              </div>
-              <div>
-                <span class="text-gray-500 font-medium"
-                  >Shift Assignment ID:</span
-                >
-                <p class="text-gray-800 text-base">{upcomingShift._id}</p>
-              </div>
-              <!-- Edit + Delete Buttons -->
-              <div class="flex justify-end space-x-2">
-                <button
-                  on:click={() => upcomingShift && editShift(upcomingShift)}
-                  class="text-blue-500 hover:text-blue-700"
-                  disabled={!upcomingShift}
-                >
-                  <Pencil class="w-5 h-5" />
-                </button>
-                <button
-                  on:click={() => upcomingShift && deleteShift(upcomingShift)}
-                  class="text-red-500 hover:text-red-700"
-                >
-                  <Trash2 class="w-5 h-5" />
-                </button>
-              </div>
+          <div class="space-y-4">
+            <div class="flex flex-col space-y-1">
+              <span class="text-sm text-gray-500">Start Date</span>
+              <p class="text-gray-800 font-medium">{fromUTCDate(upcomingShift.startDate)}</p>
+            </div>
+            <div class="flex flex-col space-y-1">
+              <span class="text-sm text-gray-500">End Date</span>
+              <p class="text-gray-800 font-medium">{fromUTCDate(upcomingShift.endDate)}</p>
+            </div>
+            <div class="flex flex-col space-y-1">
+              <span class="text-sm text-gray-500">Shift Code</span>
+              <p class="text-gray-800 font-medium">{upcomingShift.shiftCode}</p>
+            </div>
+            <div class="pt-4 flex justify-end space-x-2">
+              <button
+                on:click={() => upcomingShift && editShift(upcomingShift)}
+                class="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+              >
+                <Pencil class="w-4 h-4 mr-2" />
+                Edit
+              </button>
+              <button
+                on:click={() => upcomingShift && deleteShift(upcomingShift)}
+                class="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
+              >
+                <Trash2 class="w-4 h-4 mr-2" />
+                Delete
+              </button>
             </div>
           </div>
         {:else}
-          <div
-            class="bg-gray-100 p-4 rounded-lg shadow-md border border-gray-300 text-gray-700"
-          >
-            <p class="text-lg font-medium">No Upcoming Shift Assigned</p>
+          <div class="text-center py-8">
+            <p class="text-gray-500 font-medium">No Upcoming Shift Assigned</p>
           </div>
         {/if}
       </div>
     </div>
 
-    <!-- Past Shifts Column -->
-    <div
-      class="flex flex-col border-2 border-gray-200 rounded-md bg-white overflow-auto"
-      role="region"
-    >
-      <div
-        class="bg-green-500 text-white p-4 rounded-t-md font-semibold text-center"
-      >
-        Past Shifts
+    <!-- Past Shifts Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-200 hover:shadow-md">
+      <div class="bg-gradient-to-r from-green-500 to-green-600 p-4">
+        <h2 class="text-white text-lg font-semibold">Past Shifts</h2>
       </div>
-      <div class="p-4 space-y-4 overflow-y-auto">
+      <div class="p-4 max-h-[500px] overflow-y-auto">
         {#if pastShifts && pastShifts.length > 0}
-          {#each pastShifts as shift}
-            <div
-              class="bg-white p-4 rounded-lg shadow-md border border-gray-300"
-            >
-              <div class="space-y-4">
-                <div>
-                  <span class="text-gray-500 font-medium">Start Date:</span>
-                  <p class="text-gray-800 text-base">
-                    {fromUTCDate(shift.startDate)}
-                  </p>
-                </div>
-                <div>
-                  <span class="text-gray-500 font-medium">End Date:</span>
-                  <p class="text-gray-800 text-base">
-                    {fromUTCDate(shift.endDate)}
-                  </p>
-                </div>
-                <div>
-                  <span class="text-gray-500 font-medium">Shift Code:</span>
-                  <p class="text-gray-800 text-base">{shift.shiftCode}</p>
-                </div>
-                <div>
-                  <span class="text-gray-500 font-medium"
-                    >Shift Assignment ID:</span
-                  >
-                  <p class="text-gray-800 text-base">{shift._id}</p>
+          <div class="space-y-4">
+            {#each pastShifts as shift}
+              <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                <div class="space-y-3">
+                  <div class="flex flex-col space-y-1">
+                    <span class="text-sm text-gray-500">Start Date</span>
+                    <p class="text-gray-800 font-medium">{fromUTCDate(shift.startDate)}</p>
+                  </div>
+                  <div class="flex flex-col space-y-1">
+                    <span class="text-sm text-gray-500">End Date</span>
+                    <p class="text-gray-800 font-medium">{fromUTCDate(shift.endDate)}</p>
+                  </div>
+                  <div class="flex flex-col space-y-1">
+                    <span class="text-sm text-gray-500">Shift Code</span>
+                    <p class="text-gray-800 font-medium">{shift.shiftCode}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          {/each}
+            {/each}
+          </div>
         {:else}
-          <div class="text-gray-500 text-center">No past shifts</div>
+          <div class="text-center py-8">
+            <p class="text-gray-500 font-medium">No Past Shifts</p>
+          </div>
         {/if}
       </div>
     </div>
   </div>
-  <Modal
-    show={showEditModal}
-    title="Edit Shift Assignment"
-    onClose={() => {
-      showEditModal = false;
-      selectedShiftAssignment = null;
-    }}
-  >
-    {#if selectedShiftAssignment}
-      <ShiftAssignmentUpdate
-        shiftAssignment={selectedShiftAssignment}
-        on:update={handleUpdate}
-      />
-    {/if}
-  </Modal>
 </div>
 
+<Modal
+  show={showEditModal}
+  title="Edit Shift Assignment"
+  onClose={() => {
+    showEditModal = false;
+    selectedShiftAssignment = null;
+  }}
+>
+  {#if selectedShiftAssignment}
+    <ShiftAssignmentUpdate
+      shiftAssignment={selectedShiftAssignment}
+      on:update={handleUpdate}
+    />
+  {/if}
+</Modal>
+
 <style>
-  .space-y-6 {
-    margin-top: 1.5rem;
+  /* Custom scrollbar for the past shifts section */
+  .overflow-y-auto {
+    scrollbar-width: thin;
+    scrollbar-color: #CBD5E0 #F7FAFC;
+  }
+
+  .overflow-y-auto::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .overflow-y-auto::-webkit-scrollbar-track {
+    background: #F7FAFC;
+  }
+
+  .overflow-y-auto::-webkit-scrollbar-thumb {
+    background-color: #CBD5E0;
+    border-radius: 3px;
   }
 </style>
