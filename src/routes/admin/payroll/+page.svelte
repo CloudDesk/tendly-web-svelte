@@ -1,5 +1,27 @@
-
 <script lang="ts">
+import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
+import Tabs from "$lib/components/common/Tabs.svelte";
+import PayrollInitiate from "$lib/components/payroll/payrollInitiate.svelte";
+let tabs=[
+  { id: "initiate", label: "Payroll Initiate" },
+  {id:"review",label:"Payroll Review"},
+  { id: "generate", label: "Payslip Generate" },
+  {id:'send',label:"Send Payslips"}
+
+]
+</script>
+<IndexPageTemplate
+title="Payroll"
+subtitle="Centralized Payroll Management for All Employees"
+>
+<Tabs {tabs} let:activeTab >
+{#if activeTab === "initiate"}
+<PayrollInitiate/>
+{/if}
+</Tabs>
+
+</IndexPageTemplate>
+<!-- <script lang="ts">
   import { toast } from "$lib/components/common/stores/toast.store";
   import Tabs from "$lib/components/common/Tabs.svelte";
   import PayrollProcess from "$lib/components/payroll/payrollProcess.svelte";
@@ -441,7 +463,7 @@
     {:else if activeTab === "history"}
     {/if}
   </Tabs>
-</IndexPageTemplate>
+</IndexPageTemplate> -->
 <!-- 
   const dashboardStats = [
     {

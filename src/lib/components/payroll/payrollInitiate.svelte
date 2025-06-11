@@ -1,0 +1,571 @@
+<script lang="ts">
+    import { onMount } from 'svelte';
+    import { employeesApi, lovsApi, payrollApi, type PayrollInitiatePayload } from '$lib/services/api';
+    import { ChevronLeft, ChevronRight, Loader2, Search, X } from 'lucide-svelte';
+  
+    interface Employee {
+      _id: string;
+      name: string;
+      email: string;
+      role: string;
+      departmentId: string;
+      joiningDate: string;
+    }
+  
+    let employees: Employee[] = [];
+    let selectedEmployees = new Set<string>();
+    let selectAll = false;
+  
+    let page = 1;
+    let limit = 10;
+    let totalPages = 1;
+    let totalRecords = 0;
+  
+    let month = '2025-05';
+    let departmentId = '';
+    let roleId = '';
+    let search = '';
+    let statusFilter = '';
+    let userDepartments: { label: string; value: string }[] = [];
+    let userRoles: { label: string; value: string }[] = [];
+    
+    // Loading states
+    let isLoadingEmployees = false;
+    let isLoadingDepartments = false;
+    let isLoadingRoles = false;
+    let isProcessing = false;
+    
+    // Status options with labels
+    const statusOptions = [
+      { value: 'Active', label: 'Active' },
+      { value: 'On Hold', label: 'Resignation Applied - Pending Approval' },
+      { value: 'Resigned', label: 'Resignation Approved - Final Settlement' }
+    ];
+
+    async function fetchDepartments() {
+      try {
+        isLoadingDepartments = true;
+        const departmentResponse: any = await lovsApi.getByType("department");
+        console.log(departmentResponse, "departmentResponse");
+        if (departmentResponse.success) {
+          userDepartments = departmentResponse.data.values.map((dept: any) => ({
+            label: dept.label,
+            value: dept.value,
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching departments:', error);
+      } finally {
+        isLoadingDepartments = false;
+      }
+    }
+
+    async function fetchRoles() {
+      try {
+        isLoadingRoles = true;
+        const roleResponse: any = await lovsApi.getByType("role");
+        if (roleResponse.success) {
+          userRoles = roleResponse.data.values.map((role: any) => ({
+            label: role.label,
+            value: role.value,
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching roles:', error);
+      } finally {
+        isLoadingRoles = false;
+      }
+    }
+
+    async function fetchEmployees() {
+      try {
+        isLoadingEmployees = true;
+        const filters = {
+          page,
+          limit,
+          month,
+          departmentId,
+          roleId,
+          search,
+          status: statusFilter,
+        };
+        
+        console.log(filters, "Fetching employees with filters1");
+
+        // Remove empty values in filter
+        Object.keys(filters).forEach(key => {
+          if (filters[key as keyof typeof filters] === '' || filters[key as keyof typeof filters] === undefined || filters[key as keyof typeof filters] === null) {
+            delete (filters as any)[key];
+          }
+        });
+
+        console.log(filters, "Fetching employees with filters");
+
+        const response: any = await employeesApi.getforPayroll(filters);
+        employees = response.data;
+        page = response.meta.page;
+        totalPages = response.meta.totalPages;
+        totalRecords = response.meta.total || 0;
+        
+        // Reset selections when data changes
+        selectedEmployees = new Set();
+        selectAll = false;
+      } catch (error) {
+        console.error('Error fetching employees:', error);
+        employees = [];
+      } finally {
+        isLoadingEmployees = false;
+      }
+    }
+  
+    function toggleSelectAll() {
+      if (selectAll) {
+        selectedEmployees = new Set(employees.map(e => e._id));
+      } else {
+        selectedEmployees = new Set();
+      }
+      selectedEmployees = selectedEmployees; // Trigger reactivity
+    }
+
+    function toggleEmployee(id: string) {
+      if (selectedEmployees.has(id)) {
+        selectedEmployees.delete(id);
+      } else {
+        selectedEmployees.add(id);
+      }
+      selectedEmployees = selectedEmployees; // Trigger reactivity
+      
+      // Update selectAll state
+      selectAll = selectedEmployees.size === employees.length && employees.length > 0;
+    }
+
+    function formatDate(dateStr: string) {
+      return new Date(dateStr).toLocaleDateString();
+    }
+  
+    function formatLabel(value: string): string {
+      return value
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function clearFilters() {
+      month = '2025-05';
+      departmentId = '';
+      roleId = '';
+      search = '';
+      statusFilter = '';
+      page = 1;
+      fetchEmployees();
+    }
+
+    function getActiveFilters() {
+      const filters = [];
+      if (departmentId) {
+        const dept = userDepartments.find(d => d.value === departmentId);
+        filters.push({ type: 'department', label: dept?.label || departmentId, value: departmentId });
+      }
+      if (roleId) {
+        const role = userRoles.find(r => r.value === roleId);
+        filters.push({ type: 'role', label: role?.label || roleId, value: roleId });
+      }
+      if (statusFilter) {
+        const status = statusOptions.find(s => s.value === statusFilter);
+        filters.push({ type: 'status', label: status?.label || statusFilter, value: statusFilter });
+      }
+      if (search) {
+        filters.push({ type: 'search', label: `Search: "${search}"`, value: search });
+      }
+      return filters;
+    }
+
+    function removeFilter(type: string) {
+      switch (type) {
+        case 'department':
+          departmentId = '';
+          break;
+        case 'role':
+          roleId = '';
+          break;
+        case 'status':
+          statusFilter = '';
+          break;
+        case 'search':
+          search = '';
+          break;
+      }
+      page = 1;
+      fetchEmployees();
+    }
+
+    async function processPayroll() {
+      if (isProcessing || selectedEmployees.size === 0) return;
+      isProcessing = true;
+
+      try {
+        const payload: PayrollInitiatePayload = { monthYear: month };
+
+        if (selectAll) {
+          const filters = {
+            departmentId: departmentId || undefined,
+            roleId: roleId || undefined,
+            status: statusFilter || undefined,
+            search: search || undefined,
+          };
+          payload.filters = Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== undefined));
+        } else {
+          payload.userIds = Array.from(selectedEmployees);
+        }
+
+        const response = await payrollApi.payrollInitiate(payload);
+        console.log(response, 'Payroll processing response');
+        
+        // Reset selections after successful processing
+        selectedEmployees = new Set();
+        selectAll = false;
+        
+      } catch (error) {
+        console.error(error, 'Error processing payroll');
+      } finally {
+        isProcessing = false;
+      }
+    }
+
+    // Handle filter changes - only call API when these specific filters change
+    function handleFilterChange() {
+      page = 1;
+      fetchEmployees();
+    }
+
+    onMount(() => {
+      fetchDepartments();
+      fetchRoles();
+      fetchEmployees();
+    });
+</script>
+
+<div class="p-4 md:p-6 bg-gray-50 min-h-screen">
+  <!-- Header -->
+  <div class="mb-4 md:mb-6">
+    <h1 class="text-xl md:text-2xl font-bold text-gray-900">
+      Payroll Processing 
+      {new Date(month + '-01').toLocaleString('default', { month: 'long', year: 'numeric' })}
+    </h1>
+  </div>
+
+  <!-- Filter Section -->
+  <div class="bg-white shadow rounded-md mb-4 md:mb-6">
+    <div class="flex flex-wrap gap-4 p-4">
+      <!-- Month Filter -->
+      <div class="flex flex-col w-full sm:w-auto">
+        <label class="text-sm font-medium text-gray-600 mb-1">Month</label>
+        <input 
+          type="month" 
+          bind:value={month}
+          on:change={handleFilterChange}
+          class="min-w-[160px] px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+
+      <!-- Department Filter -->
+      <div class="flex flex-col w-full sm:w-auto">
+        <label class="text-sm font-medium text-gray-600 mb-1">Department</label>
+        <select 
+          bind:value={departmentId}
+          on:change={handleFilterChange}
+          class="min-w-[160px] px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          disabled={isLoadingDepartments}
+        >
+          <option value="">All Departments</option>
+          {#each userDepartments as dept}
+            <option value={dept.value}>{dept.label}</option>
+          {/each}
+        </select>
+      </div>
+
+      <!-- Role Filter -->
+      <div class="flex flex-col w-full sm:w-auto">
+        <label class="text-sm font-medium text-gray-600 mb-1">Role</label>
+        <select 
+          bind:value={roleId}
+          on:change={handleFilterChange}
+          class="min-w-[160px] px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          disabled={isLoadingRoles}
+        >
+          <option value="">All Roles</option>
+          {#each userRoles as role}
+            <option value={role.value}>{role.label}</option>
+          {/each}
+        </select>
+      </div>
+
+      <!-- Status Filter -->
+      <div class="flex flex-col w-full sm:w-auto">
+        <label class="text-sm font-medium text-gray-600 mb-1">Status</label>
+        <select 
+          bind:value={statusFilter}
+          on:change={handleFilterChange}
+          class="min-w-[160px] px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">All Status</option>
+          {#each statusOptions as status}
+            <option value={status.value}>{status.label}</option>
+          {/each}
+        </select>
+      </div>
+
+      <!-- Search -->
+      <div class="flex flex-col w-full sm:w-auto">
+        <label class="text-sm font-medium text-gray-600 mb-1">Search</label>
+        <div class="relative">
+          <input
+            type="text"
+            placeholder="Search employees..."
+            bind:value={search}
+            class="min-w-[160px] w-full px-3 py-2 pr-10 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            on:keydown={(e) => e.key === 'Enter' && handleFilterChange()}
+          />
+          <button 
+            on:click={handleFilterChange}
+            class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <Search size="16" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Clear Filters -->
+      <div class="flex flex-col justify-end w-full sm:w-auto">
+        <button 
+          on:click={clearFilters}
+          class="text-sm text-blue-600 hover:underline px-2 py-2 whitespace-nowrap"
+        >
+          Clear Filters
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading indicator for filters -->
+    {#if isLoadingEmployees}
+      <div class="px-4 pb-4">
+        <div class="flex items-center gap-2 text-sm text-gray-500">
+          <Loader2 class="animate-spin" size="16" />
+          Loading employees...
+        </div>
+      </div>
+    {/if}
+
+    <!-- Active Filters Tags -->
+    {#if getActiveFilters().length > 0}
+      <div class="px-4 pb-4 border-t border-gray-200">
+        <div class="pt-3">
+          <div class="flex flex-wrap gap-2">
+            <span class="text-sm text-gray-600 mr-2">Active filters:</span>
+            {#each getActiveFilters() as filter}
+              <span class="inline-flex items-center gap-1 bg-gray-100 px-2 py-1 rounded text-sm">
+                {filter.label}
+                <button 
+                  on:click={() => removeFilter(filter.type)}
+                  class="text-gray-500 hover:text-gray-700 ml-1"
+                >
+                  <X size="14" />
+                </button>
+              </span>
+            {/each}
+          </div>
+        </div>
+      </div>
+    {/if}
+  </div>
+
+  <!-- Table -->
+  <div class="overflow-x-auto rounded-lg shadow-sm">
+    <div class="bg-white">
+      <table class="w-full table-auto text-sm text-left border-collapse">
+        <thead class="bg-gray-100 sticky top-0 z-10 text-gray-700">
+          <tr>
+            <th class="px-4 py-3 font-semibold">Employee Name</th>
+            <th class="px-4 py-3 font-semibold">Role</th>
+            <th class="px-4 py-3 font-semibold">Department</th>
+            <th class="px-4 py-3 font-semibold">Join Date</th>
+            <th class="px-4 py-3 font-semibold text-center">
+              <input 
+                type="checkbox" 
+                bind:checked={selectAll} 
+                on:change={toggleSelectAll}
+                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                disabled={employees.length === 0 || isLoadingEmployees}
+              />
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {#if isLoadingEmployees}
+            <!-- Loading skeleton rows -->
+            {#each Array(5) as _}
+              <tr class="even:bg-gray-50">
+                <td class="px-4 py-3 border-b">
+                  <div class="animate-pulse">
+                    <div class="h-4 bg-gray-200 rounded w-32 mb-1"></div>
+                    <div class="h-3 bg-gray-200 rounded w-24"></div>
+                  </div>
+                </td>
+                <td class="px-4 py-3 border-b">
+                  <div class="animate-pulse h-4 bg-gray-200 rounded w-20"></div>
+                </td>
+                <td class="px-4 py-3 border-b">
+                  <div class="animate-pulse h-4 bg-gray-200 rounded w-24"></div>
+                </td>
+                <td class="px-4 py-3 border-b">
+                  <div class="animate-pulse h-4 bg-gray-200 rounded w-20"></div>
+                </td>
+                <td class="px-4 py-3 border-b text-center">
+                  <div class="animate-pulse h-4 w-4 bg-gray-200 rounded mx-auto"></div>
+                </td>
+              </tr>
+            {/each}
+          {:else}
+            {#each employees as emp, index}
+              <tr class="even:bg-gray-50 hover:bg-gray-50 transition">
+                <td class="px-4 py-3 text-gray-600 border-b">
+                  <div class="font-medium text-gray-900">{emp.name}</div>
+                  <div class="text-gray-500 text-xs">{emp.email}</div>
+                </td>
+                <td class="px-4 py-3 text-gray-600 border-b">{formatLabel(emp.role)}</td>
+                <td class="px-4 py-3 text-gray-600 border-b">{formatLabel(emp.departmentId)}</td>
+                <td class="px-4 py-3 text-gray-600 border-b">{formatDate(emp.joiningDate)}</td>
+                <td class="px-4 py-3 text-gray-600 border-b text-center">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedEmployees.has(emp._id)} 
+                    on:change={() => toggleEmployee(emp._id)}
+                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </td>
+              </tr>
+            {/each}
+            {#if employees.length === 0}
+              <tr>
+                <td colspan="5" class="text-center p-8 text-gray-500">
+                  <div class="flex flex-col items-center">
+                    <svg class="w-12 h-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8l-4 4m0 0l-4-4m4 4V3"></path>
+                    </svg>
+                    <p>No employees found</p>
+                    <p class="text-sm">Try adjusting your filters</p>
+                  </div>
+                </td>
+              </tr>
+            {/if}
+          {/if}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pagination and Actions -->
+  <div class="flex flex-col sm:flex-row justify-between items-center mt-4 px-4 gap-4">
+    <!-- Records Info -->
+    <div class="text-sm text-gray-500">
+      {#if totalRecords > 0}
+        Showing {((page - 1) * limit) + 1}–{Math.min(page * limit, totalRecords)} of {totalRecords}
+      {:else}
+        No records found
+      {/if}
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="flex items-center space-x-2">
+      <button 
+        disabled={page <= 1 || isLoadingEmployees} 
+        on:click={() => { page--; fetchEmployees(); }}
+        class="px-3 py-1 border rounded-md text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+      >
+        <ChevronLeft size="16" />
+        <span class="hidden sm:inline">Previous</span>
+      </button>
+      
+      {#if totalPages <= 7}
+        {#each Array(totalPages) as _, i}
+          <button 
+            on:click={() => { page = i + 1; fetchEmployees(); }}
+            class="px-3 py-1 border rounded-md text-sm {page === i + 1 ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}"
+            disabled={isLoadingEmployees}
+          >
+            {i + 1}
+          </button>
+        {/each}
+      {:else}
+        <!-- Show first page -->
+        <button 
+          on:click={() => { page = 1; fetchEmployees(); }}
+          class="px-3 py-1 border rounded-md text-sm {page === 1 ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}"
+          disabled={isLoadingEmployees}
+        >
+          1
+        </button>
+        
+        {#if page > 3}
+          <span class="px-2 text-gray-500">...</span>
+        {/if}
+        
+        <!-- Show current page range -->
+        {#each Array(3) as _, i}
+          {#if page + i - 1 > 1 && page + i - 1 < totalPages}
+            <button 
+              on:click={() => { page = page + i - 1; fetchEmployees(); }}
+              class="px-3 py-1 border rounded-md text-sm {page === page + i - 1 ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}"
+              disabled={isLoadingEmployees}
+            >
+              {page + i - 1}
+            </button>
+          {/if}
+        {/each}
+        
+        {#if page < totalPages - 2}
+          <span class="px-2 text-gray-500">...</span>
+        {/if}
+        
+        <!-- Show last page -->
+        <button 
+          on:click={() => { page = totalPages; fetchEmployees(); }}
+          class="px-3 py-1 border rounded-md text-sm {page === totalPages ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}"
+          disabled={isLoadingEmployees}
+        >
+          {totalPages}
+        </button>
+      {/if}
+      
+      <button 
+        disabled={page >= totalPages || isLoadingEmployees} 
+        on:click={() => { page++; fetchEmployees(); }}
+        class="px-3 py-1 border rounded-md text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+      >
+        <span class="hidden sm:inline">Next</span>
+        <ChevronRight size="16" />
+      </button>
+    </div>
+
+    <!-- Process Button -->
+    <div class="flex items-center gap-4 w-full sm:w-auto justify-end">
+      {#if selectedEmployees.size > 0}
+        <span class="text-sm text-gray-600">
+          {selectedEmployees.size} employee{selectedEmployees.size === 1 ? '' : 's'} selected
+        </span>
+      {/if}
+      
+      <button
+        class="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+        on:click={processPayroll}
+        disabled={isProcessing || selectedEmployees.size === 0}
+      >
+        {#if isProcessing}
+          <Loader2 class="animate-spin" size="16" />
+          Processing...
+        {:else}
+          Process Payroll ▶
+        {/if}
+      </button>
+    </div>
+  </div>
+</div>

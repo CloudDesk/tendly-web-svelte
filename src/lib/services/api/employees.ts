@@ -159,6 +159,14 @@ export const employeesApi = {
   getById: async (id: string): Promise<ApiResponse<User>> => {
     return await fetchApi<ApiResponse<User>>(`/users/${id}`);
   },
+  getforPayroll:async(filters:any) : Promise<ApiResponse<Employee[]>> => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined) params.append(key, String(value));
+    });
+
+    return await fetchApi(`/users/payroll?${params.toString()}`);
+  },
 
   create: async (employee: Omit<User, "id">): Promise<ApiResponse<User>> => {
     return await fetchApi<ApiResponse<User>>("/users", {

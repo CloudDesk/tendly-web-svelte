@@ -1,11 +1,18 @@
 import { fetchApi } from './base';
 
-interface IPayroll {
+export interface PayrollInitiatePayload {
     monthYear: string;
-}
+    filters?: {
+      departmentId?: string;
+      status?: string;
+      search?: string;
+    };
+    userIds?: string[];
+  }
+  
 export const payrollApi = {
 
-    payrollInitiate: async (data: IPayroll) => {
+    payrollInitiate: async (data: PayrollInitiatePayload) => {
         return fetchApi('/payroll/generate', {
             method: 'POST',
             body: JSON.stringify(data)
