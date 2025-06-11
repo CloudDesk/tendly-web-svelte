@@ -35,6 +35,16 @@ export const payrollApi = {
             method: 'GET',
         })
     },
+    getUserPayrollStatus: async (userIds: string[], month: number, year: number) => {
+        return fetchApi(`/payroll/by-users`, {
+            method: 'POST',
+            body: JSON.stringify({
+                userIds,
+                month,
+                year
+            })
+        })
+    },
     canInitiatePayroll: async (month: number, year: number) => {
         return fetchApi(`/payroll/can-initiate?month=${month}&year=${year}`, {
             method: 'GET',

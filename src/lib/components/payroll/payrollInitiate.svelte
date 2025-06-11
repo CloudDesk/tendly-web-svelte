@@ -2,7 +2,7 @@
     import { onMount } from 'svelte';
     import { employeesApi, lovsApi, payrollApi, type PayrollInitiatePayload } from '$lib/services/api';
     import { ChevronLeft, ChevronRight, Loader2, Search, X } from 'lucide-svelte';
-  
+
     interface Employee {
       _id: string;
       name: string;
@@ -10,17 +10,18 @@
       role: string;
       departmentId: string;
       joiningDate: string;
+      payrollStatus?: 'Draft' | 'Pending Approval' | 'Processing' | 'Processed' | 'Completed' | 'Failed' | 'Cancelled' | null;
     }
-  
+
     let employees: Employee[] = [];
     let selectedEmployees = new Set<string>();
     let selectAll = false;
-  
+
     let page = 1;
     let limit = 10;
     let totalPages = 1;
     let totalRecords = 0;
-  
+
     let month = '2025-05';
     let departmentId = '';
     let roleId = '';
@@ -46,7 +47,6 @@
       try {
         isLoadingDepartments = true;
         const departmentResponse: any = await lovsApi.getByType("department");
-        console.log(departmentResponse, "departmentResponse");
         if (departmentResponse.success) {
           userDepartments = departmentResponse.data.values.map((dept: any) => ({
             label: dept.label,
@@ -77,6 +77,17 @@
       }
     }
 
+    async function fetchPayrollStatus(userIds: string[], year: string, month: string) {
+        console.log("fetchPayrollSttaus", userIds, year, month);
+      try {
+        const response: any = await payrollApi.getUserPayrollStatus( userIds,Number(year), Number(month) );
+        return response.data || [];
+      } catch (error) {
+        console.error('Error fetching payroll status:', error);
+        return [];
+      }
+    }
+
     async function fetchEmployees() {
       try {
         isLoadingEmployees = true;
@@ -89,8 +100,6 @@
           search,
           status: statusFilter,
         };
-        
-        console.log(filters, "Fetching employees with filters1");
 
         // Remove empty values in filter
         Object.keys(filters).forEach(key => {
@@ -99,10 +108,22 @@
           }
         });
 
-        console.log(filters, "Fetching employees with filters");
-
         const response: any = await employeesApi.getforPayroll(filters);
-        employees = response.data;
+        const employeeData = response.data || [];
+        
+        // Extract year and month from the month filter (format: YYYY-MM)
+        const [year, monthNum] = month.split('-');
+
+        // Fetch payroll status for all employees in the current page
+        const userIds = employeeData.map((emp: Employee) => emp._id);
+        const payrollStatuses = await fetchPayrollStatus(userIds, year, monthNum);
+
+        // Merge payroll status with employee data
+        employees = employeeData.map((emp: Employee) => ({
+          ...emp,
+          payrollStatus: payrollStatuses.find((status: any) => status.userId === emp._id)?.status || null
+        }));
+
         page = response.meta.page;
         totalPages = response.meta.totalPages;
         totalRecords = response.meta.total || 0;
@@ -117,10 +138,14 @@
         isLoadingEmployees = false;
       }
     }
-  
+
     function toggleSelectAll() {
       if (selectAll) {
-        selectedEmployees = new Set(employees.map(e => e._id));
+        selectedEmployees = new Set(
+          employees
+            .filter(emp => emp.payrollStatus === 'Failed' || emp.payrollStatus === 'Cancelled' || emp.payrollStatus === null)
+            .map(emp => emp._id)
+        );
       } else {
         selectedEmployees = new Set();
       }
@@ -128,6 +153,11 @@
     }
 
     function toggleEmployee(id: string) {
+      const employee = employees.find(emp => emp._id === id);
+      if (!employee || (employee.payrollStatus && !['Failed', 'Cancelled'].includes(employee.payrollStatus))) {
+        return; // Prevent selection if status is not Failed, Cancelled, or null
+      }
+
       if (selectedEmployees.has(id)) {
         selectedEmployees.delete(id);
       } else {
@@ -136,17 +166,40 @@
       selectedEmployees = selectedEmployees; // Trigger reactivity
       
       // Update selectAll state
-      selectAll = selectedEmployees.size === employees.length && employees.length > 0;
+      selectAll = selectedEmployees.size === employees.filter(emp => 
+        emp.payrollStatus === 'Failed' || emp.payrollStatus === 'Cancelled' || emp.payrollStatus === null
+      ).length && employees.length > 0;
     }
 
     function formatDate(dateStr: string) {
       return new Date(dateStr).toLocaleDateString();
     }
-  
+
     function formatLabel(value: string): string {
       return value
         .replace(/_/g, ' ')
         .replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function getPayrollStatusColor(status: string | null | undefined): string {
+      switch (status) {
+        case 'Draft':
+          return 'text-gray-600 bg-gray-100';
+        case 'Pending Approval':
+          return 'text-yellow-600 bg-yellow-100';
+        case 'Processing':
+          return 'text-blue-600 bg-blue-100';
+        case 'Processed':
+          return 'text-green-600 bg-green-100';
+        case 'Completed':
+          return 'text-green-600 bg-green-100';
+        case 'Failed':
+          return 'text-red-600 bg-red-100';
+        case 'Cancelled':
+          return 'text-gray-600 bg-gray-100';
+        default:
+          return 'text-gray-600 bg-gray-100';
+      }
     }
 
     function clearFilters() {
@@ -224,6 +277,8 @@
         selectedEmployees = new Set();
         selectAll = false;
         
+        // Refresh employee data to update payroll statuses
+        await fetchEmployees();
       } catch (error) {
         console.error(error, 'Error processing payroll');
       } finally {
@@ -388,13 +443,14 @@
             <th class="px-4 py-3 font-semibold">Role</th>
             <th class="px-4 py-3 font-semibold">Department</th>
             <th class="px-4 py-3 font-semibold">Join Date</th>
+            <th class="px-4 py-3 font-semibold">Payroll Status</th>
             <th class="px-4 py-3 font-semibold text-center">
               <input 
                 type="checkbox" 
                 bind:checked={selectAll} 
                 on:change={toggleSelectAll}
                 class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                disabled={employees.length === 0 || isLoadingEmployees}
+                disabled={employees.length === 0 || isLoadingEmployees || employees.every(emp => emp.payrollStatus && !['Failed', 'Cancelled'].includes(emp.payrollStatus))}
               />
             </th>
           </tr>
@@ -419,13 +475,16 @@
                 <td class="px-4 py-3 border-b">
                   <div class="animate-pulse h-4 bg-gray-200 rounded w-20"></div>
                 </td>
+                <td class="px-4 py-3 border-b">
+                  <div class="animate-pulse h-4 bg-gray-200 rounded w-20"></div>
+                </td>
                 <td class="px-4 py-3 border-b text-center">
                   <div class="animate-pulse h-4 w-4 bg-gray-200 rounded mx-auto"></div>
                 </td>
               </tr>
             {/each}
           {:else}
-            {#each employees as emp, index}
+            {#each employees as emp}
               <tr class="even:bg-gray-50 hover:bg-gray-50 transition">
                 <td class="px-4 py-3 text-gray-600 border-b">
                   <div class="font-medium text-gray-900">{emp.name}</div>
@@ -434,19 +493,25 @@
                 <td class="px-4 py-3 text-gray-600 border-b">{formatLabel(emp.role)}</td>
                 <td class="px-4 py-3 text-gray-600 border-b">{formatLabel(emp.departmentId)}</td>
                 <td class="px-4 py-3 text-gray-600 border-b">{formatDate(emp.joiningDate)}</td>
+                <td class="px-4 py-3 text-gray-600 border-b">
+                  <span class="inline-block px-2 py-1 rounded text-xs {getPayrollStatusColor(emp.payrollStatus)}">
+                    {emp.payrollStatus || 'No Record'}
+                  </span>
+                </td>
                 <td class="px-4 py-3 text-gray-600 border-b text-center">
                   <input 
                     type="checkbox" 
                     checked={selectedEmployees.has(emp._id)} 
                     on:change={() => toggleEmployee(emp._id)}
                     class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    disabled={emp.payrollStatus && !['Failed', 'Cancelled'].includes(emp.payrollStatus)}
                   />
                 </td>
               </tr>
             {/each}
             {#if employees.length === 0}
               <tr>
-                <td colspan="5" class="text-center p-8 text-gray-500">
+                <td colspan="6" class="text-center p-8 text-gray-500">
                   <div class="flex flex-col items-center">
                     <svg class="w-12 h-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8l-4 4m0 0l-4-4m4 4V3"></path>
