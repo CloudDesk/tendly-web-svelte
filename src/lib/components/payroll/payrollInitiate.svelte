@@ -1,310 +1,414 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
-    import { employeesApi, lovsApi, payrollApi, type PayrollInitiatePayload } from '$lib/services/api';
-    import { ChevronLeft, ChevronRight, Loader2, Search, X } from 'lucide-svelte';
+  import { onMount } from "svelte";
+  import {
+    employeesApi,
+    lovsApi,
+    payrollApi,
+    type PayrollInitiatePayload,
+  } from "$lib/services/api";
+  import { ChevronLeft, ChevronRight, Loader2, Search, X } from "lucide-svelte";
+  import Modal from "../common/Modal.svelte";
+  import LoaderNew from "../common/LoaderNew.svelte";
+  import PayrollSummaryTable from "./payrollSummaryTable.svelte";
 
-    interface Employee {
-      _id: string;
-      name: string;
-      email: string;
-      role: string;
-      departmentId: string;
-      joiningDate: string;
-      payrollStatus?: 'Draft' | 'Pending Approval' | 'Processing' | 'Processed' | 'Completed' | 'Failed' | 'Cancelled' | null;
-    }
+  interface Employee {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+    departmentId: string;
+    joiningDate: string;
+    payrollStatus?:
+      | "Draft"
+      | "Pending Approval"
+      | "Processing"
+      | "Processed"
+      | "Completed"
+      | "Failed"
+      | "Cancelled"
+      | null;
+  }
 
-    let employees: Employee[] = [];
-    let selectedEmployees = new Set<string>();
-    let selectAll = false;
+  let employees: Employee[] = [];
+  let selectedEmployees = new Set<string>();
+  let selectAll = false;
 
-    let page = 1;
-    let limit = 10;
-    let totalPages = 1;
-    let totalRecords = 0;
+  let page = 1;
+  let limit = 10;
+  let totalPages = 1;
+  let totalRecords = 0;
 
-    let month = '2025-05';
-    let departmentId = '';
-    let roleId = '';
-    let search = '';
-    let statusFilter = '';
-    let userDepartments: { label: string; value: string }[] = [];
-    let userRoles: { label: string; value: string }[] = [];
-    
-    // Loading states
-    let isLoadingEmployees = false;
-    let isLoadingDepartments = false;
-    let isLoadingRoles = false;
-    let isProcessing = false;
-    
-    // Status options with labels
-    const statusOptions = [
-      { value: 'Active', label: 'Active' },
-      { value: 'On Hold', label: 'Resignation Applied - Pending Approval' },
-      { value: 'Resigned', label: 'Resignation Approved - Final Settlement' }
-    ];
+  let showModal = false;
+  // Set default month to current year and month in "YYYY-MM" format
+  let month = (() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 0).padStart(2, "0");
+    return `${y}-${m}`;
+  })();
+  let departmentId = "";
+  let role = "";
+  let search = "";
+  let statusFilter = "";
+  let userDepartments: { label: string; value: string }[] = [];
+  let userRoles: { label: string; value: string }[] = [];
 
-    async function fetchDepartments() {
-      try {
-        isLoadingDepartments = true;
-        const departmentResponse: any = await lovsApi.getByType("department");
-        if (departmentResponse.success) {
-          userDepartments = departmentResponse.data.values.map((dept: any) => ({
-            label: dept.label,
-            value: dept.value,
-          }));
-        }
-      } catch (error) {
-        console.error('Error fetching departments:', error);
-      } finally {
-        isLoadingDepartments = false;
+  // Loading states
+  let isLoadingEmployees = false;
+  let isLoadingDepartments = false;
+  let isLoadingRoles = false;
+  let isProcessing = false;
+  let isLoadingSummary = false;
+
+  let payrollSummaryData: any = null;
+  // Status options with labels
+  const statusOptions = [
+    { value: "Active", label: "Active" },
+    { value: "On Hold", label: "Resignation Applied - Pending Approval" },
+    { value: "Resigned", label: "Resignation Approved - Final Settlement" },
+  ];
+
+  async function fetchDepartments() {
+    try {
+      isLoadingDepartments = true;
+      const departmentResponse: any = await lovsApi.getByType("department");
+      if (departmentResponse.success) {
+        userDepartments = departmentResponse.data.values.map((dept: any) => ({
+          label: dept.label,
+          value: dept.value,
+        }));
       }
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+    } finally {
+      isLoadingDepartments = false;
     }
+  }
 
-    async function fetchRoles() {
-      try {
-        isLoadingRoles = true;
-        const roleResponse: any = await lovsApi.getByType("role");
-        if (roleResponse.success) {
-          userRoles = roleResponse.data.values.map((role: any) => ({
-            label: role.label,
-            value: role.value,
-          }));
-        }
-      } catch (error) {
-        console.error('Error fetching roles:', error);
-      } finally {
-        isLoadingRoles = false;
+  async function fetchRoles() {
+    try {
+      isLoadingRoles = true;
+      const roleResponse: any = await lovsApi.getByType("role");
+      if (roleResponse.success) {
+        userRoles = roleResponse.data.values.map((role: any) => ({
+          label: role.label,
+          value: role.value,
+        }));
       }
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+    } finally {
+      isLoadingRoles = false;
     }
+  }
 
-    async function fetchPayrollStatus(userIds: string[], year: string, month: string) {
-        console.log("fetchPayrollSttaus", userIds, year, month);
-      try {
-        const response: any = await payrollApi.getUserPayrollStatus( userIds,Number(year), Number(month) );
-        return response.data || [];
-      } catch (error) {
-        console.error('Error fetching payroll status:', error);
+  async function fetchPayrollStatus(
+    userIds: string[],
+    year: string,
+    month: string
+  ) {
+    console.log("fetchPayrollSttaus", userIds, year, month);
+    try {
+      const response: any = await payrollApi.getUserPayrollStatus(
+        userIds,
+        Number(year),
+        Number(month)
+      );
+      console.log(response, "Payroll status response");
+      if (!response.success) {
         return [];
       }
+      return response.data || [];
+    } catch (error) {
+      console.error("Error fetching payroll status:", error);
+      return [];
+    }
+  }
+
+  async function fetchEmployees() {
+    try {
+      isLoadingEmployees = true;
+      const filters = {
+        page,
+        limit,
+        month,
+        departmentId,
+        role,
+        search,
+        status: statusFilter,
+      };
+
+      // Remove empty values in filter
+      Object.keys(filters).forEach((key) => {
+        if (
+          filters[key as keyof typeof filters] === "" ||
+          filters[key as keyof typeof filters] === undefined ||
+          filters[key as keyof typeof filters] === null
+        ) {
+          delete (filters as any)[key];
+        }
+      });
+      console.log(filters, "Filters for employee API");
+      const response: any = await employeesApi.getforPayroll(filters);
+      const employeeData = response.data || [];
+
+      // Extract year and month from the month filter (format: YYYY-MM)
+      const [year, monthNum] = month.split("-");
+
+      // Fetch payroll status for all employees in the current page
+      const userIds = employeeData.map((emp: Employee) => emp._id);
+      const payrollStatuses = await fetchPayrollStatus(userIds, year, monthNum);
+
+      // Merge payroll status with employee data
+      employees = employeeData.map((emp: Employee) => ({
+        ...emp,
+        payrollStatus:
+          payrollStatuses.find((status: any) => status.employeeId === emp._id)
+            ?.status || null,
+      }));
+
+      page = response.meta.page;
+      totalPages = response.meta.totalPages;
+      totalRecords = response.meta.total || 0;
+
+      // Reset selections when data changes
+      selectedEmployees = new Set();
+      selectAll = false;
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      employees = [];
+    } finally {
+      isLoadingEmployees = false;
+    }
+  }
+
+  function toggleSelectAll() {
+    if (selectAll) {
+      selectedEmployees = new Set(
+        employees
+          .filter(
+            (emp) =>
+              emp.payrollStatus === "Failed" ||
+              emp.payrollStatus === "Cancelled" ||
+              emp.payrollStatus === null
+          )
+          .map((emp) => emp._id)
+      );
+    } else {
+      selectedEmployees = new Set();
+    }
+    selectedEmployees = selectedEmployees; // Trigger reactivity
+  }
+
+  function toggleEmployee(id: string) {
+    const employee = employees.find((emp) => emp._id === id);
+    if (
+      !employee ||
+      (employee.payrollStatus &&
+        !["Failed", "Cancelled"].includes(employee.payrollStatus))
+    ) {
+      return; // Prevent selection if status is not Failed, Cancelled, or null
     }
 
-    async function fetchEmployees() {
-      try {
-        isLoadingEmployees = true;
-        const filters = {
-          page,
-          limit,
-          month,
-          departmentId,
-          roleId,
-          search,
-          status: statusFilter,
-        };
-
-        // Remove empty values in filter
-        Object.keys(filters).forEach(key => {
-          if (filters[key as keyof typeof filters] === '' || filters[key as keyof typeof filters] === undefined || filters[key as keyof typeof filters] === null) {
-            delete (filters as any)[key];
-          }
-        });
-
-        const response: any = await employeesApi.getforPayroll(filters);
-        const employeeData = response.data || [];
-        
-        // Extract year and month from the month filter (format: YYYY-MM)
-        const [year, monthNum] = month.split('-');
-
-        // Fetch payroll status for all employees in the current page
-        const userIds = employeeData.map((emp: Employee) => emp._id);
-        const payrollStatuses = await fetchPayrollStatus(userIds, year, monthNum);
-
-        // Merge payroll status with employee data
-        employees = employeeData.map((emp: Employee) => ({
-          ...emp,
-          payrollStatus: payrollStatuses.find((status: any) => status.userId === emp._id)?.status || null
-        }));
-
-        page = response.meta.page;
-        totalPages = response.meta.totalPages;
-        totalRecords = response.meta.total || 0;
-        
-        // Reset selections when data changes
-        selectedEmployees = new Set();
-        selectAll = false;
-      } catch (error) {
-        console.error('Error fetching employees:', error);
-        employees = [];
-      } finally {
-        isLoadingEmployees = false;
-      }
+    if (selectedEmployees.has(id)) {
+      selectedEmployees.delete(id);
+    } else {
+      selectedEmployees.add(id);
     }
+    selectedEmployees = selectedEmployees; // Trigger reactivity
 
-    function toggleSelectAll() {
+    // Update selectAll state
+    selectAll =
+      selectedEmployees.size ===
+        employees.filter(
+          (emp) =>
+            emp.payrollStatus === "Failed" ||
+            emp.payrollStatus === "Cancelled" ||
+            emp.payrollStatus === null
+        ).length && employees.length > 0;
+  }
+
+  function formatDate(dateStr: string) {
+    return new Date(dateStr).toLocaleDateString();
+  }
+
+  function formatLabel(value: string): string {
+    return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  function getPayrollStatusColor(status: string | null | undefined): string {
+    switch (status) {
+      case "Draft":
+        return "text-gray-600 bg-gray-100";
+      case "Pending Approval":
+        return "text-yellow-600 bg-yellow-100";
+      case "Processing":
+        return "text-blue-600 bg-blue-100";
+      case "Processed":
+        return "text-green-600 bg-green-100";
+      case "Completed":
+        return "text-green-600 bg-green-100";
+      case "Failed":
+        return "text-red-600 bg-red-100";
+      case "Cancelled":
+        return "text-gray-600 bg-gray-100";
+      default:
+        return "text-gray-600 bg-gray-100";
+    }
+  }
+
+  function clearFilters() {
+    month = month;
+    departmentId = "";
+    role = "";
+    search = "";
+    statusFilter = "";
+    page = 1;
+    fetchEmployees();
+  }
+
+  function getActiveFilters() {
+    const filters = [];
+    if (departmentId) {
+      const dept = userDepartments.find((d) => d.value === departmentId);
+      filters.push({
+        type: "department",
+        label: dept?.label || departmentId,
+        value: departmentId,
+      });
+    }
+    if (role) {
+      const foundRole = userRoles.find((r) => r.value === role);
+      filters.push({
+        type: "role",
+        label: foundRole?.label || role,
+        value: role,
+      });
+    }
+    if (statusFilter) {
+      const status = statusOptions.find((s) => s.value === statusFilter);
+      filters.push({
+        type: "status",
+        label: status?.label || statusFilter,
+        value: statusFilter,
+      });
+    }
+    if (search) {
+      filters.push({
+        type: "search",
+        label: `Search: "${search}"`,
+        value: search,
+      });
+    }
+    return filters;
+  }
+
+  function removeFilter(type: string) {
+    switch (type) {
+      case "department":
+        departmentId = "";
+        break;
+      case "role":
+        role = "";
+        break;
+      case "status":
+        statusFilter = "";
+        break;
+      case "search":
+        search = "";
+        break;
+    }
+    page = 1;
+    fetchEmployees();
+  }
+
+  async function processPayroll() {
+    if (isProcessing || selectedEmployees.size === 0) return;
+    isProcessing = true;
+
+    try {
+      const payload: PayrollInitiatePayload = { monthYear: month };
+
       if (selectAll) {
-        selectedEmployees = new Set(
-          employees
-            .filter(emp => emp.payrollStatus === 'Failed' || emp.payrollStatus === 'Cancelled' || emp.payrollStatus === null)
-            .map(emp => emp._id)
+        const filters = {
+          departmentId: departmentId || undefined,
+          role: role || undefined,
+          status: statusFilter || undefined,
+          search: search || undefined,
+        };
+        payload.filters = Object.fromEntries(
+          Object.entries(filters).filter(([_, v]) => v !== undefined)
         );
       } else {
-        selectedEmployees = new Set();
+        payload.userIds = Array.from(selectedEmployees);
       }
-      selectedEmployees = selectedEmployees; // Trigger reactivity
+      console.log(payload, "Payroll processing payload");
+      const response = await payrollApi.payrollInitiate(payload);
+      console.log(response, "Payroll processing response");
+
+      // Reset selections after successful processing
+      selectedEmployees = new Set();
+      selectAll = false;
+
+      // Refresh employee data to update payroll statuses
+      await fetchEmployees();
+    } catch (error) {
+      console.error(error, "Error processing payroll");
+    } finally {
+      isProcessing = false;
     }
+  }
 
-    function toggleEmployee(id: string) {
-      const employee = employees.find(emp => emp._id === id);
-      if (!employee || (employee.payrollStatus && !['Failed', 'Cancelled'].includes(employee.payrollStatus))) {
-        return; // Prevent selection if status is not Failed, Cancelled, or null
-      }
+  // Handle filter changes - only call API when these specific filters change
+  function handleFilterChange() {
+    page = 1;
+    fetchEmployees();
+  }
 
-      if (selectedEmployees.has(id)) {
-        selectedEmployees.delete(id);
+  // Handle view summary action
+  function handleViewSummary() {
+    showModal = true;
+    getSummary();
+  }
+  const getSummary = async () => {
+    const [year, monthNum] = month.split("-");
+
+    isLoadingSummary = true;
+    try {
+      const response: any = await payrollApi.payrollSummary(
+        Number(monthNum),
+        Number(year)
+      );
+      if (response.success) {
+        // Process and display summary data
+        console.log(response.data, "Payroll Summary Data");
+        payrollSummaryData = response.data;
       } else {
-        selectedEmployees.add(id);
+        console.error("Failed to fetch payroll summary:", response.message);
       }
-      selectedEmployees = selectedEmployees; // Trigger reactivity
-      
-      // Update selectAll state
-      selectAll = selectedEmployees.size === employees.filter(emp => 
-        emp.payrollStatus === 'Failed' || emp.payrollStatus === 'Cancelled' || emp.payrollStatus === null
-      ).length && employees.length > 0;
+    } catch (error) {
+      console.error("Error fetching payroll summary:", error);
+    } finally {
+      isLoadingSummary = false;
     }
+  };
 
-    function formatDate(dateStr: string) {
-      return new Date(dateStr).toLocaleDateString();
-    }
-
-    function formatLabel(value: string): string {
-      return value
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, c => c.toUpperCase());
-    }
-
-    function getPayrollStatusColor(status: string | null | undefined): string {
-      switch (status) {
-        case 'Draft':
-          return 'text-gray-600 bg-gray-100';
-        case 'Pending Approval':
-          return 'text-yellow-600 bg-yellow-100';
-        case 'Processing':
-          return 'text-blue-600 bg-blue-100';
-        case 'Processed':
-          return 'text-green-600 bg-green-100';
-        case 'Completed':
-          return 'text-green-600 bg-green-100';
-        case 'Failed':
-          return 'text-red-600 bg-red-100';
-        case 'Cancelled':
-          return 'text-gray-600 bg-gray-100';
-        default:
-          return 'text-gray-600 bg-gray-100';
-      }
-    }
-
-    function clearFilters() {
-      month = '2025-05';
-      departmentId = '';
-      roleId = '';
-      search = '';
-      statusFilter = '';
-      page = 1;
-      fetchEmployees();
-    }
-
-    function getActiveFilters() {
-      const filters = [];
-      if (departmentId) {
-        const dept = userDepartments.find(d => d.value === departmentId);
-        filters.push({ type: 'department', label: dept?.label || departmentId, value: departmentId });
-      }
-      if (roleId) {
-        const role = userRoles.find(r => r.value === roleId);
-        filters.push({ type: 'role', label: role?.label || roleId, value: roleId });
-      }
-      if (statusFilter) {
-        const status = statusOptions.find(s => s.value === statusFilter);
-        filters.push({ type: 'status', label: status?.label || statusFilter, value: statusFilter });
-      }
-      if (search) {
-        filters.push({ type: 'search', label: `Search: "${search}"`, value: search });
-      }
-      return filters;
-    }
-
-    function removeFilter(type: string) {
-      switch (type) {
-        case 'department':
-          departmentId = '';
-          break;
-        case 'role':
-          roleId = '';
-          break;
-        case 'status':
-          statusFilter = '';
-          break;
-        case 'search':
-          search = '';
-          break;
-      }
-      page = 1;
-      fetchEmployees();
-    }
-
-    async function processPayroll() {
-      if (isProcessing || selectedEmployees.size === 0) return;
-      isProcessing = true;
-
-      try {
-        const payload: PayrollInitiatePayload = { monthYear: month };
-
-        if (selectAll) {
-          const filters = {
-            departmentId: departmentId || undefined,
-            roleId: roleId || undefined,
-            status: statusFilter || undefined,
-            search: search || undefined,
-          };
-          payload.filters = Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== undefined));
-        } else {
-          payload.userIds = Array.from(selectedEmployees);
-        }
-
-        const response = await payrollApi.payrollInitiate(payload);
-        console.log(response, 'Payroll processing response');
-        
-        // Reset selections after successful processing
-        selectedEmployees = new Set();
-        selectAll = false;
-        
-        // Refresh employee data to update payroll statuses
-        await fetchEmployees();
-      } catch (error) {
-        console.error(error, 'Error processing payroll');
-      } finally {
-        isProcessing = false;
-      }
-    }
-
-    // Handle filter changes - only call API when these specific filters change
-    function handleFilterChange() {
-      page = 1;
-      fetchEmployees();
-    }
-
-    onMount(() => {
-      fetchDepartments();
-      fetchRoles();
-      fetchEmployees();
-    });
+  onMount(() => {
+    fetchDepartments();
+    fetchRoles();
+    fetchEmployees();
+  });
 </script>
 
 <div class="p-4 md:p-6 bg-gray-50 min-h-screen">
   <!-- Header -->
   <div class="mb-4 md:mb-6">
     <h1 class="text-xl md:text-2xl font-bold text-gray-900">
-      Payroll Processing 
-      {new Date(month + '-01').toLocaleString('default', { month: 'long', year: 'numeric' })}
+      Payroll Processing
+      {new Date(month + "-01").toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      })}
     </h1>
   </div>
 
@@ -314,8 +418,8 @@
       <!-- Month Filter -->
       <div class="flex flex-col w-full sm:w-auto">
         <label class="text-sm font-medium text-gray-600 mb-1">Month</label>
-        <input 
-          type="month" 
+        <input
+          type="month"
           bind:value={month}
           on:change={handleFilterChange}
           class="min-w-[160px] px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -325,7 +429,7 @@
       <!-- Department Filter -->
       <div class="flex flex-col w-full sm:w-auto">
         <label class="text-sm font-medium text-gray-600 mb-1">Department</label>
-        <select 
+        <select
           bind:value={departmentId}
           on:change={handleFilterChange}
           class="min-w-[160px] px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -341,8 +445,8 @@
       <!-- Role Filter -->
       <div class="flex flex-col w-full sm:w-auto">
         <label class="text-sm font-medium text-gray-600 mb-1">Role</label>
-        <select 
-          bind:value={roleId}
+        <select
+          bind:value={role}
           on:change={handleFilterChange}
           class="min-w-[160px] px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           disabled={isLoadingRoles}
@@ -357,7 +461,7 @@
       <!-- Status Filter -->
       <div class="flex flex-col w-full sm:w-auto">
         <label class="text-sm font-medium text-gray-600 mb-1">Status</label>
-        <select 
+        <select
           bind:value={statusFilter}
           on:change={handleFilterChange}
           class="min-w-[160px] px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -378,9 +482,9 @@
             placeholder="Search employees..."
             bind:value={search}
             class="min-w-[160px] w-full px-3 py-2 pr-10 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            on:keydown={(e) => e.key === 'Enter' && handleFilterChange()}
+            on:keydown={(e) => e.key === "Enter" && handleFilterChange()}
           />
-          <button 
+          <button
             on:click={handleFilterChange}
             class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
@@ -391,11 +495,19 @@
 
       <!-- Clear Filters -->
       <div class="flex flex-col justify-end w-full sm:w-auto">
-        <button 
+        <button
           on:click={clearFilters}
           class="text-sm text-blue-600 hover:underline px-2 py-2 whitespace-nowrap"
         >
           Clear Filters
+        </button>
+      </div>
+      <div class="flex flex-col justify-end w-full sm:w-auto">
+        <button
+          on:click={handleViewSummary}
+          class="text-sm text-blue-600 hover:underline px-2 py-2 whitespace-nowrap"
+        >
+          View Summary
         </button>
       </div>
     </div>
@@ -417,9 +529,11 @@
           <div class="flex flex-wrap gap-2">
             <span class="text-sm text-gray-600 mr-2">Active filters:</span>
             {#each getActiveFilters() as filter}
-              <span class="inline-flex items-center gap-1 bg-gray-100 px-2 py-1 rounded text-sm">
+              <span
+                class="inline-flex items-center gap-1 bg-gray-100 px-2 py-1 rounded text-sm"
+              >
                 {filter.label}
-                <button 
+                <button
                   on:click={() => removeFilter(filter.type)}
                   class="text-gray-500 hover:text-gray-700 ml-1"
                 >
@@ -445,12 +559,18 @@
             <th class="px-4 py-3 font-semibold">Join Date</th>
             <th class="px-4 py-3 font-semibold">Payroll Status</th>
             <th class="px-4 py-3 font-semibold text-center">
-              <input 
-                type="checkbox" 
-                bind:checked={selectAll} 
+              <input
+                type="checkbox"
+                bind:checked={selectAll}
                 on:change={toggleSelectAll}
                 class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                disabled={employees.length === 0 || isLoadingEmployees || employees.every(emp => emp.payrollStatus && !['Failed', 'Cancelled'].includes(emp.payrollStatus))}
+                disabled={employees.length === 0 ||
+                  isLoadingEmployees ||
+                  employees.every(
+                    (emp) =>
+                      emp.payrollStatus &&
+                      !["Failed", "Cancelled"].includes(emp.payrollStatus)
+                  )}
               />
             </th>
           </tr>
@@ -479,7 +599,9 @@
                   <div class="animate-pulse h-4 bg-gray-200 rounded w-20"></div>
                 </td>
                 <td class="px-4 py-3 border-b text-center">
-                  <div class="animate-pulse h-4 w-4 bg-gray-200 rounded mx-auto"></div>
+                  <div
+                    class="animate-pulse h-4 w-4 bg-gray-200 rounded mx-auto"
+                  ></div>
                 </td>
               </tr>
             {/each}
@@ -490,21 +612,32 @@
                   <div class="font-medium text-gray-900">{emp.name}</div>
                   <div class="text-gray-500 text-xs">{emp.email}</div>
                 </td>
-                <td class="px-4 py-3 text-gray-600 border-b">{formatLabel(emp.role)}</td>
-                <td class="px-4 py-3 text-gray-600 border-b">{formatLabel(emp.departmentId)}</td>
-                <td class="px-4 py-3 text-gray-600 border-b">{formatDate(emp.joiningDate)}</td>
+                <td class="px-4 py-3 text-gray-600 border-b"
+                  >{formatLabel(emp.role)}</td
+                >
+                <td class="px-4 py-3 text-gray-600 border-b"
+                  >{formatLabel(emp.departmentId)}</td
+                >
+                <td class="px-4 py-3 text-gray-600 border-b"
+                  >{formatDate(emp.joiningDate)}</td
+                >
                 <td class="px-4 py-3 text-gray-600 border-b">
-                  <span class="inline-block px-2 py-1 rounded text-xs {getPayrollStatusColor(emp.payrollStatus)}">
-                    {emp.payrollStatus || 'No Record'}
+                  <span
+                    class="inline-block px-2 py-1 rounded text-xs {getPayrollStatusColor(
+                      emp.payrollStatus
+                    )}"
+                  >
+                    {emp.payrollStatus || "No Record"}
                   </span>
                 </td>
                 <td class="px-4 py-3 text-gray-600 border-b text-center">
-                  <input 
-                    type="checkbox" 
-                    checked={selectedEmployees.has(emp._id)} 
+                  <input
+                    type="checkbox"
+                    checked={selectedEmployees.has(emp._id)}
                     on:change={() => toggleEmployee(emp._id)}
                     class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    disabled={emp.payrollStatus && !['Failed', 'Cancelled'].includes(emp.payrollStatus)}
+                    disabled={emp.payrollStatus &&
+                      !["Failed", "Cancelled"].includes(emp.payrollStatus)}
                   />
                 </td>
               </tr>
@@ -513,8 +646,18 @@
               <tr>
                 <td colspan="6" class="text-center p-8 text-gray-500">
                   <div class="flex flex-col items-center">
-                    <svg class="w-12 h-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8l-4 4m0 0l-4-4m4 4V3"></path>
+                    <svg
+                      class="w-12 h-12 text-gray-300 mb-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8l-4 4m0 0l-4-4m4 4V3"
+                      ></path>
                     </svg>
                     <p>No employees found</p>
                     <p class="text-sm">Try adjusting your filters</p>
@@ -529,11 +672,14 @@
   </div>
 
   <!-- Pagination and Actions -->
-  <div class="flex flex-col sm:flex-row justify-between items-center mt-4 px-4 gap-4">
+  <div
+    class="flex flex-col sm:flex-row justify-between items-center mt-4 px-4 gap-4"
+  >
     <!-- Records Info -->
     <div class="text-sm text-gray-500">
       {#if totalRecords > 0}
-        Showing {((page - 1) * limit) + 1}–{Math.min(page * limit, totalRecords)} of {totalRecords}
+        Showing {(page - 1) * limit + 1}–{Math.min(page * limit, totalRecords)} of
+        {totalRecords}
       {:else}
         No records found
       {/if}
@@ -541,20 +687,28 @@
 
     <!-- Pagination Controls -->
     <div class="flex items-center space-x-2">
-      <button 
-        disabled={page <= 1 || isLoadingEmployees} 
-        on:click={() => { page--; fetchEmployees(); }}
+      <button
+        disabled={page <= 1 || isLoadingEmployees}
+        on:click={() => {
+          page--;
+          fetchEmployees();
+        }}
         class="px-3 py-1 border rounded-md text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
       >
         <ChevronLeft size="16" />
         <span class="hidden sm:inline">Previous</span>
       </button>
-      
+
       {#if totalPages <= 7}
         {#each Array(totalPages) as _, i}
-          <button 
-            on:click={() => { page = i + 1; fetchEmployees(); }}
-            class="px-3 py-1 border rounded-md text-sm {page === i + 1 ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}"
+          <button
+            on:click={() => {
+              page = i + 1;
+              fetchEmployees();
+            }}
+            class="px-3 py-1 border rounded-md text-sm {page === i + 1
+              ? 'bg-blue-600 text-white'
+              : 'hover:bg-gray-100'}"
             disabled={isLoadingEmployees}
           >
             {i + 1}
@@ -562,48 +716,66 @@
         {/each}
       {:else}
         <!-- Show first page -->
-        <button 
-          on:click={() => { page = 1; fetchEmployees(); }}
-          class="px-3 py-1 border rounded-md text-sm {page === 1 ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}"
+        <button
+          on:click={() => {
+            page = 1;
+            fetchEmployees();
+          }}
+          class="px-3 py-1 border rounded-md text-sm {page === 1
+            ? 'bg-blue-600 text-white'
+            : 'hover:bg-gray-100'}"
           disabled={isLoadingEmployees}
         >
           1
         </button>
-        
+
         {#if page > 3}
           <span class="px-2 text-gray-500">...</span>
         {/if}
-        
+
         <!-- Show current page range -->
         {#each Array(3) as _, i}
           {#if page + i - 1 > 1 && page + i - 1 < totalPages}
-            <button 
-              on:click={() => { page = page + i - 1; fetchEmployees(); }}
-              class="px-3 py-1 border rounded-md text-sm {page === page + i - 1 ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}"
+            <button
+              on:click={() => {
+                page = page + i - 1;
+                fetchEmployees();
+              }}
+              class="px-3 py-1 border rounded-md text-sm {page === page + i - 1
+                ? 'bg-blue-600 text-white'
+                : 'hover:bg-gray-100'}"
               disabled={isLoadingEmployees}
             >
               {page + i - 1}
             </button>
           {/if}
         {/each}
-        
+
         {#if page < totalPages - 2}
           <span class="px-2 text-gray-500">...</span>
         {/if}
-        
+
         <!-- Show last page -->
-        <button 
-          on:click={() => { page = totalPages; fetchEmployees(); }}
-          class="px-3 py-1 border rounded-md text-sm {page === totalPages ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}"
+        <button
+          on:click={() => {
+            page = totalPages;
+            fetchEmployees();
+          }}
+          class="px-3 py-1 border rounded-md text-sm {page === totalPages
+            ? 'bg-blue-600 text-white'
+            : 'hover:bg-gray-100'}"
           disabled={isLoadingEmployees}
         >
           {totalPages}
         </button>
       {/if}
-      
-      <button 
-        disabled={page >= totalPages || isLoadingEmployees} 
-        on:click={() => { page++; fetchEmployees(); }}
+
+      <button
+        disabled={page >= totalPages || isLoadingEmployees}
+        on:click={() => {
+          page++;
+          fetchEmployees();
+        }}
         class="px-3 py-1 border rounded-md text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
       >
         <span class="hidden sm:inline">Next</span>
@@ -613,12 +785,6 @@
 
     <!-- Process Button -->
     <div class="flex items-center gap-4 w-full sm:w-auto justify-end">
-      {#if selectedEmployees.size > 0}
-        <span class="text-sm text-gray-600">
-          {selectedEmployees.size} employee{selectedEmployees.size === 1 ? '' : 's'} selected
-        </span>
-      {/if}
-      
       <button
         class="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
         on:click={processPayroll}
@@ -633,4 +799,21 @@
       </button>
     </div>
   </div>
+  {#if showModal}
+    <Modal
+      title="Payroll Summary"
+      show={showModal}
+      onClose={() => (showModal = false)}
+    >
+      {#if isLoadingSummary}
+        <LoaderNew />
+      {:else if payrollSummaryData}
+        <PayrollSummaryTable summary={payrollSummaryData} />
+      {:else}
+        <div class="p-4 text-center text-gray-500">
+          <p>No summary data available for this month.</p>
+        </div>
+      {/if}
+    </Modal>
+  {/if}
 </div>

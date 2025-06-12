@@ -3,13 +3,13 @@ import { fetchApi } from './base';
 export interface PayrollInitiatePayload {
     monthYear: string;
     filters?: {
-      departmentId?: string;
-      status?: string;
-      search?: string;
+        departmentId?: string;
+        status?: string;
+        search?: string;
     };
     userIds?: string[];
-  }
-  
+}
+
 export const payrollApi = {
 
     payrollInitiate: async (data: PayrollInitiatePayload) => {
@@ -18,8 +18,21 @@ export const payrollApi = {
             body: JSON.stringify(data)
         });
     },
-    payrollApprovalSummary: async (month: number, year: number) => {
-        return fetchApi(`/payroll/approval-summary?month=${month}&year=${year}`, {
+
+    getUserPayrollStatus: async (userIds: string[], year: number, month: number) => {
+        return fetchApi(`/payroll/by-users`, {
+            method: 'POST',
+            body: JSON.stringify({
+                userIds,
+                month,
+                year
+            })
+        })
+    },
+
+    payrollSummary: async (month: number, year: number) => {
+
+        return fetchApi(`/payroll/summary?month=${month}&year=${year}`, {
             method: 'GET'
         });
     },
@@ -35,16 +48,7 @@ export const payrollApi = {
             method: 'GET',
         })
     },
-    getUserPayrollStatus: async (userIds: string[], month: number, year: number) => {
-        return fetchApi(`/payroll/by-users`, {
-            method: 'POST',
-            body: JSON.stringify({
-                userIds,
-                month,
-                year
-            })
-        })
-    },
+
     canInitiatePayroll: async (month: number, year: number) => {
         return fetchApi(`/payroll/can-initiate?month=${month}&year=${year}`, {
             method: 'GET',
