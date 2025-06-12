@@ -393,6 +393,13 @@
     }
   };
 
+  function handleBulkAction(event: CustomEvent) {
+    const payload = event.detail;
+    // payload will contain: { currentStatus: "Draft", process: [ids] } or { currentStatus: "Draft", cancel: [ids] }
+    console.log('Received bulk action:', payload);
+    // Handle the action here
+  }
+
   onMount(() => {
     fetchDepartments();
     fetchRoles();
@@ -803,12 +810,16 @@
     <Modal
       title="Payroll Summary"
       show={showModal}
+      wide={true}
       onClose={() => (showModal = false)}
     >
       {#if isLoadingSummary}
         <LoaderNew />
       {:else if payrollSummaryData}
-        <PayrollSummaryTable summary={payrollSummaryData} />
+        <PayrollSummaryTable summary={payrollSummaryData}
+        allowedActions={["Draft"]} 
+        on:bulkAction={handleBulkAction}
+         />
       {:else}
         <div class="p-4 text-center text-gray-500">
           <p>No summary data available for this month.</p>
