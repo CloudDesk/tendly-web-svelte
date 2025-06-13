@@ -6,10 +6,18 @@
     payrollApi,
     type PayrollInitiatePayload,
   } from "$lib/services/api";
-  import { ChevronLeft, ChevronRight, Loader2, Search, X } from "lucide-svelte";
+  import {
+    Archive,
+    ChevronLeft,
+    ChevronRight,
+    Loader2,
+    Search,
+    X,
+  } from "lucide-svelte";
   import Modal from "../common/Modal.svelte";
   import LoaderNew from "../common/LoaderNew.svelte";
   import PayrollSummaryTable from "./payrollSummaryTable.svelte";
+  import { toast } from "../common/stores/toast.store";
 
   interface Employee {
     _id: string;
@@ -67,6 +75,14 @@
     { value: "On Hold", label: "Resignation Applied - Pending Approval" },
     { value: "Resigned", label: "Resignation Approved - Final Settlement" },
   ];
+
+  // Map current status to the next "Proceed" status based on BE stateTransitions
+  const statusTransitionMap: Record<string, string> = {
+    Draft: "PendingApproval",
+    PendingApproval: "InPayment",
+    Failed: "RetryPending",
+    RetryPending: "InPayment",
+  };
 
   async function fetchDepartments() {
     try {
@@ -393,11 +409,66 @@
     }
   };
 
-  function handleBulkAction(event: CustomEvent) {
-    const payload = event.detail;
-    // payload will contain: { currentStatus: "Draft", process: [ids] } or { currentStatus: "Draft", cancel: [ids] }
-    console.log('Received bulk action:', payload);
-    // Handle the action here
+  async function handleBulkAction(event: CustomEvent) {
+    const { currentStatus, processIds, cancelIds } = event.detail;
+    console.log("Received bulk action:", currentStatus, processIds, cancelIds);
+    try {
+      const results = [];
+      // Handle "Proceed" actions (move to next status)
+      if (processIds?.length > 0) {
+        const nextStatus =
+          statusTransitionMap[currentStatus] || "PendingApproval"; // Default to PendingApproval if unknown
+        const proceedPayload = {
+          recordIds: processIds,
+          status: nextStatus,
+        };
+
+        const proceedResult: any =
+          await payrollApi.updateStatus(proceedPayload);
+        results.push({
+          status: nextStatus,
+          success: proceedResult?.success ?? false,
+          data: proceedResult?.data,
+        });
+      }
+      // Handle "Cancel" actions
+      if (cancelIds?.length > 0) {
+        const cancelPayload = {
+          recordIds: cancelIds,
+          status: "Cancelled",
+        };
+
+        const cancelResult: any = await payrollApi.updateStatus(cancelPayload);
+        results.push({
+          status: "Cancelled",
+          success: cancelResult?.success ?? false,
+          data: cancelResult?.data,
+        });
+      }
+      // Process results for user feedback
+      results.forEach(({ status, success, data }) => {
+        if (success) {
+          const { updatedCount, failedRecords } = data;
+          if (updatedCount > 0) {
+            toast.success(`${updatedCount} records updated to ${status}`); // Optional: Show success toast
+          }
+          if (failedRecords?.length > 0) {
+            failedRecords.forEach(
+              ({ id, reason }: { id: string; reason: string }) => {
+                toast.error(`Record ${id} failed: ${reason}`); // Optional: Show error toast
+              }
+            );
+          }
+        } else {
+          toast.error(
+            `Failed to update status ${status}: ${data?.error?.message || "Unknown error"}`
+          );
+        }
+      });
+    } catch (error: any) {
+      console.log("error in bulk action", error);
+      toast.error(`Bulk action failed: ${error.message}`);
+    }
   }
 
   onMount(() => {
@@ -653,19 +724,7 @@
               <tr>
                 <td colspan="6" class="text-center p-8 text-gray-500">
                   <div class="flex flex-col items-center">
-                    <svg
-                      class="w-12 h-12 text-gray-300 mb-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8l-4 4m0 0l-4-4m4 4V3"
-                      ></path>
-                    </svg>
+                    <Archive class="w-12 h-12 text-gray-300 mb-2" />
                     <p>No employees found</p>
                     <p class="text-sm">Try adjusting your filters</p>
                   </div>
@@ -808,7 +867,7 @@
   </div>
   {#if showModal}
     <Modal
-      title="Payroll Summary"
+      title={`Payroll Summary ${month}`}
       show={showModal}
       wide={true}
       onClose={() => (showModal = false)}
@@ -816,10 +875,11 @@
       {#if isLoadingSummary}
         <LoaderNew />
       {:else if payrollSummaryData}
-        <PayrollSummaryTable summary={payrollSummaryData}
-        allowedActions={["Draft"]} 
-        on:bulkAction={handleBulkAction}
-         />
+        <PayrollSummaryTable
+          summary={payrollSummaryData}
+          allowedActions={["Draft"]}
+          on:bulkAction={handleBulkAction}
+        />
       {:else}
         <div class="p-4 text-center text-gray-500">
           <p>No summary data available for this month.</p>

@@ -30,13 +30,20 @@ export const payrollApi = {
         })
     },
 
-    payrollSummary: async (month: number, year: number) => {
-
-        return fetchApi(`/payroll/summary?month=${month}&year=${year}`, {
-            method: 'GET'
+    payrollSummary: async (month: number, year: number, status?: string) => {
+        let fetchUrl = `/payroll/summary?month=${month}&year=${year}`;
+        if (status) {
+            fetchUrl += `&status=${status}`;
+        }
+        return fetchApi(fetchUrl, { method: 'GET' });
+    },
+    updateStatus: async (data: { recordIds: string[], status: string, failureReason?: string, utrNumber?: string }) => {
+        return fetchApi(`/payroll/status-update`, {
+            method: 'POST',
+            body: JSON.stringify(data)
         });
     },
-    updateStatus: async (month: number, year: number, data: string) => {
+    updateStatusOld: async (month: number, year: number, data: string) => {
         return fetchApi(`/payroll/approval/status?month=${month}&year=${year}`, {
             method: 'PUT',
             body: JSON.stringify({ status: data })
