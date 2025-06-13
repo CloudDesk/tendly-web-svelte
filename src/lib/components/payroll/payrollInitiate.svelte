@@ -416,8 +416,8 @@
       const results = [];
       // Handle "Proceed" actions (move to next status)
       if (processIds?.length > 0) {
-        const nextStatus =
-          statusTransitionMap[currentStatus] || "PendingApproval"; // Default to PendingApproval if unknown
+        // const nextStatus = statusTransitionMap[currentStatus] || "PendingApproval"; // Default to PendingApproval if unknown
+        const nextStatus = "PendingApproval";
         const proceedPayload = {
           recordIds: processIds,
           status: nextStatus,
@@ -878,6 +878,17 @@
         <PayrollSummaryTable
           summary={payrollSummaryData}
           allowedActions={["Draft"]}
+          tableColumns={[
+            { key: "employee", label: "Employee", type: "employee" },
+            { key: "Attendance", label: "Attendance", type: "attendance" },
+            { key: "monthlyGross", label: "Gross Salary", type: "currency" },
+            { key: "netSalary", label: "Net Salary", type: "currency" },
+            { key: "status", label: "Status", type: "status" },
+          ]}
+          columnActions={[
+            { key: "Proceed", label: "Process", color: "green" },
+            { key: "Cancel", label: "Cancel", color: "red" },
+          ]}
           on:bulkAction={handleBulkAction}
         />
       {:else}

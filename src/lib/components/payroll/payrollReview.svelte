@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { payrollApi } from "$lib/services/api";
-  import { HandCoins, Scissors, Users, Wallet } from "lucide-svelte";
   import PayrollSummaryTable from "./payrollSummaryTable.svelte";
   import LoaderNew from "../common/LoaderNew.svelte";
+  import { toast } from "../common/stores/toast.store";
   let month = (() => {
     const now = new Date();
     const y = now.getFullYear();
@@ -38,7 +38,68 @@
     fetchPayrollSummary();
   }
 
-  async function handleBulkAction(event: CustomEvent) {}
+  async function handleBulkAction(event: CustomEvent) {
+    const { currentStatus, processIds, cancelIds } = event.detail;
+    console.log("Received bulk action:", currentStatus, processIds, cancelIds);
+
+    try {
+      const results = [];
+      // Handle "Proceed" actions (move to next status)
+      if (processIds?.length > 0) {
+        // const nextStatus = statusTransitionMap[currentStatus] || "PendingApproval"; // Default to PendingApproval if unknown
+        const nextStatus = "InPayment";
+        const proceedPayload = {
+          recordIds: processIds,
+          status: nextStatus,
+        };
+
+        const proceedResult: any =
+          await payrollApi.updateStatus(proceedPayload);
+        results.push({
+          status: nextStatus,
+          success: proceedResult?.success ?? false,
+          data: proceedResult?.data,
+        });
+      }
+      // Handle "Cancel" actions
+      if (cancelIds?.length > 0) {
+        const cancelPayload = {
+          recordIds: cancelIds,
+          status: "Cancelled",
+        };
+
+        const cancelResult: any = await payrollApi.updateStatus(cancelPayload);
+        results.push({
+          status: "Cancelled",
+          success: cancelResult?.success ?? false,
+          data: cancelResult?.data,
+        });
+      }
+      // Process results for user feedback
+      results.forEach(({ status, success, data }) => {
+        if (success) {
+          const { updatedCount, failedRecords } = data;
+          if (updatedCount > 0) {
+            toast.success(`${updatedCount} records updated to ${status}`); // Optional: Show success toast
+          }
+          if (failedRecords?.length > 0) {
+            failedRecords.forEach(
+              ({ id, reason }: { id: string; reason: string }) => {
+                toast.error(`Record ${id} failed: ${reason}`); // Optional: Show error toast
+              }
+            );
+          }
+        } else {
+          toast.error(
+            `Failed to update status ${status}: ${data?.error?.message || "Unknown error"}`
+          );
+        }
+      });
+    } catch (error: any) {
+      console.log("error in bulk action", error);
+      toast.error(`Bulk action failed: ${error.message}`);
+    }
+  }
   onMount(fetchPayrollSummary);
 </script>
 
@@ -77,91 +138,18 @@
     <PayrollSummaryTable
       {summary}
       allowedActions={["PendingApproval"]}
+      tableColumns={[
+        { key: "employee", label: "Employee", type: "employee" },
+        // { key: "monthlyGross", label: "Gross Salary", type: "currency" },
+        { key: "bankAccountNumber", label: "Bank Account", type: "bank" },
+        { key: "netSalary", label: "Net Salary", type: "currency" },
+        { key: "status", label: "Status", type: "status" },
+      ]}
+      columnActions={[
+        { key: "Proceed", label: "Approve", color: "green" },
+        { key: "Cancel", label: "Reject", color: "red" },
+      ]}
       on:bulkAction={handleBulkAction}
     />
   {/if}
 </div>
-
-<!-- 
-  {#if summary}
-    <div class="bg-white shadow rounded p-4 flex flex-col gap-2">
-      <div class="text-sm">Status: <strong>Pending Approval</strong></div>
-      <div class="flex gap-6 text-sm">
-        <div>Total Employees: <strong>{summary.totalEmployees}</strong></div>
-        <div>Draft: <strong>{summary.statusBreakdown?.Draft ?? 0}</strong></div>
-        <div>
-          Approved: <strong>{summary.statusBreakdown?.Approved ?? 0}</strong>
-        </div>
-      </div>
-    </div>
-
-    <div class="flex justify-between items-center bg-white p-4 shadow rounded">
-      <div class="space-x-2">
-        <button
-          class="px-3 py-2 bg-blue-500 text-white rounded shadow-sm text-sm hover:bg-blue-600"
-          >Download Excel Summary</button
-        >
-        <button class="px-3 py-2 bg-gray-100 text-sm rounded hover:bg-gray-200"
-          >Audit Log</button
-        >
-      </div>
-    </div>
-
-    <div class="overflow-x-auto bg-white rounded shadow">
-      <table class="min-w-full text-sm border-t">
-        <thead class="bg-gray-100 text-gray-700 text-left">
-          <tr>
-            <th class="p-2">Employee Name</th>
-            <th class="p-2">Net Pay</th>
-            <th class="p-2">Bank Acc.</th>
-            <th class="p-2">Status</th>
-            <th class="p-2">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each summary.exportableDetails as emp}
-            <tr class="border-t hover:bg-gray-50">
-              <td class="p-2">{emp.employeeName}</td>
-              <td class="p-2">₹{emp.netSalary.toLocaleString()}</td>
-              <td class="p-2"
-                >{emp.bankAccountNumber?.slice(-4)?.padStart(8, "*") ??
-                  "N/A"}</td
-              >
-              <td class="p-2">{emp.status}</td>
-              <td class="p-2 flex gap-2">
-                <button
-                  class="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600"
-                  on:click={() => selectedIds.add(emp._id)}>✔ Approve</button
-                >
-                <button
-                  class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600"
-                  on:click={() => selectedIds.add(emp._id)}>✖ Cancel</button
-                >
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="mt-4 flex justify-center">
-      <button
-        class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded"
-        on:click={markAsProcessing}
-      >
-        ▶ Mark as Processing
-      </button>
-    </div>
-  {:else if isLoadingSummary}
-    <div class="text-gray-500">Loading payroll summary...</div>
-  {:else}
-    <div class="text-red-500">No payroll summary found for selected month.</div>
-  {/if}
--->
-
-<style>
-  th,
-  td {
-    white-space: nowrap;
-  }
-</style>
