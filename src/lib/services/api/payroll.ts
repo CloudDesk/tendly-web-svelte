@@ -1,4 +1,4 @@
-import { fetchApi } from './base';
+import { fetchApi, uploadFiles } from './base';
 
 export interface PayrollInitiatePayload {
     monthYear: string;
@@ -43,6 +43,18 @@ export const payrollApi = {
             body: JSON.stringify(data)
         });
     },
+    importPayments: async (formData: FormData) => {
+        return uploadFiles(`/payroll/import-payments`, formData);
+    }
+,
+confirmPaymentUpdates: async (validatedRows:any) => {
+    return fetchApi(`/payroll/confirm-payments`, {
+        method: 'POST',
+        body: JSON.stringify(validatedRows)
+    });
+}
+,
+
     updateStatusOld: async (month: number, year: number, data: string) => {
         return fetchApi(`/payroll/approval/status?month=${month}&year=${year}`, {
             method: 'PUT',

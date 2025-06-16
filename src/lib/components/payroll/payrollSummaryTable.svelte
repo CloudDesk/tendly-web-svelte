@@ -71,11 +71,11 @@
   ];
   export let showFilters: boolean = true;
   export let showSummaryCards: boolean = true;
-
+export let showCheckboxes: boolean = true;
   console.log(summary, "summary table");
   const dispatch = createEventDispatcher();
 
-  let selectedCurrentStatus: string = allowedActions[0] || "Draft";
+  let selectedCurrentStatus: string = allowedActions[1] || "Draft";
   let rowSelections = new Map<string, RowSelection>();
   let selectAllChecked = false;
 
@@ -368,7 +368,7 @@
               <div>
                 <p class="text-sm font-medium text-green-600">Gross Salary</p>
                 <p class="text-2xl font-bold text-green-900">
-                  ₹{summary?.monthlyGross?.toLocaleString() || 0}
+                  ₹{summary?.totalGrossSalary?.toLocaleString() || 0}
                 </p>
               </div>
               <div
@@ -504,7 +504,7 @@
           <div class="flex items-center gap-4">
             <div class="flex items-center gap-2">
               <label class="text-sm font-medium text-gray-700"
-                >Filter by Status:</label
+                > Status:</label
               >
               <select
                 bind:value={selectedCurrentStatus}
@@ -527,14 +527,16 @@
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-4 py-3 text-left">
-                <input
-                  type="checkbox"
-                  checked={selectAllChecked}
-                  on:change={toggleSelectAll}
-                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </th>
+              {#if showCheckboxes}
+                <th class="px-4 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={selectAllChecked}
+                    on:change={toggleSelectAll}
+                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </th>
+              {/if}
               {#each tableColumns as column}
                 <th
                   class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -556,27 +558,21 @@
             {#if Array.isArray(summary?.exportableDetails)}
               {#each filteredEmployees as employee (employee._id)}
                 {@const isSelected = rowSelections.has(employee._id)}
-                {@const selectedAction = rowSelections.get(
-                  employee._id
-                )?.action}
+                {@const selectedAction = rowSelections.get(employee._id)?.action}
                 <tr
-                  class="hover:bg-gray-50 transition-colors {isSelected
-                    ? 'bg-blue-50'
-                    : ''}"
+                  class="hover:bg-gray-50 transition-colors {isSelected ? 'bg-blue-50' : ''}"
                 >
-                  <td class="px-4 py-4">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      disabled={!isActionAllowed(employee.status)}
-                      on:change={() => toggleRowSelection(employee)}
-                      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 {!isActionAllowed(
-                        employee.status
-                      )
-                        ? 'opacity-50 cursor-not-allowed'
-                        : ''}"
-                    />
-                  </td>
+                  {#if showCheckboxes}
+                    <td class="px-4 py-4">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        disabled={!isActionAllowed(employee.status)}
+                        on:change={() => toggleRowSelection(employee)}
+                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 {!isActionAllowed(employee.status) ? 'opacity-50 cursor-not-allowed' : ''}"
+                      />
+                    </td>
+                  {/if}
                   {#each tableColumns as column}
                     <td class="px-4 py-4">
                       {#if column.type === "employee"}
@@ -672,8 +668,7 @@
               <tr>
                 <td
                   class="px-4 py-8 text-center text-gray-500"
-                  colspan={tableColumns.length +
-                    (columnActions.length > 0 ? 2 : 1)}
+                  colspan={tableColumns.length + (columnActions.length > 0 ? 1 : 0) + (showCheckboxes ? 1 : 0)}
                 >
                   <div class="flex flex-col items-center">
                     <ClipboardList class="w-12 h-12 text-gray-400 mb-2" />
