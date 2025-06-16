@@ -43,7 +43,8 @@
   let showValidationResults = false;
   let isConfirming = false;
 
-
+  $:disableImport = false;
+  $:console.log(summary,"disableImport")
   let showConfirmationDialog = false;
   let confirmationDialogConfig: DialogConfig = {
     title: "Payroll Processing Confirmation",
@@ -76,6 +77,12 @@
         statusFilters
       )) as { data: any }; // Add a type assertion here
       summary = response.data;
+
+      if(summary.totalEmployees ===summary.exportableDetails.length 
+&& summary.exportableDetails.length >0
+      ){
+        disableImport = true;
+      }
     } catch (err) {
       console.error("Failed to load payroll summary", err);
       summary = null;
@@ -408,7 +415,7 @@ console.log(data,"Data aftr format")
       </div>
 
       <div class="action-buttons">
-        <Button disabled={!summary} on:click={handleImportExcel}>
+        <Button disabled={!summary|| disableImport} on:click={handleImportExcel}>
           <Import class="w-4 h-4 mr-2" />
           Improt Excel
         </Button>

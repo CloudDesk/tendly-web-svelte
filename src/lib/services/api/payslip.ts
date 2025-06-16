@@ -24,6 +24,18 @@ export const payslipApi = {
             body: JSON.stringify(data)
         });
     },
+
+    getUserPayslipStatus: async (userIds: string[], year: number, month: number) => {
+        return fetchApi(`/payslip/by-users`, {
+            method: 'POST',
+            body: JSON.stringify({
+                userIds,
+                month,
+                year
+            })
+        })
+    },
+
     // New method to check payslip generation status
     checkPayslipStatus: async (month: number, year: number) => {
         return fetchApi(`/payslip/is-generated?month=${month}&year=${year}`, {

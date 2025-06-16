@@ -31,8 +31,10 @@
         | "RetryPending"
         | "Cancelled"
         | null;
-
         paymentConfirmedAt:string | null;
+        payslipStatus?:
+       'Generated'|  'Sent' | 'Exported' | null;
+        payslipUrl:string | null;
     }
 
   
@@ -137,6 +139,30 @@
       }
     }
   
+    async function fetchPayslipStatus(
+      userIds: string[],
+      year: string,
+      month: string
+    ) {
+      console.log("fetchPayslipStatus", userIds, year, month);
+      try {
+        const response: any = await payslipApi.getUserPayslipStatus(
+          userIds,
+          Number(year),
+          Number(month)
+        );
+        console.log(response, "payslip status response");
+        if (!response.success) {
+          return [];
+        }
+        return response.data || [];
+      } catch (error) {
+        console.error("Error fetching payslip status:", error);
+        return [];
+      }
+    }
+  
+
     async function fetchEmployees() {
       try {
         isLoadingEmployees = true;
@@ -172,7 +198,11 @@
         // Fetch payroll status for all employees in the current page
         const userIds = employeeData.map((emp: Employee) => emp._id);
         const payrollStatuses = await fetchPayrollStatus(userIds, year, monthNum);
-  
+        const payslipStatuses = await fetchPayslipStatus(userIds, year, monthNum);
+      
+        
+          console.log(payslipStatuses, "payslipStatuses");
+          console.log(payrollStatuses, "payrollStatuses");
         // Merge payroll status with employee data
         employees = employeeData.map((emp: Employee) => ({
           ...emp,
@@ -180,10 +210,16 @@
             payrollStatuses.find((status: any) => status.employeeId === emp._id)
               ?.status || null,
 
-              paymentConfirmedAt :    payrollStatuses.find((status: any) => status.employeeId === emp._id)
-              ?.paymentConfirmedAt || null,
-        }));
-  
+              paymentConfirmedAt :    payrollStatuses.find((status: any) => status.employeeId === emp._id)   ?.paymentConfirmedAt || null,
+          
+          payslipStatus:
+            payslipStatuses.find((status: any) => status.userId === emp._id)
+              ?.status || null, 
+          payslipUrl:
+            payslipStatuses.find((status: any) => status.userId === emp._id)
+              ?.payslipUrl || null,
+            }));
+  console.log(employees, "fecthEmployees");
         page = response.meta.page;
         totalPages = response.meta.totalPages;
         totalRecords = response.meta.total || 0;
@@ -252,6 +288,19 @@
       return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
     }
   
+    function getPayslipStatusColor(status: string | null | undefined): string {
+      switch (status) {
+        case "Generated":
+          return "text-gray-600 bg-gray-100";
+        case "Sent":
+          return "text-yellow-600 bg-yellow-100";
+        case "Exported":
+          return "text-green-600 bg-green-100";
+        default:
+          return "text-gray-600 bg-gray-100";
+      }
+    }
+
     function getPayrollStatusColor(status: string | null | undefined): string {
       switch (status) {
         case "Draft":
@@ -467,6 +516,8 @@
               <th class="px-4 py-3 font-semibold">Department</th>
               <th class="px-4 py-3 font-semibold">Payment Date</th>
               <th class="px-4 py-3 font-semibold">Payroll Status</th>
+              <th class="px-4 py-3 font-semibold">Payslip Status</th>
+              <th class="px-4 py-3 font-semibold">Payslip URL</th>
               <th class="px-4 py-3 font-semibold text-center">
                 <input
                   type="checkbox"
@@ -477,9 +528,16 @@
                     isLoadingEmployees ||
                     employees.every(
                       (emp) =>
+                        emp.payslipStatus &&
+                        ["Generated","Sent","Exported"].includes(emp.payslipStatus)
+                    ) ||
+                    employees.every(
+                      (emp) =>
                         emp.payrollStatus &&
                         !["Completed"].includes(emp.payrollStatus)
-                    )}
+                    )
+                    
+                    }
                 />
               </th>
             </tr>
@@ -540,15 +598,36 @@
                       {emp.payrollStatus || "No Record"}
                     </span>
                   </td>
+                  <td class="px-4 py-3 text-gray-600 border-b">
+                    <span
+                      class="inline-block px-2 py-1 rounded text-xs {getPayslipStatusColor(
+                        emp.payslipStatus
+                      )}"
+                    >
+                      {emp.payslipStatus || "No Record"}
+                    </span>
+                  </td>
+                  
+                  <td class="px-4 py-3 text-gray-600 border-b ">
+                    <span
+                      class="inline-block px-2 py-1 rounded text-xs text-blue-600 underline truncate max-w-[200px]"
+                    >
+                      {emp.payslipUrl || "No Record"}
+                    </span>
+                  </td>
+                  
                   <td class="px-4 py-3 text-gray-600 border-b text-center">
                     <input
                       type="checkbox"
                       checked={selectedEmployees.has(emp._id)}
                       on:change={() => toggleEmployee(emp._id)}
                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      disabled={emp.payrollStatus &&
-                        !["Completed"].includes(emp.payrollStatus)}
-                    />
+                      disabled={
+                      emp.payslipStatus && ["Generated","Sent","Exported"].includes(emp.payslipStatus)
+                      ||
+                      emp.payrollStatus &&
+                          !["Completed"].includes(emp.payrollStatus)}
+                        />
                   </td>
                 </tr>
               {/each}
