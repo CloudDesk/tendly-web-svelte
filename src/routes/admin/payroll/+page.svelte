@@ -3,6 +3,7 @@
   import Tabs from "$lib/components/common/Tabs.svelte";
   import PayrollInitiate from "$lib/components/payroll/payrollInitiate.svelte";
   import PayrollReview from "$lib/components/payroll/payrollReview.svelte";
+  import PayslipGenerate from "$lib/components/payroll/payslipGenerate.svelte";
   let tabs = [
     { id: "initiate", label: "Payroll Initiate" },
     { id: "review", label: "Payroll Review" },
@@ -20,6 +21,10 @@
       <PayrollInitiate />
     {:else if activeTab === "review"}
       <PayrollReview />
+{:else if activeTab ==="generate"}
+<PayslipGenerate/>
+{:else if activeTab ==="send"}
+
     {/if}
   </Tabs>
 </IndexPageTemplate>

@@ -8,7 +8,7 @@
   export let iconComponent: typeof SvelteComponent | null = null; // For Lucide or other SVG component icons
 
   // Button styling
-  export let variant: keyof typeof variantClasses = "primary"; // primary, outline, text, none
+  export let variant: "primary" | "outline" | "text" | "none" | "danger" | "success" | "warning" = "primary";
   export let size: keyof typeof sizeClasses = "md"; // sm, md, lg
   export let disabled = false;
   export let fullWidth = false;
@@ -19,20 +19,22 @@
 
   const dispatch = createEventDispatcher();
 
-  // Base classes for all buttons
+  // Base classes for all buttons - enhanced with better transitions and focus states
   const baseClasses =
-    "inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 gap-2";
+    "inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 gap-2 select-none cursor-pointer active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100";
 
-  // Visual style variants
+  // Enhanced visual style variants with better contrast and aesthetics
   const variantClasses = {
-    primary: "bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300",
-    outline:
-      "border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200",
-    text: "text-blue-600 hover:bg-blue-50 disabled:text-blue-300",
-    none: "text-gray-700 hover:bg-gray-50 disabled:text-gray-400",
+    primary: "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 shadow-sm hover:shadow-md disabled:bg-gray-300 disabled:text-gray-500 disabled:shadow-none",
+    outline: "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 focus:ring-gray-500 shadow-sm hover:shadow-md disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200 disabled:shadow-none",
+    text: "text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:ring-gray-500 rounded-lg disabled:text-gray-400 disabled:hover:bg-transparent",
+    none: "text-gray-600 hover:bg-gray-50 hover:text-gray-800 focus:ring-gray-500 border border-transparent hover:border-gray-200 disabled:text-gray-400 disabled:hover:bg-transparent disabled:hover:border-transparent",
+    danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm hover:shadow-md disabled:bg-gray-300 disabled:text-gray-500 disabled:shadow-none",
+    success: "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 shadow-sm hover:shadow-md disabled:bg-gray-300 disabled:text-gray-500 disabled:shadow-none",
+    warning: "bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-500 shadow-sm hover:shadow-md disabled:bg-gray-300 disabled:text-gray-500 disabled:shadow-none",
   };
 
-  // Size variants
+  // Size variants (keeping your original sizes)
   const sizeClasses = {
     sm: "text-sm py-1 px-3 h-8",
     md: "text-sm py-2 px-4 h-10",
@@ -53,7 +55,7 @@
   $: classes = `${baseClasses} ${variantClasses[variant]} ${
     iconOnly ? iconOnlySizeClasses[size] : sizeClasses[size]
   } ${widthClass} ${$$props.class || ""}`.trim();
-  console.log(classes, "classes", $$props.class);
+
   // Function to handle click with additional logic if needed
   function handleClick(event: MouseEvent) {
     if (!disabled) {

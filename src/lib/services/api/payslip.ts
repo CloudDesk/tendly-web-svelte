@@ -1,4 +1,5 @@
 import { fetchApi } from "./base";
+import type { PayrollInitiatePayload } from "./payroll";
 
 interface PayslipGen {
     month: number;
@@ -17,7 +18,7 @@ interface PayslipHistoryParams {
     limit: number;
 }
 export const payslipApi = {
-    bulkGenerate: async (data: PayslipGen) => {
+    bulkGenerate: async (data: PayrollInitiatePayload) => {
         return fetchApi('/payslip/bulk-generate', {
             method: 'POST',
             body: JSON.stringify(data)

@@ -47,10 +47,11 @@ export const payrollApi = {
         return uploadFiles(`/payroll/import-payments`, formData);
     }
 ,
-confirmPaymentUpdates: async (validatedRows:any) => {
-    return fetchApi(`/payroll/confirm-payments`, {
+confirmPaymentUpdates: async (data:any) => {
+    console.log(data,"confirmPaymentUpdates")
+    return fetchApi(`/payroll/status-update-excel`, {
         method: 'POST',
-        body: JSON.stringify(validatedRows)
+        body: JSON.stringify(data)
     });
 }
 ,

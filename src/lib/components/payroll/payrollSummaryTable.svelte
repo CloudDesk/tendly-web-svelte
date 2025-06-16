@@ -1,13 +1,5 @@
 <script lang="ts">
-  import {
-    Check,
-    ClipboardList,
-    HandCoins,
-    Scissors,
-    Users,
-    Wallet,
-    X,
-  } from "lucide-svelte";
+  import {Check,ClipboardList,HandCoins,Scissors,Users, Wallet, X,} from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
 
   interface PayrollSummaryEmployee {
@@ -55,7 +47,7 @@
     color: "green" | "red" | "blue" | "yellow" | "purple";
     variant?: "solid" | "outline";
   }
-
+  export let filterValue :any;
   export let summary: any;
   export let allowedActions: string[] = [];
   export let tableColumns: TableColumn[] = [
@@ -75,7 +67,9 @@ export let showCheckboxes: boolean = true;
   console.log(summary, "summary table");
   const dispatch = createEventDispatcher();
 
-  let selectedCurrentStatus: string = allowedActions[1] || "Draft";
+  let selectedCurrentStatus: string = filterValue ? filterValue : allowedActions[1] || "Draft";
+  console.log(filterValue,"filterValue");
+  console.log(selectedCurrentStatus,"selectedCurrentStatus")
   let rowSelections = new Map<string, RowSelection>();
   let selectAllChecked = false;
 
@@ -483,7 +477,7 @@ export let showCheckboxes: boolean = true;
           </div>
         </div>
       </div>
-    {:else if showFilters}
+{:else if true}
       <div
         class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-4"
       >
@@ -501,6 +495,7 @@ export let showCheckboxes: boolean = true;
               {/each}
             </div>
           </div>
+          {#if showFilters}
           <div class="flex items-center gap-4">
             <div class="flex items-center gap-2">
               <label class="text-sm font-medium text-gray-700"
@@ -516,6 +511,7 @@ export let showCheckboxes: boolean = true;
               </select>
             </div>
           </div>
+          {/if}
         </div>
       </div>
     {/if}
@@ -687,6 +683,7 @@ export let showCheckboxes: boolean = true;
     </div>
   </div>
 </div>
+
 
 <style>
   .overflow-y-auto {

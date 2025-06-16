@@ -11,6 +11,7 @@
   import type { DialogConfig } from "$lib/types";
   import ConfirmDialog from "../common/ConfirmDialog.svelte";
     import Modal from "../common/Modal.svelte";
+  import FileUpload from "../common/FileUpload.svelte";
 
     interface ValidatedRow {
         payrollId: string;
@@ -238,15 +239,19 @@
   }
 
   const handleFileUpload = async (event:any) => {
-    const input = event.target;
-    if (!input.files || !input.files.length) return;
-    
-    selectedFile = input.files[0];
+    // const input = event.target;
+    // if (!input.files || !input.files.length) return;
+    //   selectedFile = input.files[0];
+    const files = event.detail.files;
+
+    selectedFile = files[0];
     isSubmitting = true;
     
     try {
       const formData = new FormData();
-      formData.append("file", selectedFile);
+      if (selectedFile) {
+        formData.append("file", selectedFile);
+      }
       
       const result = await payrollApi.importPayments(formData);
       console.log(result, "result in handleFileUpload");
@@ -256,8 +261,7 @@
       
     } catch (error) {
       console.error(error, "error in handleFileUpload");
-      // Show error notification
-      alert(`Error: ${error.message || 'Failed to process file'}`);
+     toast.error("Failed to process file");
     } finally {
       isSubmitting = false;
     }
@@ -274,27 +278,51 @@
     
     isConfirming = true;
     
+    const data = {
+        records: validRows.map(row => {
+          const record: any = {
+          id: row.payrollId,
+          status: row.status,
+        };
+        if (row.status === 'Completed' && row.utrNumber != null) {
+        record.utrNumber = row.utrNumber;
+        }
+        if (row.status === 'Failed' && row.failureReason != null) {
+          record.failureReason = row.failureReason;
+        }
+        return record;
+      })
+    };
+console.log(data,"Data aftr format")
+
     try {
       // Call the existing status update API
-      const result = await payrollApi.confirmPaymentUpdates(validRows);
+      const result:any = await payrollApi.confirmPaymentUpdates(data);
       console.log('Payment updates confirmed:', result);
       
       // Close modal and refresh data
       isImported = false;
       showValidationResults = false;
       validatedRows = [];
-      
-      // Dispatch event to parent to refresh data
-      // dispatch('importComplete', { updatedRows: validRows.length });
-      
-      alert(`Successfully updated ${validRows.length} payroll records.`);
-      
+      if(result.data){
+        toast.success(`All Record is Updated`);
+        // if(data.records.length == result.data.updatedCount){
+        //   toast.success(`All Record is Updated`);
+        // }else if(result.data.failedRecords.length >0){
+        //   toast.success(``)
+        // }else if(result.data.failedRecords.length >0 && result.data.updatedCount ==0){
+        //   toast.error(`All Record is Failed`)
+        // }
+      }
     } catch (error:any) {
       console.error('Error confirming updates:', error);
       alert(`Error: ${error.message || 'Failed to update payroll records'}`);
     } finally {
+      statusFilters ='Completed';
+     await fetchPayrollSummary()
       isConfirming = false;
     }
+    
   }
   
   const closeModal = () => {
@@ -304,8 +332,8 @@
     selectedFile = null;
   }
   
-  const hasErrors = validatedRows.some(row => row.errors.length > 0);
-  const validRowsCount = validatedRows.filter(row => row.errors.length === 0).length;
+  $: hasErrors = validatedRows.some(row => row.errors.length > 0);
+  $: validRowsCount = validatedRows.filter(row => row.errors.length === 0).length;
 
 
   onMount(fetchPayrollSummary);
@@ -339,6 +367,20 @@
         >
           In Payment
         </button>
+        <button
+        class="toggle-button"
+        class:active={statusFilters === "Completed"}
+        on:click={() => toggleStatus("Completed")}
+      >
+      Completed
+      </button>
+      <button
+      class="toggle-button"
+      class:active={statusFilters === "Failed"}
+      on:click={() => toggleStatus("Failed")}
+    >
+    Failed
+    </button>
       </div>
   </div>
 
@@ -359,7 +401,7 @@
 
       <!-- Action Buttons -->
       <div class="action-buttons">
-        <Button disabled={!summary} on:click={handleImportExcel}>
+        <Button disabled={!summary} on:click={handleExportExcel}>
           <Download class="w-4 h-4 mr-2" />
           Export Excel
         </Button>
@@ -381,7 +423,7 @@
   {:else if summary}
     <PayrollSummaryTable
       {summary}
-      allowedActions={["PendingApproval", "InPayment"]}
+      allowedActions={["PendingApproval", "InPayment","Completed","Failed"]}
       tableColumns={[
         { key: "employee", label: "Employee", type: "employee" },
         { key: "bankAccountNumber", label: "Bank Account", type: "bank" },
@@ -395,6 +437,8 @@
       ]:[]}
       showCheckboxes={statusFilters==='PendingApproval'}
       on:bulkAction={handleBulkAction}
+      filterValue ={statusFilters}
+      showFilters={false }
     />
     {:else}
     <div class="text-center text-gray-500">No data found</div>
@@ -421,25 +465,37 @@
     {#if !showValidationResults}
       <!-- File Upload Section -->
       <div class="space-y-4">
-        <div>
+        <!-- <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">
-            Select Excel File (.xlsx, .xls)
+            Select Excel File (.xlsx)
           </label>
           <input 
             type="file" 
-            accept=".xlsx,.xls"
+            accept=".xlsx"
             class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             on:change={handleFileUpload}
             disabled={isSubmitting}
           />
-        </div>
-        
+        </div> -->
+
+        <FileUpload
+        accept=".xlsx"
+        maxFiles={1}
+        maxSize={5 * 1024 * 1024}
+        multiple={false}
+        label="Upload Excel File"
+        description="Drag and drop your .xlsx file here or click to browse"
+        confirmBeforeUpload={false}
+        disabled={isSubmitting}
+        on:upload={handleFileUpload}
+      />
+
         {#if isSubmitting}
-          <div class="flex items-center justify-center p-4">
-            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <span class="ml-2 text-gray-600">Processing file...</span>
-          </div>
-        {/if}
+        <div class="flex items-center justify-center p-4">
+          <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          <span class="ml-2 text-gray-600">Processing file...</span>
+        </div>
+      {/if}
       </div>
     {:else}
       <!-- Validation Results Section -->
@@ -447,7 +503,7 @@
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-semibold">Validation Results</h3>
           <div class="text-sm text-gray-600">
-            {validRowsCount} valid / {validatedRows.length} total rows
+            {validatedRows.filter(row => row.errors.length === 0).length} valid / {validatedRows.length} total rows
           </div>
         </div>
         
@@ -471,7 +527,7 @@
           </div>
         {/if}
         
-        <!-- Results Table -->
+        <!-- Results Table -->  
         <div class="border border-gray-200 rounded-lg overflow-hidden">
           <div class="overflow-x-auto max-h-96">
             <table class="min-w-full divide-y divide-gray-200">
@@ -481,13 +537,13 @@
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payroll ID</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">New Status</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">UTR/Reason</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-48">UTR/Reason</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Errors</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
                 {#each validatedRows as row, index}
-                  <tr class={row.errors.length > 0 ? 'bg-red-50' : 'bg-white'}>
+                  <tr class={row.errors.length > 0 ? "bg-red-50" : "bg-white"}>
                     <td class="px-4 py-3">
                       {#if row.errors.length > 0}
                         <AlertCircle class="h-5 w-5 text-red-500" />
@@ -496,18 +552,22 @@
                       {/if}
                     </td>
                     <td class="px-4 py-3 text-sm font-mono">{row.payrollId}</td>
-                    <td class="px-4 py-3 text-sm">{row.employeeName || '-'}</td>
+                    <td class="px-4 py-3 text-sm">{row.employeeName || "-"}</td>
                     <td class="px-4 py-3">
-                      <span class={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        row.status === 'Completed' ? 'bg-green-100 text-green-800' : 
-                        row.status === 'Failed' ? 'bg-red-100 text-red-800' : 
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span
+                        class={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          row.status === "Completed"
+                            ? "bg-green-100 text-green-800"
+                            : row.status === "Failed"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
                         {row.status}
                       </span>
                     </td>
-                    <td class="px-4 py-3 text-sm">
-                      {row.utrNumber || row.failureReason || '-'}
+                    <td class="px-4 py-3 text-sm truncate max-w-[12rem]" title={row.utrNumber || row.failureReason || "-"}>
+                      {row.utrNumber || row.failureReason || "-"}
                     </td>
                     <td class="px-4 py-3">
                       {#if row.errors.length > 0}
@@ -528,38 +588,30 @@
             </table>
           </div>
         </div>
-        
         <!-- Action Buttons -->
-        <div class="flex justify-between items-center pt-4 border-t">
-          <Button 
-            variant="outline" 
-            on:click={() => showValidationResults = false}
-          >
-            Upload Different File
-          </Button>
-          
-          <div class="space-x-3">
+        <div class="flex justify-end items-center pt-4 border-t space-x-3">
+          {#if hasErrors}
+            <Button 
+              variant="warning" 
+              on:click={() => showValidationResults = false}
+            >
+              Upload Different File
+            </Button>
+          {:else}
             <Button variant="outline" on:click={closeModal}>
               Cancel
             </Button>
-            
-            {#if !hasErrors}
-              <Button 
-                on:click={handleConfirmImport}
-                disabled={isConfirming}
-                class="bg-green-600 hover:bg-green-700"
-              >
-                {#if isConfirming}
-                  <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                {/if}
-                Confirm Import ({validRowsCount} rows)
-              </Button>
-            {:else}
-              <Button disabled class="bg-gray-400">
-                Fix Errors First
-              </Button>
-            {/if}
-          </div>
+            <Button 
+              on:click={handleConfirmImport}
+              disabled={isConfirming}
+              class="bg-green-600 hover:bg-green-700"
+            >
+              {#if isConfirming}
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              {/if}
+              Confirm Import ({validatedRows.length} rows)
+            </Button>
+          {/if}
         </div>
       </div>
     {/if}
@@ -569,13 +621,14 @@
 
 
 
+
 <style>
   .filter-container {
     @apply bg-white shadow rounded-md mb-4 md:mb-6 p-4;
   }
 
   .filter-header {
-    @apply flex flex-col  md:flex-row md:items-center md:justify-between gap-4 mb-4;
+    @apply flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4;
   }
 
   .filter-controls {
@@ -612,5 +665,9 @@
 
   .action-buttons {
     @apply flex items-center gap-3;
+  }
+
+  .bg-red-50 {
+    background-color: #fef2f2;
   }
 </style>

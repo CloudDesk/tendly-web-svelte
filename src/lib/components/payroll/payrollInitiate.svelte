@@ -878,6 +878,7 @@
         <PayrollSummaryTable
           summary={payrollSummaryData}
           allowedActions={["Draft"]}
+          filterValue="Draft"
           tableColumns={[
             { key: "employee", label: "Employee", type: "employee" },
             { key: "Attendance", label: "Attendance", type: "attendance" },
