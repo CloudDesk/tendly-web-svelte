@@ -7,9 +7,17 @@ interface PayslipGen {
 }
 
 interface payslipSend {
-    month: number;
-    year: number;
-    recipients: string[]
+    // month: number;
+    // year: number;
+    // recipients: string[]
+    monthYear: string; // YYYY-MM
+    userIds?: string[];
+    filters?: {
+        departmentId?: string;
+        role?: string;
+        status?: string;
+        search?: string;
+    };
 }
 interface PayslipHistoryParams {
     startDate: string;

@@ -3,7 +3,6 @@
     import {
       employeesApi,
       lovsApi,
-      payrollApi,
       payslipApi,
       type PayrollInitiatePayload,
     } from "$lib/services/api";
@@ -172,14 +171,19 @@
           console.log(payslipStatuses, "payslipStatuses");
            // Merge payroll status with employee data
         employees = employeeData.map((emp: Employee) => ({
-          ...emp,
-   
-          payslipStatus:
-            payslipStatuses.find((status: any) => status.userId === emp._id)
-              ?.status || null, 
-          payslipUrl:
-            payslipStatuses.find((status: any) => status.userId === emp._id)
-              ?.payslipUrl || null,
+    
+            _id: emp._id,
+            name: emp.name,
+            email: emp.email,
+            role: emp.role,
+            departmentId: emp.departmentId,
+            joiningDate: emp.joiningDate,
+            payslipStatus:
+                payslipStatuses.find((status: any) => status.userId === emp._id)
+                ?.status || null, 
+            payslipUrl:
+                payslipStatuses.find((status: any) => status.userId === emp._id)
+                ?.payslipUrl || null,
             }));
   console.log(employees, "fecthEmployees");
         page = response.meta.page;
@@ -284,7 +288,7 @@
           payload.userIds = Array.from(selectedEmployees);
         }
         console.log(payload, "Payroll processing payload");
-        const response = await payslipApi.bulkGenerate(payload);
+        const response = await payslipApi.sendPayslips(payload);
         console.log(response, "Payroll processing response");
   
         // Reset selections after successful processing
@@ -451,14 +455,8 @@
                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   disabled={employees.length === 0 ||
                     isLoadingEmployees ||
-                    employees.every(
-                      (emp) =>
-                        emp.payslipStatus &&
-                        !["Generated","Sent","Exported"].includes(emp.payslipStatus)
-                    ) 
-                    
-                    
-                    }
+                    employees.every( (emp) =>!["Generated", "Sent", "Exported"].includes(emp.payslipStatus ?? "")
+                  )}
                 />
               </th>
             </tr>
@@ -533,8 +531,8 @@
                       on:change={() => toggleEmployee(emp._id)}
                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       disabled={
-                      emp.payslipStatus && !["Generated","Sent","Exported"].includes(emp.payslipStatus)
-                     }
+                        !["Generated", "Sent", "Exported"].includes(emp.payslipStatus ?? "")
+                      }
                         />
                   </td>
                 </tr>
@@ -677,9 +675,9 @@
         >
           {#if isGenerating}
             <Loader2 class="animate-spin" size="16" />
-            Generating...
+            sending...
           {:else}
-            Generate Payslip ▶
+            Send Payslip ▶
           {/if}
         </button>
       </div>

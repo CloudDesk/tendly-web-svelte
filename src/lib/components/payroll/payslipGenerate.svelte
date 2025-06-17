@@ -205,13 +205,16 @@
           console.log(payrollStatuses, "payrollStatuses");
         // Merge payroll status with employee data
         employees = employeeData.map((emp: Employee) => ({
-          ...emp,
-          payrollStatus:
-            payrollStatuses.find((status: any) => status.employeeId === emp._id)
+            _id: emp._id,
+            name: emp.name,
+            email: emp.email,
+            role: emp.role,
+            departmentId: emp.departmentId,
+            joiningDate: emp.joiningDate,
+            payrollStatus:
+                payrollStatuses.find((status: any) => status.employeeId === emp._id)
               ?.status || null,
-
-              paymentConfirmedAt :    payrollStatuses.find((status: any) => status.employeeId === emp._id)   ?.paymentConfirmedAt || null,
-          
+            paymentConfirmedAt :    payrollStatuses.find((status: any) => status.employeeId === emp._id)   ?.paymentConfirmedAt || null,
           payslipStatus:
             payslipStatuses.find((status: any) => status.userId === emp._id)
               ?.status || null, 
@@ -527,15 +530,10 @@
                   disabled={employees.length === 0 ||
                     isLoadingEmployees ||
                     employees.every(
-                      (emp) =>
-                        emp.payslipStatus &&
-                        ["Generated","Sent","Exported"].includes(emp.payslipStatus)
-                    ) ||
-                    employees.every(
-                      (emp) =>
-                        emp.payrollStatus &&
-                        !["Completed"].includes(emp.payrollStatus)
-                    )
+        emp =>
+          emp.payrollStatus !== "Completed" ||
+          ["Generated", "Sent", "Exported"].includes(emp.payslipStatus ?? "")
+      )
                     
                     }
                 />
@@ -623,10 +621,9 @@
                       on:change={() => toggleEmployee(emp._id)}
                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       disabled={
-                      emp.payslipStatus && ["Generated","Sent","Exported"].includes(emp.payslipStatus)
-                      ||
-                      emp.payrollStatus &&
-                          !["Completed"].includes(emp.payrollStatus)}
+                        emp.payrollStatus !== "Completed" ||
+                        ["Generated", "Sent", "Exported"].includes(emp.payslipStatus ?? "")
+                      }
                         />
                   </td>
                 </tr>

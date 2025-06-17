@@ -468,6 +468,9 @@
     } catch (error: any) {
       console.log("error in bulk action", error);
       toast.error(`Bulk action failed: ${error.message}`);
+    }finally{
+      await fetchEmployees();
+      showModal=false
     }
   }
 

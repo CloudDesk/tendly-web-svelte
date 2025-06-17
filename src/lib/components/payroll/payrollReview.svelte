@@ -76,6 +76,7 @@
         parseInt(year),
         statusFilters
       )) as { data: any }; // Add a type assertion here
+      console.log(response.data,"payrollSummary import")
       summary = response.data;
 
       if(summary.totalEmployees ===summary.exportableDetails.length 
@@ -181,6 +182,8 @@
       console.error("error in bulk action", error);
       toast.error(`Bulk action failed: ${error.message}`);
     } finally {
+     await fetchPayrollSummary()
+     toggleStatus("InPayment");
       closeConfirmationDialog();
     }
   }
