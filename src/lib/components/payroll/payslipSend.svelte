@@ -516,12 +516,23 @@
                     </span>
                   </td>
                   
-                  <td class="px-4 py-3 text-gray-600 border-b ">
-                    <span
-                      class="inline-block px-2 py-1 rounded text-xs text-blue-600 underline truncate max-w-[200px]"
-                    >
-                      {emp.payslipUrl || "No Record"}
-                    </span>
+                  <td class="px-4 py-3 text-gray-600 border-b">
+                    {#if emp.payslipUrl}
+                      <a
+                        href={emp.payslipUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-block px-2 py-1 rounded text-xs text-blue-600 underline truncate max-w-[200px]"
+                      >
+                        {emp.payslipUrl}
+                      </a>
+                    {:else}
+                      <span
+                        class="inline-block px-2 py-1 rounded text-xs text-gray-500 bg-gray-100 truncate max-w-[200px]"
+                      >
+                        Not Ready
+                      </span>
+                    {/if}
                   </td>
                   
                   <td class="px-4 py-3 text-gray-600 border-b text-center">

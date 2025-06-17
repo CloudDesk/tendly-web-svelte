@@ -292,38 +292,40 @@
     }
   
     function getPayslipStatusColor(status: string | null | undefined): string {
-      switch (status) {
-        case "Generated":
-          return "text-gray-600 bg-gray-100";
-        case "Sent":
-          return "text-yellow-600 bg-yellow-100";
-        case "Exported":
-          return "text-green-600 bg-green-100";
-        default:
-          return "text-gray-600 bg-gray-100";
-      }
-    }
+  switch (status) {
+    case "Generated":
+      return "text-sky-800 bg-sky-100";       // Stage 1: Internally generated
+    case "Sent":
+      return "text-indigo-800 bg-indigo-100"; // Stage 2: Sent to user
+    case "Exported":
+      return "text-emerald-800 bg-emerald-100"; // Stage 3: Officially exported/downloaded
+    default:
+      return "text-gray-400 bg-gray-50";      // No record or unknown status
+  }
+}
+
 
     function getPayrollStatusColor(status: string | null | undefined): string {
-      switch (status) {
-        case "Draft":
-          return "text-gray-600 bg-gray-100";
-        case "Pending Approval":
-          return "text-yellow-600 bg-yellow-100";
-        case "Processing":
-          return "text-blue-600 bg-blue-100";
-        case "Processed":
-          return "text-green-600 bg-green-100";
-        case "Completed":
-          return "text-green-600 bg-green-100";
-        case "Failed":
-          return "text-red-600 bg-red-100";
-        case "Cancelled":
-          return "text-gray-600 bg-gray-100";
-        default:
-          return "text-gray-600 bg-gray-100";
-      }
-    }
+  switch (status) {
+    case "Draft":
+      return "text-teal-800 bg-teal-100"; // visually distinct from null
+    case "Pending Approval":
+      return "text-yellow-800 bg-yellow-100";
+    case "Processing":
+      return "text-blue-800 bg-blue-100";
+    case "Processed":
+      return "text-indigo-800 bg-indigo-100";
+    case "Completed":
+      return "text-green-800 bg-green-100";
+    case "Failed":
+      return "text-red-800 bg-red-100";
+    case "Cancelled":
+      return "text-gray-700 bg-gray-100";
+    default:
+      // For null, undefined, or unknown status
+      return "text-gray-400 bg-gray-50"; // soft and neutral
+  }
+}
   
     function clearFilters() {
       month = month;
@@ -606,12 +608,23 @@
                     </span>
                   </td>
                   
-                  <td class="px-4 py-3 text-gray-600 border-b ">
-                    <span
-                      class="inline-block px-2 py-1 rounded text-xs text-blue-600 underline truncate max-w-[200px]"
-                    >
-                      {emp.payslipUrl || "No Record"}
-                    </span>
+                  <td class="px-4 py-3 text-gray-600 border-b">
+                    {#if emp.payslipUrl}
+                      <a
+                        href={emp.payslipUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-block px-2 py-1 rounded text-xs text-blue-600 underline truncate max-w-[200px]"
+                      >
+                        {emp.payslipUrl}
+                      </a>
+                    {:else}
+                      <span
+                        class="inline-block px-2 py-1 rounded text-xs text-gray-500 bg-gray-100 truncate max-w-[200px]"
+                      >
+                        Not Ready
+                      </span>
+                    {/if}
                   </td>
                   
                   <td class="px-4 py-3 text-gray-600 border-b text-center">
