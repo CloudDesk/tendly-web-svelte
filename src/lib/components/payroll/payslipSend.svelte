@@ -13,6 +13,7 @@
       Loader2,
       Search,
     } from "lucide-svelte";
+  import { toast } from "../common/stores/toast.store";
   
     interface Employee {
       _id: string;
@@ -53,10 +54,12 @@
     let userRoles: { label: string; value: string }[] = [];
   
     // Loading states
-    let isLoadingEmployees = false;
-    let isLoadingDepartments = false;
-    let isLoadingRoles = false;
-    let isGenerating = false;
+    let loadingStates = {
+      employees: false,
+      departments: false,
+      roles: false,
+      processing: false
+    };
   
     // Status options with labels
     const statusOptions = [
@@ -75,7 +78,7 @@
   
     async function fetchDepartments() {
       try {
-        isLoadingDepartments = true;
+        loadingStates.departments = true;
         const departmentResponse: any = await lovsApi.getByType("department");
         if (departmentResponse.success) {
           userDepartments = departmentResponse.data.values.map((dept: any) => ({
@@ -86,13 +89,13 @@
       } catch (error) {
         console.error("Error fetching departments:", error);
       } finally {
-        isLoadingDepartments = false;
+        loadingStates.departments = false;
       }
     }
   
     async function fetchRoles() {
       try {
-        isLoadingRoles = true;
+        loadingStates.roles = true;
         const roleResponse: any = await lovsApi.getByType("role");
         if (roleResponse.success) {
           userRoles = roleResponse.data.values.map((role: any) => ({
@@ -103,7 +106,7 @@
       } catch (error) {
         console.error("Error fetching roles:", error);
       } finally {
-        isLoadingRoles = false;
+        loadingStates.roles = false;
       }
     }
 
@@ -133,7 +136,7 @@
 
     async function fetchEmployees() {
       try {
-        isLoadingEmployees = true;
+        loadingStates.employees = true;
         const filters = {
           page,
           limit,
@@ -197,7 +200,7 @@
         console.error("Error fetching employees:", error);
         employees = [];
       } finally {
-        isLoadingEmployees = false;
+        loadingStates.employees = false;
       }
     }
   
@@ -268,8 +271,8 @@
 
   
     async function sendPayslip() {
-      if (isGenerating || selectedEmployees.size === 0) return;
-      isGenerating = true;
+      if (loadingStates.processing || selectedEmployees.size === 0) return;
+      loadingStates.processing = true;
   
       try {
         const payload: PayrollInitiatePayload = { monthYear: month };
@@ -290,7 +293,7 @@
         console.log(payload, "Payroll processing payload");
         const response = await payslipApi.sendPayslips(payload);
         console.log(response, "Payroll processing response");
-  
+        toast.success( `Payslip sent Succesfully`)
         // Reset selections after successful processing
         selectedEmployees = new Set();
         selectAll = false;
@@ -300,7 +303,7 @@
       } catch (error) {
         console.error(error, "Error processing payroll");
       } finally {
-        isGenerating = false;
+        loadingStates.processing = false;
       }
     }
   
@@ -352,7 +355,7 @@
             bind:value={departmentId}
             on:change={handleFilterChange}
             class="min-w-[160px] px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            disabled={isLoadingDepartments}
+            disabled={loadingStates.departments}
           >
             <option value="">All Departments</option>
             {#each userDepartments as dept}
@@ -368,7 +371,7 @@
             bind:value={role}
             on:change={handleFilterChange}
             class="min-w-[160px] px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            disabled={isLoadingRoles}
+            disabled={loadingStates.roles}
           >
             <option value="">All Roles</option>
             {#each userRoles as role}
@@ -425,7 +428,7 @@
       </div>
   
       <!-- Loading indicator for filters -->
-      {#if isLoadingEmployees}
+      {#if loadingStates.employees}
         <div class="px-4 pb-4">
           <div class="flex items-center gap-2 text-sm text-gray-500">
             <Loader2 class="animate-spin" size="16" />
@@ -454,7 +457,7 @@
                   on:change={toggleSelectAll}
                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   disabled={employees.length === 0 ||
-                    isLoadingEmployees ||
+                    loadingStates.employees ||
                     employees.every( (emp) =>!["Generated", "Sent", "Exported"].includes(emp.payslipStatus ?? "")
                   )}
                 />
@@ -462,7 +465,7 @@
             </tr>
           </thead>
           <tbody>
-            {#if isLoadingEmployees}
+            {#if loadingStates.employees}
               <!-- Loading skeleton rows -->
               {#each Array(5) as _}
                 <tr class="even:bg-gray-50">
@@ -582,7 +585,7 @@
       <!-- Pagination Controls -->
       <div class="flex items-center space-x-2">
         <button
-          disabled={page <= 1 || isLoadingEmployees}
+          disabled={page <= 1 || loadingStates.employees}
           on:click={() => {
             page--;
             fetchEmployees();
@@ -603,7 +606,7 @@
               class="px-3 py-1 border rounded-md text-sm {page === i + 1
                 ? 'bg-blue-600 text-white'
                 : 'hover:bg-gray-100'}"
-              disabled={isLoadingEmployees}
+              disabled={loadingStates.employees}
             >
               {i + 1}
             </button>
@@ -618,7 +621,7 @@
             class="px-3 py-1 border rounded-md text-sm {page === 1
               ? 'bg-blue-600 text-white'
               : 'hover:bg-gray-100'}"
-            disabled={isLoadingEmployees}
+            disabled={loadingStates.employees}
           >
             1
           </button>
@@ -638,7 +641,7 @@
                 class="px-3 py-1 border rounded-md text-sm {page === page + i - 1
                   ? 'bg-blue-600 text-white'
                   : 'hover:bg-gray-100'}"
-                disabled={isLoadingEmployees}
+                disabled={loadingStates.employees}
               >
                 {page + i - 1}
               </button>
@@ -658,14 +661,14 @@
             class="px-3 py-1 border rounded-md text-sm {page === totalPages
               ? 'bg-blue-600 text-white'
               : 'hover:bg-gray-100'}"
-            disabled={isLoadingEmployees}
+            disabled={loadingStates.employees}
           >
             {totalPages}
           </button>
         {/if}
   
         <button
-          disabled={page >= totalPages || isLoadingEmployees}
+          disabled={page >= totalPages || loadingStates.employees}
           on:click={() => {
             page++;
             fetchEmployees();
@@ -682,9 +685,9 @@
         <button
           class="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
           on:click={sendPayslip}
-          disabled={isGenerating || selectedEmployees.size === 0}
+          disabled={loadingStates.processing || selectedEmployees.size === 0}
         >
-          {#if isGenerating}
+          {#if loadingStates.processing}
             <Loader2 class="animate-spin" size="16" />
             sending...
           {:else}
