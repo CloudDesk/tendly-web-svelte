@@ -7,7 +7,7 @@
   import EmployeeSalary from "$lib/components/employee/EmployeeSalary.svelte";
   import ITDeclarationApproval from "$lib/components/employee/ITDeclarationApproval.svelte";
   import EmployeeShiftAssignment from "$lib/components/employee/EmployeeShiftAssignment.svelte";
-  import { employeesApi } from "$lib/services/api/employees";
+  import { employeesApi } from "$lib/services/api";
   import EmployeeInfo from "$lib/components/employee/EmployeeInfo.svelte";
   import { toast } from "$lib/components/common/stores/toast.store.js";
   import Modal from "$lib/components/common/Modal.svelte";

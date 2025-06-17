@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { auth } from "$lib/stores/auth";
-  import { resignationApi } from "$lib/services/api/user-resignation";
+  import { resignationApi } from "$lib/services/api";
   import Modal from "$lib/components/common/Modal.svelte";
   import { toast } from "$lib/components/common/stores/toast.store";
   import type {

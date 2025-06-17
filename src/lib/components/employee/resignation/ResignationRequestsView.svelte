@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { fade, fly } from "svelte/transition";
   import { auth } from "$lib/stores/auth";
-  import { resignationApi } from "$lib/services/api/user-resignation";
+  import { resignationApi } from "$lib/services/api";
   import type {
     ApproveResignationData,
     IResignationEmployee,

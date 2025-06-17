@@ -22,15 +22,7 @@
       role: string;
       departmentId: string;
       joiningDate: string;
-      payrollStatus?:
-        | "Draft"
-        | "PendingApproval"
-        | "InPayment"
-        | "Completed"
-        | "Failed"
-        | "RetryPending"
-        | "Cancelled"
-        | null;
+    
         paymentConfirmedAt:string | null;
         payslipStatus?:
        'Generated'|  'Sent' | 'Exported' | null;
@@ -115,30 +107,7 @@
         isLoadingRoles = false;
       }
     }
-  
-    async function fetchPayrollStatus(
-      userIds: string[],
-      year: string,
-      month: string
-    ) {
-      console.log("fetchPayrollSttaus", userIds, year, month);
-      try {
-        const response: any = await payrollApi.getUserPayrollStatus(
-          userIds,
-          Number(year),
-          Number(month)
-        );
-        console.log(response, "Payroll status response");
-        if (!response.success) {
-          return [];
-        }
-        return response.data || [];
-      } catch (error) {
-        console.error("Error fetching payroll status:", error);
-        return [];
-      }
-    }
-  
+
     async function fetchPayslipStatus(
       userIds: string[],
       year: string,
@@ -197,21 +166,14 @@
 
         // Fetch payroll status for all employees in the current page
         const userIds = employeeData.map((emp: Employee) => emp._id);
-        const payrollStatuses = await fetchPayrollStatus(userIds, year, monthNum);
         const payslipStatuses = await fetchPayslipStatus(userIds, year, monthNum);
       
         
           console.log(payslipStatuses, "payslipStatuses");
-          console.log(payrollStatuses, "payrollStatuses");
-        // Merge payroll status with employee data
+           // Merge payroll status with employee data
         employees = employeeData.map((emp: Employee) => ({
           ...emp,
-          payrollStatus:
-            payrollStatuses.find((status: any) => status.employeeId === emp._id)
-              ?.status || null,
-
-              paymentConfirmedAt :    payrollStatuses.find((status: any) => status.employeeId === emp._id)   ?.paymentConfirmedAt || null,
-          
+   
           payslipStatus:
             payslipStatuses.find((status: any) => status.userId === emp._id)
               ?.status || null, 
@@ -240,11 +202,7 @@
       if (selectAll) {
         console.log("toggleSelectAll if")
         selectedEmployees = new Set(
-          employees
-            .filter(
-              (emp) =>
-                emp.payrollStatus === "Completed"
-            )
+          employees           
             .map((emp) => emp._id)
         );
       } else {
@@ -256,13 +214,7 @@
   
     function toggleEmployee(id: string) {
       const employee = employees.find((emp) => emp._id === id);
-      if (
-        !employee ||
-        (employee.payrollStatus &&
-          !["Failed", "Cancelled"].includes(employee.payrollStatus))
-      ) {
-        return; // Prevent selection if status is not Failed, Cancelled, or null
-      }
+     
   
       if (selectedEmployees.has(id)) {
         selectedEmployees.delete(id);
@@ -271,13 +223,7 @@
       }
       selectedEmployees = selectedEmployees; // Trigger reactivity
   
-      // Update selectAll state
-      selectAll =
-        selectedEmployees.size ===
-          employees.filter(
-            (emp) =>
-              emp.payrollStatus === "Completed"
-          ).length && employees.length > 0;
+     
     }
   
     function formatDate(dateStr: string) {
@@ -301,26 +247,7 @@
       }
     }
 
-    function getPayrollStatusColor(status: string | null | undefined): string {
-      switch (status) {
-        case "Draft":
-          return "text-gray-600 bg-gray-100";
-        case "Pending Approval":
-          return "text-yellow-600 bg-yellow-100";
-        case "Processing":
-          return "text-blue-600 bg-blue-100";
-        case "Processed":
-          return "text-green-600 bg-green-100";
-        case "Completed":
-          return "text-green-600 bg-green-100";
-        case "Failed":
-          return "text-red-600 bg-red-100";
-        case "Cancelled":
-          return "text-gray-600 bg-gray-100";
-        default:
-          return "text-gray-600 bg-gray-100";
-      }
-    }
+  
   
     function clearFilters() {
       month = month;
@@ -336,7 +263,7 @@
   
 
   
-    async function generatePayslip() {
+    async function sendPayslip() {
       if (isGenerating || selectedEmployees.size === 0) return;
       isGenerating = true;
   
@@ -392,7 +319,7 @@
     <!-- Header -->
     <div class="mb-4 md:mb-6">
       <h1 class="text-xl md:text-2xl font-bold text-gray-900">
-        Payslip Processing
+        Send Payslip
         {new Date(month + "-01").toLocaleString("default", {
           month: "long",
           year: "numeric",
@@ -514,8 +441,6 @@
               <th class="px-4 py-3 font-semibold">Employee Name</th>
               <th class="px-4 py-3 font-semibold">Role</th>
               <th class="px-4 py-3 font-semibold">Department</th>
-              <th class="px-4 py-3 font-semibold">Payment Date</th>
-              <th class="px-4 py-3 font-semibold">Payroll Status</th>
               <th class="px-4 py-3 font-semibold">Payslip Status</th>
               <th class="px-4 py-3 font-semibold">Payslip URL</th>
               <th class="px-4 py-3 font-semibold text-center">
@@ -529,13 +454,9 @@
                     employees.every(
                       (emp) =>
                         emp.payslipStatus &&
-                        ["Generated","Sent","Exported"].includes(emp.payslipStatus)
-                    ) ||
-                    employees.every(
-                      (emp) =>
-                        emp.payrollStatus &&
-                        !["Completed"].includes(emp.payrollStatus)
-                    )
+                        !["Generated","Sent","Exported"].includes(emp.payslipStatus)
+                    ) 
+                    
                     
                     }
                 />
@@ -585,19 +506,8 @@
                   <td class="px-4 py-3 text-gray-600 border-b"
                     >{formatLabel(emp.departmentId)}</td
                   >
-                  <td class="px-4 py-3 text-gray-600 border-b">
-                    {emp.paymentConfirmedAt ? formatDate(emp.paymentConfirmedAt) : '-'}
-                  </td>
                   
-                  <td class="px-4 py-3 text-gray-600 border-b">
-                    <span
-                      class="inline-block px-2 py-1 rounded text-xs {getPayrollStatusColor(
-                        emp.payrollStatus
-                      )}"
-                    >
-                      {emp.payrollStatus || "No Record"}
-                    </span>
-                  </td>
+                 
                   <td class="px-4 py-3 text-gray-600 border-b">
                     <span
                       class="inline-block px-2 py-1 rounded text-xs {getPayslipStatusColor(
@@ -623,10 +533,8 @@
                       on:change={() => toggleEmployee(emp._id)}
                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       disabled={
-                      emp.payslipStatus && ["Generated","Sent","Exported"].includes(emp.payslipStatus)
-                      ||
-                      emp.payrollStatus &&
-                          !["Completed"].includes(emp.payrollStatus)}
+                      emp.payslipStatus && !["Generated","Sent","Exported"].includes(emp.payslipStatus)
+                     }
                         />
                   </td>
                 </tr>
@@ -764,7 +672,7 @@
       <div class="flex items-center gap-4 w-full sm:w-auto justify-end">
         <button
           class="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-          on:click={generatePayslip}
+          on:click={sendPayslip}
           disabled={isGenerating || selectedEmployees.size === 0}
         >
           {#if isGenerating}

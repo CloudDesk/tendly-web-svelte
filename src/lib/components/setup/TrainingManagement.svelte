@@ -3,7 +3,7 @@
   import Modal from "$lib/components/common/Modal.svelte";
   import { onMount } from "svelte";
   import type { Training, User } from "$lib/types_old";
-  import { trainingsApi, employeesApi } from "$lib/services/api/";
+  import { trainingsApi, employeesApi } from "$lib/services/api";
   import { page } from "$app/stores";
 
   export let isTrainer = false;

@@ -2,7 +2,7 @@
   import { createEventDispatcher, onMount } from "svelte";
   import { writable } from "svelte/store";
   import type { SalaryStructure } from "$lib/types";
-  import { salaryStructureApi } from "$lib/services/api/salaryStructure";
+  import { salaryStructureApi } from "$lib/services/api";
 
   // TypeScript interfaces
   interface Field {

@@ -4,6 +4,7 @@
   import PayrollInitiate from "$lib/components/payroll/payrollInitiate.svelte";
   import PayrollReview from "$lib/components/payroll/payrollReview.svelte";
   import PayslipGenerate from "$lib/components/payroll/payslipGenerate.svelte";
+  import PayslipSend from "$lib/components/payroll/payslipSend.svelte";
   let tabs = [
     { id: "initiate", label: "Payroll Initiate" },
     { id: "review", label: "Payroll Review" },
@@ -24,6 +25,7 @@
 {:else if activeTab ==="generate"}
 <PayslipGenerate/>
 {:else if activeTab ==="send"}
+<PayslipSend/>
 
     {/if}
   </Tabs>
@@ -32,13 +34,13 @@
   import { toast } from "$lib/components/common/stores/toast.store";
   import Tabs from "$lib/components/common/Tabs.svelte";
   import PayrollProcess from "$lib/components/payroll/payrollProcess.svelte";
-  import { payrollApi } from "$lib/services/api/payroll";
+  import { payrollApi } from "$lib/services/api";
   import { formatCurrency } from "$lib/utils/currency";
   import { getMonthFormats } from "$lib/utils/monthFormats";
   import { onMount } from "svelte";
   import { Check, X, AlertTriangle } from "lucide-svelte";
   import PayslipProcess from "$lib/components/payroll/payslipProcess.svelte";
-  import { payslipApi } from "$lib/services/api/payslip";
+  import { payslipApi } from "$lib/services/api";
   import PayslipHistory from "$lib/components/payroll/payslipHistory.svelte";
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
 

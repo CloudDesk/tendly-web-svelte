@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { CreditCard, FileText, ArrowRight } from "lucide-svelte";
   import { auth } from "$lib/stores/auth";
-  import { payslipApi } from "$lib/services/api/payslip";
+  import { payslipApi } from "$lib/services/api";
   import { goto } from "$app/navigation";
   import { onDestroy } from 'svelte';
 

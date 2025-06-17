@@ -1,11 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { writable, get } from "svelte/store";
-  import { leavesApi } from "$lib/services/api/leaves";
+  import { leavesApi,type LeaveFilters, type LeaveRequest } from "$lib/services/api";
   import Table from "$lib/components/common/Table.svelte";
   import { getLeaveTypeLabel } from "$lib/constants/leaveTypes.js";
   import { toast } from "$lib/components/common/stores/toast.store.js";
-  import type { LeaveFilters, LeaveRequest } from "$lib/services/api/leaves";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
 

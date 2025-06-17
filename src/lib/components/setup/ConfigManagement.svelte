@@ -3,7 +3,7 @@
   import Modal from "$lib/components/common/Modal.svelte";
   import { onMount } from "svelte";
   import type { LOV } from "$lib/types";
-  import { lovsApi } from "$lib/services/api/";
+  import { lovsApi } from "$lib/services/api";
   import { page } from "$app/stores";
   let lovs: LOV[] = [];
   let loading = false;

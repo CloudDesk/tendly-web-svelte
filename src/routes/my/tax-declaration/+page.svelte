@@ -3,8 +3,7 @@
   import Loader from "$lib/components/common/Loader.svelte";
   import TaxDeclarationViewer from "$lib/components/taxDeclaration/TaxDeclarationViewer.svelte";
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
-  import { taxSlabApi } from "$lib/services/api";
-  import { taxDeclarationApi } from "$lib/services/api/taxDeclaration";
+  import { taxSlabApi,taxDeclarationApi } from "$lib/services/api";
   import { auth } from "$lib/stores/auth";
   import type { TaxSlab } from "$lib/types";
   import { getCurrentFinancialYear } from "$lib/utils/date";

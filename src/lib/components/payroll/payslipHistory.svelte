@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { payslipApi } from "$lib/services/api/payslip";
+  import { payslipApi } from "$lib/services/api";
   import Table from "$lib/components/common/Table.svelte";
 
   export let startDate: string;

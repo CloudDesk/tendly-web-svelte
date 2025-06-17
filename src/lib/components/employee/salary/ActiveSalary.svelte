@@ -10,7 +10,7 @@
   import SalaryDetails from "./SalaryDetails.svelte";
   import { salaryAssignmentApi } from "../../../services/api/salaryAssignments";
   import { onMount } from "svelte";
-  import { salaryStructureApi } from "$lib/services/api/salaryStructure";
+  import { salaryStructureApi } from "$lib/services/api";
   import {
     DollarSign,
     Edit,

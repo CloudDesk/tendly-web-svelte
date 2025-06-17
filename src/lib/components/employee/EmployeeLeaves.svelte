@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { leavesApi } from "$lib/services/api";
+  import { leavesApi,
+    type LeaveRequest,
+    type LeaveCategory,
+    type LeaveSummary
+   } from "$lib/services/api";
   import Modal from "$lib/components/common/Modal.svelte";
-  import type {
-    LeaveRequest,
-    LeaveCategory,
-    LeaveSummary,
-  } from "$lib/services/api/leaves";
+
 
   export let employeeId: string;
   export let showEditAllotments = true;

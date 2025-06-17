@@ -1,8 +1,8 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from "svelte";
   import "../../styles/form.css";
-  import { lovsApi } from "$lib/services/api/lovs";
-  import { employeesApi } from "$lib/services/api";
+  import { lovsApi,employeesApi } from "$lib/services/api";
+
 
   // Field interface defines the structure of form fields
   interface Field {

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { reportsApi } from "$lib/services/api/reports";
+  import { reportsApi } from "$lib/services/api";
   import { onMount } from "svelte";
   import {
     Download,

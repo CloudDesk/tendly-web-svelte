@@ -5,7 +5,7 @@
   import HolidayDetails from "./HolidayDetails.svelte";
   import { onMount } from "svelte";
   import type { IHolidayCalendar } from "$lib/types";
-  import { holidayCalendarApi } from "$lib/services/api/";
+  import { holidayCalendarApi } from "$lib/services/api";
   import { page } from "$app/stores";
   import HolidayAssign from "./HolidayAssign.svelte";
 

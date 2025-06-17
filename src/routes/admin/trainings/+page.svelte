@@ -7,7 +7,7 @@
   import { page } from "$app/stores";
   import Modal from "$lib/components/common/Modal.svelte";
   import EmployeeForm from "$lib/components/employee/EmployeeForm.svelte";
-  import { employeesApi } from "$lib/services/api/employees.js";
+  import { employeesApi } from "$lib/services/api";
   import { toast } from "$lib/components/common/stores/toast.store.js";
   import type { Training, User } from "$lib/types";
   import TrainingsList from "$lib/components/training/TrainingsList.svelte";

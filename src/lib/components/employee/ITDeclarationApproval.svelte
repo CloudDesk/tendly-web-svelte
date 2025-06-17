@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { taxDeclarationApi } from "$lib/services/api/taxDeclaration";
+  import { taxDeclarationApi } from "$lib/services/api";
   import { onMount } from "svelte";
   import Loader from "../common/Loader.svelte";
   import type { TaxDeclaration } from "$lib/types";

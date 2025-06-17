@@ -6,7 +6,7 @@
     import WeekendCalendarAssign from "./WeekendCalendarAssign.svelte";
     import { onMount } from "svelte";
     import type { IWeekendCalendar } from "$lib/types";
-    import { weekendCalendarApi } from "$lib/services/api/";
+    import { weekendCalendarApi } from "$lib/services/api";
   
     let weekendCalendars: IWeekendCalendar[] = [];
     let loading = false;

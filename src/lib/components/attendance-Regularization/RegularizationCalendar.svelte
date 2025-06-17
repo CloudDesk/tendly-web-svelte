@@ -11,7 +11,7 @@
     AlertCircle,
     Calendar,
   } from "lucide-svelte";
-  import type { AttendanceRegularization } from "$lib/services/api/attendance-regularization";
+  import type { AttendanceRegularization } from "$lib/services/api";
 
   // Types
   interface User {

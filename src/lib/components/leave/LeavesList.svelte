@@ -1,8 +1,8 @@
 <script lang="ts">
     import Table from "$lib/components/common/Table.svelte";
     import Filter from "$lib/components/common/Filter.svelte";
-    import { leavesApi, type LeaveFilters } from "$lib/services/api/leaves";
-    import type { LeaveRequest } from "$lib/services/api/leaves";
+    import { leavesApi, type LeaveFilters ,type LeaveRequest } from "$lib/services/api";
+   
     import { goto } from "$app/navigation";
     import { page } from "$app/stores";
     import { writable, derived } from "svelte/store";

@@ -5,7 +5,7 @@
   import Loader from "$lib/components/common/Loader.svelte";
   import { formatCurrency } from "$lib/utils/currency";
   import { auth } from "$lib/stores/auth";
-  import { taxDeclarationApi } from "$lib/services/api/taxDeclaration";
+  import { taxDeclarationApi } from "$lib/services/api";
 
   export let taxDeclaration: TaxDeclaration | null = null;
   export let adminOnly: boolean = false;

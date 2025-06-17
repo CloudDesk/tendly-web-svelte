@@ -1,6 +1,6 @@
 <script lang="ts">
   import { attendanceRegularizeApi, leavesApi } from "$lib/services/api";
-  import type { AttendanceRegularization } from "$lib/services/api/attendance-regularization";
+  import type { AttendanceRegularization } from "$lib/services/api";
   import { toast } from "../common/stores/toast.store";
   import { writable } from "svelte/store";
   import { onMount } from "svelte";

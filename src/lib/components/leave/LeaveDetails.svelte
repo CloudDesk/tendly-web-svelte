@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { leavesApi } from "$lib/services/api/leaves";
+  import { leavesApi } from "$lib/services/api";
   import Modal from "$lib/components/common/Modal.svelte";
   import type { LeaveRequest } from "$lib/types";
   import {

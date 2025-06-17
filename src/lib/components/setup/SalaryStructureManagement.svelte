@@ -3,7 +3,7 @@
   import Modal from "$lib/components/common/Modal.svelte";
   import { onMount } from "svelte";
   import type { SalaryStructure } from "$lib/types";
-  import { salaryStructureApi } from "$lib/services/api/salaryStructure";
+  import { salaryStructureApi } from "$lib/services/api";
   import SalaryStructureForm from "./salary-structure/SalaryStructureForm.svelte";
   import { page } from "$app/stores";
   import { getSelectLabel } from "$lib/utils/select";

@@ -24,6 +24,23 @@ export const payslipApi = {
             body: JSON.stringify(data)
         });
     },
+    getPayslipMe: async (month: number, year: number, userId: string) => {
+        return fetchApi(
+            `/payslip/me?month=${month}&year=${year}&userId=${userId}`,
+            {
+                method: "GET",
+            }
+        );
+    },
+    sendPayslips: async (data: payslipSend) => {
+        console.log(data, "sendPayslips")
+        return fetchApi(`/payslip/send`, {
+            method: "POST",
+            body: JSON.stringify(data)
+        })
+    },
+
+
 
     getUserPayslipStatus: async (userIds: string[], year: number, month: number) => {
         return fetchApi(`/payslip/by-users`, {
@@ -42,13 +59,6 @@ export const payslipApi = {
             method: 'GET'
         });
     },
-    sendPayslips: async (data: payslipSend) => {
-        console.log(data, "sendPayslips")
-        return fetchApi(`/payslip/send`, {
-            method: "POST",
-            body: JSON.stringify(data)
-        })
-    },
     getPayslipHistory: async (params: PayslipHistoryParams) => {
         const { startDate, endDate, page, limit } = params;
         return fetchApi(
@@ -58,14 +68,7 @@ export const payslipApi = {
             }
         );
     },
-    getPayslipMe: async (month: number, year: number, userId: string) => {
-        return fetchApi(
-            `/payslip/me?month=${month}&year=${year}&userId=${userId}`,
-            {
-                method: "GET",
-            }
-        );
-    }
+   
 
 
 }

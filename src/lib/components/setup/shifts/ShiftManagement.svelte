@@ -6,7 +6,7 @@
   import ShiftAssignment from "./ShiftAssignment.svelte";
   import { onMount } from "svelte";
   import type { Shift, User } from "$lib/types";
-  import { shiftsApi, employeesApi } from "$lib/services/api/";
+  import { shiftsApi, employeesApi } from "$lib/services/api";
   import { page } from "$app/stores";
 
   let shifts: Shift[] = [];

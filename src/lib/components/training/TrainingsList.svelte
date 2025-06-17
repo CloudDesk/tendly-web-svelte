@@ -4,7 +4,7 @@
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import type { Training, User } from "$lib/types";
-  import { trainingsApi, employeesApi } from "$lib/services/api/";
+  import { trainingsApi, employeesApi } from "$lib/services/api";
 
   let trainings: Training[] = [];
   let employees: User[] = [];

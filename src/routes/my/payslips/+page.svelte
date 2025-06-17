@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { auth } from "$lib/stores/auth";
   import { Chart, registerables } from "chart.js";
-  import { payslipApi } from "$lib/services/api/payslip";
+  import { payslipApi } from "$lib/services/api";
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
 
   Chart.register(...registerables);

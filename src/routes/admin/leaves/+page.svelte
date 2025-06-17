@@ -1,9 +1,8 @@
 <script lang="ts">
   import Table from "$lib/components/common/Table.svelte";
-  import type { LeaveRequest } from "$lib/services/api/leaves";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { leavesApi } from "$lib/services/api/leaves";
+  import { leavesApi ,type LeaveRequest } from "$lib/services/api";
   import { getLeaveTypeLabel } from "$lib/constants/leaveTypes.js";
   import { toast } from "$lib/components/common/stores/toast.store.js";
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";

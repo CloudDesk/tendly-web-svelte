@@ -4,7 +4,7 @@
   import ReportDataUnit from "$lib/components/report/ReportDataUnit.svelte";
   import Table from "$lib/components/common/Table.svelte";
   import { onMount } from "svelte";
-  import { reportsApi, type IReport } from "$lib/services/api/reports";
+  import { reportsApi, type IReport } from "$lib/services/api";
   import LoaderNew from "$lib/components/common/LoaderNew.svelte";
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
   import ContentCard from "$lib/components/common/ContentCard.svelte";
