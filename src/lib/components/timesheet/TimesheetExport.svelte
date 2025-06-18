@@ -4,6 +4,7 @@
   import { onMount } from "svelte";
   import LoaderNew from "../common/LoaderNew.svelte";
   import { ChevronDown, CheckCheck, Info, Download } from "lucide-svelte";
+  import { documentsApi } from "$lib/services/api/documents";
 
   let userId = "";
   let month = new Date().getMonth() + 1;
@@ -50,10 +51,14 @@
     error = "";
     success = false;
     try {
-      const result: any = await timesheetApi.generate(userId, month, year);
+      const result: any = await documentsApi.generateTimesheet(
+        userId,
+        month,
+        year
+      );
       console.log(result, "generateTimesheet");
       if (result.success) {
-        fileUrl = result.data;
+        fileUrl = result.data.filePath || result.data;
         success = true;
       }
     } catch (e: any) {

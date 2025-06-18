@@ -251,7 +251,7 @@
     },
     {
       label: "Timesheet",
-      href: "/my/Timesheet",
+      href: "/my/timesheet",
       icon: CalendarRange,
     },
   ];
