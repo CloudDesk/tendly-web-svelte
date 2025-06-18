@@ -12,6 +12,7 @@
   import HolidayCalendar from "$lib/components/setup/holiday/HolidayCalendar.svelte";
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
   import ContentCard from "$lib/components/common/ContentCard.svelte";
+  import DocummentCenter from "$lib/components/documentCenter/DocummentCenter.svelte";
 
   const tabs = [
     { id: "lovs", label: "LOVs" },
@@ -20,6 +21,7 @@
     { id: "salary", label: "Salary Structure" },
     { id: "taxslab", label: "Tax Slab" },
     { id: "holiday", label: "Holiday Calendar" },
+    { id: "documents", label: "Document Center" },
     { id: "org", label: "Org Chart" },
   ];
 
@@ -47,29 +49,33 @@
     showModal = true;
   }
 </script>
+
 <IndexPageTemplate
   title="Setup"
   subtitle="Manage your organization's Setup"
+  hasContainerShadow={false}
 >
-<ContentCard noPadding={true}>
+  <ContentCard noPadding={true}>
     <Tabs {tabs}>
-        {#if $activeTab === "shifts"}
-          <ShiftManagement />
-        {:else if $activeTab === "trainings"}
-          <TrainingManagement />
-        {:else if $activeTab === "lovs"}
-          <ConfigManagement />
-        {:else if $activeTab === "org"}
-          <OrgChart />
-        {:else if $activeTab === "salary"}
-          <SalaryStructureManagement />
-        {:else if $activeTab === "taxslab"}
-          <TaxSlabManagement />
-        {:else if $activeTab === "holiday"}
-          <HolidayCalendar />
-          <!-- {:else if $activeTab === "weekends"}
+      {#if $activeTab === "shifts"}
+        <ShiftManagement />
+      {:else if $activeTab === "trainings"}
+        <TrainingManagement />
+      {:else if $activeTab === "lovs"}
+        <ConfigManagement />
+      {:else if $activeTab === "org"}
+        <OrgChart />
+      {:else if $activeTab === "salary"}
+        <SalaryStructureManagement />
+      {:else if $activeTab === "taxslab"}
+        <TaxSlabManagement />
+      {:else if $activeTab === "holiday"}
+        <HolidayCalendar />
+      {:else if $activeTab === "documents"}
+        <DocummentCenter />
+        <!-- {:else if $activeTab === "weekends"}
           <WeekendCalendar /> -->
-        {/if}
-      </Tabs>
+      {/if}
+    </Tabs>
   </ContentCard>
 </IndexPageTemplate>

@@ -122,7 +122,7 @@
     <!-- Mobile top navigation bar (only visible on small screens) -->
     {#if isAuthenticated && $isMobile}
       <div
-        class="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-50 flex items-center
+        class="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-30 flex items-center
         justify-between px-4 lg:hidden overflow-hidden max-w-full"
       >
         <div class="flex items-center min-w-0 flex-1">

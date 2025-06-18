@@ -146,7 +146,7 @@
   });
 </script>
 
-<div class="container mx-auto py-6">
+<div>
   <div class="flex justify-between items-center mb-4">
     <h2 class="text-xl font-semibold">Tax Slabs</h2>
     <div class="flex gap-4">

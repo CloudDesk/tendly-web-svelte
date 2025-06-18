@@ -19,6 +19,9 @@
   export let filterText = "Filter";
   export let viewText = "View";
   export let selectedFilterCount = 0;
+  export let hasContainerShadow = true;
+
+  const ICON_SIZE = 16;
 
   const isMobile = writable(false);
   const sidebarOpen = writable(false);
@@ -73,7 +76,7 @@
           {#if showFilter}
             <Button variant="none" size="sm" on:click={onFilter}>
               <span class="flex items-center gap-1.5">
-                <Filter size="16" />
+                <Filter size={ICON_SIZE} />
                 {#if selectedFilterCount > 0}
                   <span
                     class="filter-badge bg-primary text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center"
@@ -91,7 +94,7 @@
           {#if showView}
             <Button variant="none" size="sm" on:click={onView}>
               <span class="flex items-center gap-1.5">
-                <Layout size="16" />
+                <Layout size={ICON_SIZE} />
                 <span class="hidden sm:inline whitespace-nowrap"
                   >{viewText}</span
                 >
@@ -110,16 +113,16 @@
           {#if showExport}
             <Button variant="outline" on:click={onExport}>
               <span class="flex items-center gap-1.5">
-                <Download size="16" />
+                <Download size={ICON_SIZE} />
                 <span class="hidden sm:inline whitespace-nowrap">Export</span>
               </span>
             </Button>
           {/if}
 
-          {#if showAdd}
+          {#if showAdd && onAdd}
             <Button variant="primary" on:click={onAdd}>
               <span class="flex items-center gap-1.5">
-                <Plus size={16} />
+                <Plus size={ICON_SIZE} />
                 <span class="hidden sm:inline whitespace-nowrap"
                   >{addButtonText}</span
                 >
@@ -135,7 +138,11 @@
   </header>
 
   <!-- Content Container -->
-  <div class="content-container px-4 py-4 rounded-lg shadow-sm overflow-hidden">
+  <div
+    class="content-container px-4 py-4 overflow-hidden"
+    class:rounded-lg={hasContainerShadow}
+    class:shadow-sm={hasContainerShadow}
+  >
     <slot />
   </div>
 </div>

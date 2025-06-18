@@ -191,8 +191,8 @@
   });
 </script>
 
-<div class="container mx-auto py-6">
-  <div class="flex justify-between items-center mb-10">
+<div>
+  <div class="flex justify-between items-center mb-4">
     <h2 class="text-xl font-semibold">Salary Structures</h2>
     <div class="flex gap-4">
       <input

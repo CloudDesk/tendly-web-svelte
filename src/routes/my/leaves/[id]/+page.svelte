@@ -4,7 +4,6 @@
   import LeaveDetails from "$lib/components/leave/LeaveDetails.svelte";
   import { leavesApi } from "$lib/services/api";
   import DetailPageTemplate from "$lib/components/templates/DetailPageTemplate.svelte";
-  import ContentCard from "$lib/components/common/ContentCard.svelte";
   import LoaderNew from "$lib/components/common/LoaderNew.svelte";
   import InfoBanner from "$lib/components/common/InfoBanner.svelte";
 
@@ -81,4 +80,3 @@
     {/if}
   </div>
 </DetailPageTemplate>
-
