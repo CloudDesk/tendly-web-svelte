@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { attendanceApi, employeesApi } from "$lib/services/api";
+  import { employeesApi } from "$lib/services/api";
   import type { User } from "$lib/types_old";
   import Tabs from "$lib/components/common/Tabs.svelte";
   import EmployeeAttendance from "$lib/components/attendance/EmployeeAttendance.svelte";
@@ -66,26 +66,24 @@
 <IndexPageTemplate
   title="Attendance Management"
   subtitle="Manage your attendance"
-
 >
-<ContentCard noPadding={true}>
+  <ContentCard noPadding={true}>
     <Tabs {tabs}>
-          {#if activeTab === "shift"}
-            <EmployeeAttendance
-              mode="multi"
-              employeeIds={Array.from(selectedEmployeeIds)}
-            />
-          {:else if activeTab === "training"}
-            <EmployeeTrainingAttendance
-              mode="multi"
-              employeeIds={Array.from(selectedEmployeeIds)}
-            />
-          {:else}
-            <div class="alert alert-info">
-              Please select at least one employee to view attendance records.
-            </div>
-          {/if}
-        </Tabs>
+      {#if activeTab === "shift"}
+        <EmployeeAttendance
+          mode="multi"
+          employeeIds={Array.from(selectedEmployeeIds)}
+        />
+      {:else if activeTab === "training"}
+        <EmployeeTrainingAttendance
+          mode="multi"
+          employeeIds={Array.from(selectedEmployeeIds)}
+        />
+      {:else}
+        <div class="alert alert-info">
+          Please select at least one employee to view attendance records.
+        </div>
+      {/if}
+    </Tabs>
   </ContentCard>
 </IndexPageTemplate>
-

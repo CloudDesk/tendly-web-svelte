@@ -51,9 +51,9 @@
   id="index-page-template"
 >
   <!-- FIXED: Robust Single-Row Flex Layout -->
-  <header class="w-full px-4 py-4 mb-6">
+  <header class="w-full px-4 py-4">
     <!-- Title & Subtitle Section -->
-    <div class="mb-4">
+    <div class="mb-2">
       <h1 class="text-2xl font-bold text-gray-900 mb-1">
         {title}
       </h1>
@@ -135,7 +135,7 @@
   </header>
 
   <!-- Content Container -->
-  <div class="content-container bg-white rounded-lg shadow-sm overflow-hidden">
+  <div class="content-container px-4 py-4 rounded-lg shadow-sm overflow-hidden">
     <slot />
   </div>
 </div>

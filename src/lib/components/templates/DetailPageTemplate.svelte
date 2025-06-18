@@ -61,7 +61,7 @@
   id="detail-page-template"
 >
   <!-- FIXED: Robust Single-Row Flex Layout -->
-  <header class="w-full px-4 py-4 mb-6">
+  <header class="w-full px-4 py-4">
     <!-- Title & Subtitle Section with Back Button -->
     <div class="mb-4">
       <div class="flex items-start gap-3">
@@ -184,7 +184,9 @@
   {/if}
 
   <!-- Content Container -->
-  <div class="content-container space-y-6 overflow-x-hidden max-w-full">
+  <div
+    class="content-container px-4 py-4 space-y-6 overflow-x-hidden max-w-full"
+  >
     <slot />
   </div>
 </div>

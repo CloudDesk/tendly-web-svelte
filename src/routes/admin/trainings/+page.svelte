@@ -2,15 +2,11 @@
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
   import ContentCard from "$lib/components/common/ContentCard.svelte";
   import Table from "$lib/components/common/Table.svelte";
-  import InfoBanner from "$lib/components/common/InfoBanner.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import Modal from "$lib/components/common/Modal.svelte";
-  import EmployeeForm from "$lib/components/employee/EmployeeForm.svelte";
   import { employeesApi } from "$lib/services/api";
   import { toast } from "$lib/components/common/stores/toast.store.js";
   import type { Training, User } from "$lib/types";
-  import TrainingsList from "$lib/components/training/TrainingsList.svelte";
   export let data;
 
   $: ({ trainings, pagination, filters, sort, employees } = data);
@@ -169,10 +165,6 @@
   showExport={false}
   showAdd={false}
 >
-  <InfoBanner type="info" dismissible={true}>
-    Remember to verify Training documents after adding new records.
-  </InfoBanner>
-
   <ContentCard noPadding={true}>
     <Table
       {columns}

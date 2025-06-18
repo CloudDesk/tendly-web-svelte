@@ -7,7 +7,6 @@
   import RegularizationList from "$lib/components/attendance-Regularization/RegularizationList.svelte";
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
   import ContentCard from "$lib/components/common/ContentCard.svelte";
-  import InfoBanner from "$lib/components/common/InfoBanner.svelte";
 
   const tabs = [
     { id: "leave", label: "Leave" },
@@ -23,19 +22,17 @@
   title="Management"
   subtitle="Review and Manage Leave, Regularization, and Resignation Requests"
 >
-
-<ContentCard noPadding={true}>
+  <ContentCard noPadding={true}>
     <Tabs {tabs}>
-        {#if activeTab === "leave"}
-          <AssignedLeaves />
-        {:else if activeTab === "regularization"}
-          <RegularizationList viewType="manager" />
-        {:else if activeTab === "resignation"}
-          <Resignation viewMode="manager" />
-        {:else if activeTab === "admin-resignation"}
-          <Resignation viewMode="admin" />
-        {/if}
-      </Tabs>
+      {#if activeTab === "leave"}
+        <AssignedLeaves />
+      {:else if activeTab === "regularization"}
+        <RegularizationList viewType="manager" />
+      {:else if activeTab === "resignation"}
+        <Resignation viewMode="manager" />
+      {:else if activeTab === "admin-resignation"}
+        <Resignation viewMode="admin" />
+      {/if}
+    </Tabs>
   </ContentCard>
 </IndexPageTemplate>
-

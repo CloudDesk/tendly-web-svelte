@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Plus, Filter, TableProperties, FileBarChart2 } from "lucide-svelte";
+  import { FileBarChart2 } from "lucide-svelte";
   import Modal from "$lib/components/common/Modal.svelte";
   import ReportDataUnit from "$lib/components/report/ReportDataUnit.svelte";
   import Table from "$lib/components/common/Table.svelte";

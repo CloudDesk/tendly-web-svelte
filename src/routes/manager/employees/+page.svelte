@@ -5,7 +5,6 @@
   import type { User, PaginationMeta } from "$lib/types_old";
   import { goto } from "$app/navigation";
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
-  import InfoBanner from "$lib/components/common/InfoBanner.svelte";
   import ContentCard from "$lib/components/common/ContentCard.svelte";
   import { page } from "$app/stores";
 
@@ -95,31 +94,26 @@
   />
 </svelte:head>
 
-
 <IndexPageTemplate
   title="Employees"
   subtitle="Manage your organization's employees"
 >
-  <InfoBanner type="info" dismissible={true}>
-    Remember to verify employee documents after adding new records.
-  </InfoBanner>
-
   <ContentCard noPadding={true}>
     <Table
-    {columns}
-    data={employees}
-    loading={$page.url.searchParams.toString() !==
+      {columns}
+      data={employees}
+      loading={$page.url.searchParams.toString() !==
         $page.url.searchParams.toString()}
-    meta={pagination}
-    serverSide={true}
-    on:search={handleSearch}
-    on:sort={handleSort}
-    on:page={handlePage}
-    on:rowClick={handleRowClick}
-  />
+      meta={pagination}
+      serverSide={true}
+      on:search={handleSearch}
+      on:sort={handleSort}
+      on:page={handlePage}
+      on:rowClick={handleRowClick}
+    />
   </ContentCard>
-
 </IndexPageTemplate>
+
 <style>
   :global(.name-cell) {
     display: flex;

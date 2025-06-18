@@ -199,7 +199,7 @@
   actions={headerActions}
 >
   <ContentCard noPadding={true}>
-    <div>
+    <div class="p-6">
       <h1 class="text-2xl font-bold text-gray-900">{reportData?.name}</h1>
       <p class="text-sm text-gray-500 mt-1">
         {reportData?.updatedAt
@@ -210,95 +210,95 @@
   </ContentCard>
   <ContentCard>
     {#if isLoading}
-    <div class="flex justify-center items-center h-64">
-      <LoaderNew />
-    </div>
+      <div class="flex justify-center items-center h-64">
+        <LoaderNew />
+      </div>
     {:else if reportData}
-    <!-- Metadata Cards -->
-    <div class="grid grid-cols-2 grid-rows-2 gap-6 mb-8">
-      {#each metadataGroups as group}
-        <Card
-          title={group.title}
-          subtitle=""
-          bordered={false}
-          icon={group.icon}
-          shadow="md"
-          bgColor="bg-gray-50"
-        >
-          <div class="space-y-4">
-            {#each group.fields as field}
-              <div>
-                <div class="info-label">{field.label}</div>
-                <div class="info-value">
-                  {#if field.render && reportData[field.key]}
-                    {field.render(reportData[field.key])}
-                  {:else}
-                    {reportData[field.key] || "N/A"}
-                  {/if}
+      <!-- Metadata Cards -->
+      <div class="grid grid-cols-2 grid-rows-2 gap-6 mb-8">
+        {#each metadataGroups as group}
+          <Card
+            title={group.title}
+            subtitle=""
+            bordered={false}
+            icon={group.icon}
+            shadow="md"
+            bgColor="bg-gray-50"
+          >
+            <div class="space-y-4">
+              {#each group.fields as field}
+                <div>
+                  <div class="info-label">{field.label}</div>
+                  <div class="info-value">
+                    {#if field.render && reportData[field.key]}
+                      {field.render(reportData[field.key])}
+                    {:else}
+                      {reportData[field.key] || "N/A"}
+                    {/if}
+                  </div>
                 </div>
-              </div>
-            {/each}
-          </div>
-        </Card>
-      {/each}
-    </div>
-  {:else}
-    <div class="bg-white rounded-xl shadow-sm p-8 text-center">
-      <h2 class="text-xl font-medium text-gray-700">Report not found</h2>
-      <p class="mt-2 text-gray-500">
-        The requested report could not be loaded.
-      </p>
-      <a href="/reports" class="inline-block mt-4 text-blue-600 hover:underline"
-        >Return to Reports</a
+              {/each}
+            </div>
+          </Card>
+        {/each}
+      </div>
+    {:else}
+      <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+        <h2 class="text-xl font-medium text-gray-700">Report not found</h2>
+        <p class="mt-2 text-gray-500">
+          The requested report could not be loaded.
+        </p>
+        <a
+          href="/reports"
+          class="inline-block mt-4 text-blue-600 hover:underline"
+          >Return to Reports</a
+        >
+      </div>
+    {/if}
+
+    <!-- Edit Report Modal -->
+    {#if isShowModal}
+      <Modal
+        show={isShowModal}
+        title="Update Report"
+        onClose={closeModal}
+        wide={true}
       >
-    </div>
-  {/if}
-
-  <!-- Edit Report Modal -->
-  {#if isShowModal}
-    <Modal
-      show={isShowModal}
-      title="Update Report"
-      onClose={closeModal}
-      wide={true}
-    >
-      <ReportDataUnit
-        on:close={closeModal}
-        on:save={handleSaveReport}
-        {initialDataUnit}
-        mode="update"
-      />
-    </Modal>
-  {/if}
-
-  <!-- Execution Results Modal -->
-  {#if showResultsModal && executedData.length}
-    <Modal
-      show={showResultsModal}
-      title={`${reportData.name} - (${executedData.length}) Results`}
-      onClose={closeResultsModal}
-      wide={true}
-    >
-      <div class="flex justify-end items-center mb-4 mt-4">
-        <button class="btn-accent-sm" on:click={downloadCSV}>
-          <Download class="w-3.5 h-3.5" />
-          Download CSV
-        </button>
-      </div>
-      <div class="overflow-x-auto max-h-[calc(100vh-220px)]">
-        <Table
-          columns={Object.keys(executedData[0]).map((key) => ({
-            key,
-            label: key.charAt(0).toUpperCase() + key.slice(1),
-            sortable: true,
-          }))}
-          searchable={false}
-          data={executedData}
+        <ReportDataUnit
+          on:close={closeModal}
+          on:save={handleSaveReport}
+          {initialDataUnit}
+          mode="update"
         />
-      </div>
-    </Modal>
-  {/if}
+      </Modal>
+    {/if}
 
+    <!-- Execution Results Modal -->
+    {#if showResultsModal && executedData.length}
+      <Modal
+        show={showResultsModal}
+        title={`${reportData.name} - (${executedData.length}) Results`}
+        onClose={closeResultsModal}
+        wide={true}
+      >
+        <div class="flex justify-end items-center mb-4 mt-4">
+          <button class="btn-accent-sm" on:click={downloadCSV}>
+            <Download class="w-3.5 h-3.5" />
+            Download CSV
+          </button>
+        </div>
+        <div class="overflow-x-auto max-h-[calc(100vh-220px)]">
+          <Table
+            columns={Object.keys(executedData[0]).map((key) => ({
+              key,
+              label: key.charAt(0).toUpperCase() + key.slice(1),
+              sortable: true,
+            }))}
+            searchable={false}
+            data={executedData}
+          />
+        </div>
+      </Modal>
+    {/if}
   </ContentCard>
 </DetailPageTemplate>
-

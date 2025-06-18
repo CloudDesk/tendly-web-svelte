@@ -5,6 +5,7 @@
   import PayrollReview from "$lib/components/payroll/payrollReview.svelte";
   import PayslipGenerate from "$lib/components/payroll/payslipGenerate.svelte";
   import PayslipSend from "$lib/components/payroll/payslipSend.svelte";
+  import ContentCard from "$lib/components/common/ContentCard.svelte";
   let tabs = [
     { id: "initiate", label: "Payroll Initiate" },
     { id: "review", label: "Payroll Review" },
@@ -17,18 +18,19 @@
   title="Payroll"
   subtitle="Centralized Payroll Management for All Employees"
 >
-  <Tabs {tabs} let:activeTab>
-    {#if activeTab === "initiate"}
-      <PayrollInitiate />
-    {:else if activeTab === "review"}
-      <PayrollReview />
-{:else if activeTab ==="generate"}
-<PayslipGenerate/>
-{:else if activeTab ==="send"}
-<PayslipSend/>
-
-    {/if}
-  </Tabs>
+  <ContentCard noPadding={true}>
+    <Tabs {tabs} let:activeTab>
+      {#if activeTab === "initiate"}
+        <PayrollInitiate />
+      {:else if activeTab === "review"}
+        <PayrollReview />
+      {:else if activeTab === "generate"}
+        <PayslipGenerate />
+      {:else if activeTab === "send"}
+        <PayslipSend />
+      {/if}
+    </Tabs>
+  </ContentCard>
 </IndexPageTemplate>
 <!-- <script lang="ts">
   import { toast } from "$lib/components/common/stores/toast.store";

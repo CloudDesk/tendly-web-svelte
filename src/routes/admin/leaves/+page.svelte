@@ -2,11 +2,11 @@
   import Table from "$lib/components/common/Table.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { leavesApi ,type LeaveRequest } from "$lib/services/api";
+  import { leavesApi, type LeaveRequest } from "$lib/services/api";
   import { getLeaveTypeLabel } from "$lib/constants/leaveTypes.js";
   import { toast } from "$lib/components/common/stores/toast.store.js";
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
-  import InfoBanner from "$lib/components/common/InfoBanner.svelte";
+  // import InfoBanner from "$lib/components/common/InfoBanner.svelte";
   import ContentCard from "$lib/components/common/ContentCard.svelte";
 
   export let data;
@@ -171,9 +171,9 @@
   showFilter={true}
   showView={true}
 >
-  <InfoBanner type="info" dismissible={true}>
+  <!-- <InfoBanner type="info" dismissible={true}>
     Remember to verify employee documents after adding new records.
-  </InfoBanner>
+  </InfoBanner> -->
 
   <ContentCard noPadding={true}>
     <Table

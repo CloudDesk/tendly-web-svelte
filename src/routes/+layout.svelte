@@ -172,7 +172,7 @@
         class:content-when-sidebar-open={$isMobile && $isSidebarOpen}
       >
         <!-- UPDATED: Added responsive padding and overflow constraints -->
-        <div class="p-4 md:p-6 lg:p-8 overflow-x-hidden max-w-full">
+        <div class="container mx-auto max-w-7xl overflow-x-hidden">
           <slot />
           <Toast />
         </div>
@@ -196,6 +196,7 @@
     overflow-x: hidden; /* Prevent horizontal scrolling when sidebar is open */
     width: 100%;
     max-width: 100vw;
+    background: #f8fafc;
   }
 
   :global(html) {

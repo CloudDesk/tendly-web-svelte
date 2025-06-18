@@ -1,5 +1,4 @@
 <script lang="ts">
-  import ToggleView from "$lib/components/attendance/ToggleView.svelte";
   import RegularizationList from "$lib/components/attendance-Regularization/RegularizationList.svelte";
   import { derived, writable } from "svelte/store";
   import { onMount } from "svelte";

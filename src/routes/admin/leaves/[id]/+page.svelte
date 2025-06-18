@@ -6,6 +6,7 @@
   import DetailPageTemplate from "$lib/components/templates/DetailPageTemplate.svelte";
   import LoaderNew from "$lib/components/common/LoaderNew.svelte";
   import InfoBanner from "$lib/components/common/InfoBanner.svelte";
+  import ContentCard from "$lib/components/common/ContentCard.svelte";
 
   interface LeaveDetails {
     id: string;
@@ -66,7 +67,8 @@
   backLink="/admin/leaves"
   showActions={false}
 >
-  <div class="page-container">
+  <!-- <div class="page-container"> -->
+  <ContentCard noPadding={true}>
     {#if isLoading}
       <LoaderNew />
     {:else if error}
@@ -76,5 +78,6 @@
         <LeaveDetails {leaveId} />
       </div>
     {/if}
-  </div>
+    <!-- </div> -->
+  </ContentCard>
 </DetailPageTemplate>

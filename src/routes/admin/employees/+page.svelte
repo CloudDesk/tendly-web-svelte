@@ -2,7 +2,7 @@
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
   import ContentCard from "$lib/components/common/ContentCard.svelte";
   import Table from "$lib/components/common/Table.svelte";
-  import InfoBanner from "$lib/components/common/InfoBanner.svelte";
+  // import InfoBanner from "$lib/components/common/InfoBanner.svelte";
   import type { User } from "$lib/types_old.js";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
@@ -170,9 +170,9 @@
   showFilter={true}
   showView={true}
 >
-  <InfoBanner type="info" dismissible={true}>
+  <!-- <InfoBanner type="info" dismissible={true}>
     Remember to verify employee documents after adding new records.
-  </InfoBanner>
+  </InfoBanner> -->
 
   <ContentCard noPadding={true}>
     <Table
