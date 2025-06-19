@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { timesheetApi } from "$lib/services/api";
   import { auth } from "$lib/stores/auth";
   import { onMount } from "svelte";
   import LoaderNew from "../common/LoaderNew.svelte";
   import { ChevronDown, CheckCheck, Info, Download } from "lucide-svelte";
-  import { documentsApi } from "$lib/services/api/documents";
+  import { documentsApi } from "$lib/services/api";
 
   let userId = "";
   let month = new Date().getMonth() + 1;

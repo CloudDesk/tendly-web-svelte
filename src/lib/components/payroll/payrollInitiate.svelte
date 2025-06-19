@@ -166,6 +166,7 @@
       });
       console.log(filters, "Filters for employee API");
       const response: any = await employeesApi.getforPayroll(filters);
+      console.log(response, "response fetch emp");
       const employeeData = response.data || [];
 
       // Extract year and month from the month filter (format: YYYY-MM)
@@ -253,26 +254,26 @@
   }
 
   function getPayrollStatusColor(status: string | null | undefined): string {
-  switch (status) {
-    case "Draft":
-      return "text-teal-800 bg-teal-100"; // visually distinct from null
-    case "Pending Approval":
-      return "text-yellow-800 bg-yellow-100";
-    case "Processing":
-      return "text-blue-800 bg-blue-100";
-    case "Processed":
-      return "text-indigo-800 bg-indigo-100";
-    case "Completed":
-      return "text-green-800 bg-green-100";
-    case "Failed":
-      return "text-red-800 bg-red-100";
-    case "Cancelled":
-      return "text-gray-700 bg-gray-100";
-    default:
-      // For null, undefined, or unknown status
-      return "text-gray-400 bg-gray-50"; // soft and neutral
+    switch (status) {
+      case "Draft":
+        return "text-teal-800 bg-teal-100"; // visually distinct from null
+      case "Pending Approval":
+        return "text-yellow-800 bg-yellow-100";
+      case "Processing":
+        return "text-blue-800 bg-blue-100";
+      case "Processed":
+        return "text-indigo-800 bg-indigo-100";
+      case "Completed":
+        return "text-green-800 bg-green-100";
+      case "Failed":
+        return "text-red-800 bg-red-100";
+      case "Cancelled":
+        return "text-gray-700 bg-gray-100";
+      default:
+        // For null, undefined, or unknown status
+        return "text-gray-400 bg-gray-50"; // soft and neutral
+    }
   }
-}
 
   function clearFilters() {
     month = month;
@@ -469,9 +470,9 @@
     } catch (error: any) {
       console.log("error in bulk action", error);
       toast.error(`Bulk action failed: ${error.message}`);
-    }finally{
+    } finally {
       await fetchEmployees();
-      showModal=false
+      showModal = false;
     }
   }
 

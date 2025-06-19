@@ -42,7 +42,7 @@
   import { onMount } from "svelte";
   import { Check, X, AlertTriangle } from "lucide-svelte";
   import PayslipProcess from "$lib/components/payroll/payslipProcess.svelte";
-  import { payslipApi } from "$lib/services/api";
+
   import PayslipHistory from "$lib/components/payroll/payslipHistory.svelte";
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
 
