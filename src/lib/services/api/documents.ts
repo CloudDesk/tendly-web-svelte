@@ -1,4 +1,4 @@
-import { fetchApi } from "./base"
+import { fetchApi, uploadFiles } from "./base"
 import type { PayrollInitiatePayload } from "./payroll";
 
 interface payslipSend {
@@ -50,6 +50,9 @@ export const documentsApi = {
             }
         );
     },
+    uploadForm16Zip: async(formData:any)=>{
+        return uploadFiles(`/documents/form16/upload`,formData)
+    }
 
 }
 

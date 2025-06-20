@@ -259,11 +259,14 @@
 
   function toggleEmployee(id: string) {
     const employee = employees.find((emp) => emp._id === id);
+    console.log("toggleEmployee",id)
+    console.log(employee,"emp toggleEmployee")
     if (
       !employee ||
       (employee.payrollStatus &&
-        !["Failed", "Cancelled"].includes(employee.payrollStatus))
+        ["Failed", "Cancelled"].includes(employee.payrollStatus))
     ) {
+      console.log("inside if toggleEmployee")
       return; // Prevent selection if status is not Failed, Cancelled, or null
     }
 
@@ -273,7 +276,7 @@
       selectedEmployees.add(id);
     }
     selectedEmployees = selectedEmployees; // Trigger reactivity
-
+console.log(selectedEmployees,"selectedEmp")
     // Update selectAll state
     selectAll =
       selectedEmployees.size ===

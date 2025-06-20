@@ -420,7 +420,7 @@ console.log(data,"Data aftr format")
       <div class="action-buttons">
         <Button disabled={!summary} on:click={handleImportExcel}>
           <Import class="w-4 h-4 mr-2" />
-          Improt Excel
+          Import Excel
         </Button>
       </div>
 
