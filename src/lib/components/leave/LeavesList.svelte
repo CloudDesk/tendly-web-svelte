@@ -7,7 +7,7 @@
     import { page } from "$app/stores";
     import { writable, derived } from "svelte/store";
     import { getLeaveTypeLabel, leaveStatusOptions, leaveTypeOptions } from "$lib/constants/leaveTypes.js";
-    import type { LeaveFilterSchema } from "$lib/types";
+    import type { filterSchema } from "$lib/types";
   
     export let userId: string;
   
@@ -68,7 +68,7 @@
     ];
   
     // Define filter schema
-    const filtersSchema: LeaveFilterSchema[] = [
+    const filtersSchema: filterSchema[] = [
       {
         key: "status",
         label: "Status",

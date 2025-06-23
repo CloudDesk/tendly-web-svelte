@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'Tendly_T_logo_192.png', 'Tendly_T_logo_512.png', 'apple-touch-icon.png'],
       manifest: {
-        name: 'HRMS Frontend',
-        short_name: 'HRMS',
-        description: 'Human Resource Management System',
+        name: 'Tendly',
+        short_name: 'Tendly',
+        description: 'Tendly - Smart Human Resource Management',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',

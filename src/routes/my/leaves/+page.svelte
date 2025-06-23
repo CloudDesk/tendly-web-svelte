@@ -13,7 +13,7 @@
   import { toast } from "$lib/components/common/stores/toast.store.js";
   import Filter from "$lib/components/common/Filter.svelte";
   import { writable, derived } from "svelte/store";
-  import type { LeaveFilterSchema } from "$lib/types";
+  import type { filterSchema } from "$lib/types";
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
   import ContentCard from "$lib/components/common/ContentCard.svelte";
 
@@ -84,7 +84,7 @@
   ];
 
   // Define filter schema
-  const filtersSchema: LeaveFilterSchema[] = [
+  const filtersSchema: filterSchema[] = [
     {
       key: "status",
       label: "Status",
@@ -98,7 +98,7 @@
       key: "leaveType",
       label: "Leave Type",
       type: "select",
-      options: leaveTypeOptions,
+      options:    leaveTypeOptions
     },
     {
       key: "fromDate",

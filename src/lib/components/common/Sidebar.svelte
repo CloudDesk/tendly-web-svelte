@@ -254,6 +254,11 @@
       href: "/my/timesheet",
       icon: CalendarRange,
     },
+    {
+      label: "Document Hub",
+      href: "/my/document-hub",
+      icon: FileCheck,
+    },
   ];
 
   $: userRole = $auth.user?.role;

@@ -14,3 +14,17 @@ export type DialogConfig = {
     cancelText?: string;
     type?: 'info' | 'warning' | 'danger';
 };
+
+export type filterOption = {
+    label: string;
+    value: string | number;
+};
+
+export type filterSchema = {
+    key: string;
+    label: string;
+    type: 'select' | 'multiselect' | 'date' | 'daterange' | 'text' | 'checkbox';
+    options?: filterOption[];
+    description?: string;
+    disabled?:boolean
+};

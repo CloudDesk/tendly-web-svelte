@@ -11,6 +11,54 @@ interface payslipSend {
         search?: string;
     };
 }
+
+// document.types.ts
+export interface IDocumentQuery {
+    access?: 'own' | 'team' | 'global';
+    employeeId?: string;
+    type?: 'Payslip' | 'TimesheetFile' | 'Form16' | 'OfferLetter' | 'HikeLetter';
+    year?: number;
+    month?: number;
+    financialYear?: string;
+    page?: number;
+    limit?: number;
+    //employee based filters
+    department?: string;
+    role?: 'admin' | 'manager' | 'staff';
+    activeStatus?: boolean;
+    search?: string;
+    designation?: string;
+    location?: string;
+  }
+  
+  export interface IDocument {
+    employeeId: string;
+    type: 'Payslip' | 'TimesheetFile' | 'Form16' | 'OfferLetter' | 'HikeLetter';
+    category: 'Payroll' | 'Timesheet' | 'Tax' | 'EmployeeLifecycle';
+    fileName: string;
+    uploadDate: string;
+    metadata: {
+      payslip?: { month: number; year: number; monthYear: string; netSalary: number; paySummary: object };
+      timesheet?: { month: number; year: number };
+      form16?: { financialYear: string; pan: string };
+      offerLetter?: { offerDate: string; joiningDate: string };
+      hikeLetter?: { effectiveDate: string; newCtc: number };
+    };
+    status: 'Uploaded' | 'Assigned' | 'Acknowledged' | 'Generated' | 'Sent' | 'Exported';
+  }
+  
+  export interface DocumentResponse {
+    success: boolean;
+    data: IDocument[];
+    meta: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+    error?: string;
+  }
+
 export const documentsApi = {
 
     generateTimesheet: async (userId: string, month: number, year: number) => {
@@ -52,8 +100,32 @@ export const documentsApi = {
     },
     uploadForm16Zip: async(formData:any)=>{
         return uploadFiles(`/documents/form16/upload`,formData)
+    },
+    getDocuments:async (query: IDocumentQuery): Promise<DocumentResponse> => {
+        const queryParams = Object.entries(query)
+    .filter(([_, value]) => value !== undefined && value !== null)
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .join('&');
+  const url = `/documents${queryParams ? `?${queryParams}` : ''}`;
+        return fetchApi(url,{            method:'GET'        })
     }
 
+/*
+type:Payslip
+accessLevel
+metadata.payslip.year
+metadata.payslip.month
+
+
+type:TimesheetFile
+accessLevel
+metadata.timesheet.month
+metadata.timesheet.year
+
+type:Form16
+accessLevel
+metadata.form16.financialYear
+*/
 }
 
 /*
