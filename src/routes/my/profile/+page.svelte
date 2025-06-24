@@ -27,7 +27,7 @@
   $: formattedDepartment = $auth.user?.departmentId
     ? $auth.user.departmentId
         .split("_")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .map((word:string) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ")
     : "N/A";
 

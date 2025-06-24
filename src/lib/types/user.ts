@@ -61,6 +61,7 @@ export type User = {
   firstName: string;
   lastName: string;
   role: UserRole;
+  departmentId?:string;
   active: boolean;
   createdAt: string;
   updatedAt: string;

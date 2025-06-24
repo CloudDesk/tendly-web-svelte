@@ -16,48 +16,137 @@ interface payslipSend {
 export interface IDocumentQuery {
     access?: 'own' | 'team' | 'global';
     employeeId?: string;
-    type?: 'Payslip' | 'TimesheetFile' | 'Form16' | 'OfferLetter' | 'HikeLetter';
+    type?: 'Payslip' | 'TimesheetFile' | 'Form16' | 'OfferLetter' | 'HikeLetter' | 'Certificate'
+    category?: 'Payroll' | 'Timesheet' | 'Tax' | 'EmployeeLifecycle' | 'Certification';
     year?: number;
     month?: number;
     financialYear?: string;
     page?: number;
     limit?: number;
-    //employee based filters
+    // Employee filters for managers/admins
     department?: string;
     role?: 'admin' | 'manager' | 'staff';
     activeStatus?: boolean;
-    search?: string;
+    search?: string; // Combined search for name or email
     designation?: string;
     location?: string;
-  }
+}
   
-  export interface IDocument {
-    employeeId: string;
-    type: 'Payslip' | 'TimesheetFile' | 'Form16' | 'OfferLetter' | 'HikeLetter';
-    category: 'Payroll' | 'Timesheet' | 'Tax' | 'EmployeeLifecycle';
+export interface IDocument {
+    employeeId: string; // Types.ObjectId as string
+    type: 'Payslip' | 'TimesheetFile' | 'Form16' | 'OfferLetter' | 'HikeLetter' | 'Certificate';
+    category: 'Payroll' | 'Timesheet' | 'Tax' | 'EmployeeLifecycle' | 'Certification';
+    tags?: string[];
     fileName: string;
-    uploadDate: string;
-    metadata: {
-      payslip?: { month: number; year: number; monthYear: string; netSalary: number; paySummary: object };
-      timesheet?: { month: number; year: number };
-      form16?: { financialYear: string; pan: string };
-      offerLetter?: { offerDate: string; joiningDate: string };
-      hikeLetter?: { effectiveDate: string; newCtc: number };
-    };
+    filePath: string;
+    uploadDate: string; // Date as ISO string
+    uploadedBy?: string; // Types.ObjectId as string
+    expiryDate?: string; // Date as ISO string
+    accessLevel: 'Public' | 'Private' | 'Role-Based';
     status: 'Uploaded' | 'Assigned' | 'Acknowledged' | 'Generated' | 'Sent' | 'Exported';
-  }
+    version: number;
+    metadata: {
+        payslip?: {
+            payrollId: string;
+            monthYear: string;
+            month: number;
+            year: number;
+            netSalary: number;
+            paySummary: {
+                gross: number;
+                net: number;
+                deductions: number;
+                bonus: number;
+                reimbursement: number;
+            };
+            isExport: boolean;
+            emailHistory?: Array<{
+                sentAt: string; // Date as ISO string
+                status: 'Sent' | 'Failed';
+                sentBy: string; // Types.ObjectId as string
+                recipientEmail?: string;
+                errorMessage?: string;
+                messageId?: string;
+            }>;
+        };
+        timesheet?: {
+            month: number;
+            year: number;
+        };
+        form16?: {
+            financialYear: string;
+            pan: string;
+            tdsAmount: number;
+        };
+        offerLetter?: {
+            offerDate: string; // Date as ISO string
+            joiningDate: string; // Date as ISO string
+            designation: string;
+            ctc: number;
+        };
+        hikeLetter?: {
+            effectiveDate: string; // Date as ISO string
+            newCtc: number;
+            percentageIncrease: number;
+        };
+        certificate?: {
+            certificateType: 'Academic' | 'Experience' | 'Skill' | 'IdentityProof';
+            title: string;
+            issuingAuthority: string;
+            issueDate: string; // Date as ISO string
+            expiryDate?: string; // Date as ISO string
+            certificateId?: string;
+            idDetails?: {
+                idType: 'Aadhaar' | 'PAN' | 'Passport' | 'DriverLicense' | 'VoterID' | 'Other';
+                idNumber: string;
+                country?: string;
+            };
+            skillDetails?: {
+                skillName: string;
+                proficiencyLevel?: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
+                category: 'Technical' | 'Soft';
+            };
+            academicDetails?: {
+                qualificationType: 'Secondary' | 'HigherSecondary' | 'Diploma' | 'Bachelor' | 'Master' | 'Doctorate' | 'Other';
+                fieldOfStudy: string;
+                grade?: string;
+                institution: string;
+                yearOfCompletion?: number;
+            };
+            experienceDetails?: {
+                companyName: string;
+                role: string;
+                startDate: string; // Date as ISO string
+                endDate?: string; // Date as ISO string
+                duration?: string;
+            };
+            verificationStatus?: 'Pending' | 'Verified' | 'Rejected';
+            verificationDetails?: {
+                verifiedBy: string; // Types.ObjectId as string
+                verifiedAt: string; // Date as ISO string
+                comments?: string;
+            };
+        };
+    };
+    auditLog?: Array<{
+        action: 'Upload' | 'View' | 'Download' | 'Send' | 'Generate' | 'Acknowledge' | 'Verify';
+        performedBy: string; // Types.ObjectId as string
+        timestamp: string; // Date as ISO string
+        details?: string;
+    }>;
+}
   
-  export interface DocumentResponse {
+export interface DocumentResponse {
     success: boolean;
     data: IDocument[];
     meta: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
     };
     error?: string;
-  }
+}
 
 export const documentsApi = {
 
