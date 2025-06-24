@@ -12,7 +12,7 @@
   import HolidayCalendar from "$lib/components/setup/holiday/HolidayCalendar.svelte";
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
   import ContentCard from "$lib/components/common/ContentCard.svelte";
-  import DocummentCenter from "$lib/components/documentCenter/DocummentCenter.svelte";
+  import Form16Upload from "$lib/components/documentCenter/Form16Upload.svelte";
 
   const tabs = [
     { id: "lovs", label: "LOVs" },
@@ -72,7 +72,7 @@
       {:else if $activeTab === "holiday"}
         <HolidayCalendar />
       {:else if $activeTab === "documents"}
-        <DocummentCenter />
+        <Form16Upload />
         <!-- {:else if $activeTab === "weekends"}
           <WeekendCalendar /> -->
       {/if}

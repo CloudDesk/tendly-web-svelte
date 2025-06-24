@@ -14,6 +14,7 @@ interface payslipSend {
 
 // document.types.ts
 export interface IDocumentQuery {
+
     access?: 'own' | 'team' | 'global';
     employeeId?: string;
     type?: 'Payslip' | 'TimesheetFile' | 'Form16' | 'OfferLetter' | 'HikeLetter' | 'Certificate'
@@ -33,6 +34,7 @@ export interface IDocumentQuery {
 }
   
 export interface IDocument {
+    _id?:string;
     employeeId: string; // Types.ObjectId as string
     type: 'Payslip' | 'TimesheetFile' | 'Form16' | 'OfferLetter' | 'HikeLetter' | 'Certificate';
     category: 'Payroll' | 'Timesheet' | 'Tax' | 'EmployeeLifecycle' | 'Certification';

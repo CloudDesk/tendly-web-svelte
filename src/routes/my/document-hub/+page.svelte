@@ -1,4 +1,64 @@
 <script lang="ts">
+  import IndexPageTemplate from '$lib/components/templates/IndexPageTemplate.svelte';
+  import DocumentViewer from '$lib/components/documentCenter/DocumentViewer.svelte';
+  import { getAccessConfig } from '$lib/utils/document';
+
+  // Props to control the component behavior
+  export let access: 'own' | 'team' | 'global' = 'own';
+
+  // Configuration based on access type
+  $: config = getAccessConfig(access);
+
+
+  // Event handlers
+  function handleAddSkill(event:CustomEvent) {
+    const { documentType } = event.detail;
+    console.log('Add skill clicked for:', documentType);
+
+    
+  }
+
+  function handlePreview(event:CustomEvent) {
+    const { docId, documentType } = event.detail;
+    console.log('Preview document:', docId, 'Type:', documentType);
+    // Open preview modal or navigate to preview page
+  }
+
+  function handleCustomAction(event:CustomEvent) {
+    const { action, docId, documentType } = event.detail;
+    console.log('Custom action:', action, 'Document:', docId, 'Type:', documentType);
+    // Handle custom actions
+  }
+
+  function handleDataLoaded(event:CustomEvent) {
+    const { documents, documentType } = event.detail;
+    console.log('Data loaded for:', documentType, 'Count:', documents?.data?.length || 0);
+    // Optional: Handle data loaded event
+  }
+
+  function handleError(event:CustomEvent) {
+    const { error, documentType } = event.detail;
+    console.error('Error loading documents for:', documentType, error);
+    // Handle error (show toast, etc.)
+  }
+</script>
+
+<IndexPageTemplate title="Document Hub" hasContainerShadow={false}>
+  <DocumentViewer
+    accessType={access}
+    enabledTabs={config.enabledTabs}
+    showAddSkill={config.showAddSkill}
+    rowActions={config.rowActions}
+    on:addSkill={handleAddSkill}
+    on:preview={handlePreview}
+    on:customAction={handleCustomAction}
+    on:dataLoaded={handleDataLoaded}
+    on:error={handleError}
+  />
+</IndexPageTemplate>
+
+
+<!-- <script lang="ts">
   import Filter from '$lib/components/common/Filter.svelte';
   import Button from '$lib/components/common/Button.svelte';
   import Toggle from '$lib/components/common/Toggle.svelte';
@@ -284,10 +344,10 @@
     </Button>
   </div>
 
-  <!-- Common Toggle Component for Document Types -->
+// Common Toggle Component for Document Types
   <Toggle items={toggleItems} bind:value={selectedItemKey} on:change={e => handleToggleChange(e.detail)} />
 
-  <!-- Filters Panel -->
+  // Filters Panel 
   <Filter
     filters={filtersSchema}
     values={filterValues}
@@ -298,7 +358,7 @@
     on:close={() => filtersOpen = false}
   />
 
-  <!-- Document List -->
+  // Document List
   <div class="bg-white rounded-lg shadow p-6 min-h-[200px] mt-6">
     {#if loading}
       <div class="flex items-center justify-center h-32">
@@ -325,4 +385,4 @@
       </div>
     {/if}
   </div>
-</IndexPageTemplate>
+</IndexPageTemplate> -->
