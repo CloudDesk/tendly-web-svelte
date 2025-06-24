@@ -189,7 +189,7 @@ export const documentsApi = {
             }
         );
     },
-    uploadForm16Zip: async(formData:any)=>{
+    uploadForm16Zip: async(formData:FormData)=>{
         return uploadFiles(`/documents/form16/upload`,formData)
     },
     getDocuments:async (query: IDocumentQuery): Promise<DocumentResponse> => {
@@ -199,6 +199,9 @@ export const documentsApi = {
     .join('&');
   const url = `/documents${queryParams ? `?${queryParams}` : ''}`;
         return fetchApi(url,{            method:'GET'        })
+    },
+    addCertificate: async (formData: FormData): Promise<DocumentResponse> => {
+        return uploadFiles(`/documents/certifications`, formData);
     }
 
 /*

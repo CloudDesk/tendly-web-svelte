@@ -9,6 +9,12 @@
   import { onMount, createEventDispatcher } from 'svelte';
   import { documentsApi, type IDocument } from '$lib/services/api';
 
+  type Column = {
+    key: string;
+    label: string;
+    render?: (doc: IDocument) => string;
+  };
+
   // Props
   export let accessType: 'own' | 'team' | 'global' = 'own';
   export let enabledTabs: string[] = ['payslip', 'timesheet', 'tax', 'certificates'];
@@ -22,6 +28,12 @@
       condition?: (doc: IDocument) => boolean;
     }>;
   } = { preview: false, download: true };
+  export let refreshKey = 0;
+
+  $: if (refreshKey) {
+    console.log("Refreshing documents...", refreshKey);
+    fetchDocuments();
+  }
 
   const dispatch = createEventDispatcher();
 
@@ -85,65 +97,86 @@ $: shouldShowAddSkill = showAddSkill &&
   };
 
   // Get base columns based on document type
-  function getBaseColumns(docType: string) {
-    const baseColumns = [
+  function getBaseColumns(docType: string): Column[] {
+    const base: Column[] = [
       { key: "type", label: "Type" },
       { key: "category", label: "Category" },
-      { key: "fileName", label: "File Name" },
     ];
+    
+    let specificColumns: Column[] = [];
 
     // Add type-specific columns
     switch (docType) {
+      case 'certificates':
+        specificColumns = [
+            { 
+                key: "certificateType", 
+                label: "Certificate Type",
+                render: (doc: IDocument) => doc.metadata?.certificate?.certificateType || "-"
+            },
+            { 
+                key: "title", 
+                label: "Title",
+                render: (doc: IDocument) => doc.metadata?.certificate?.title || "-"
+            },
+            { 
+                key: "verificationStatus", 
+                label: "Verification Status",
+                render: (doc: IDocument) => doc.metadata?.certificate?.verificationStatus || "Pending"
+            },
+        ];
+        break;
+      
       case 'payslip':
       case 'timesheet':
-        baseColumns.push({
-          key: "monthYear",
-          label: "Year-Month",
-          // @ts-expect-error HACK: This is a temporary workaround to bypass strict object literal checks.
-          // The root cause is that `baseColumns` is inferred as `Array<{key: string, label: string}>`
-          // and does not include the optional `render` property. The correct fix is to explicitly
-          // type `baseColumns` at its declaration.
-          render: (doc: IDocument) => {
-            const metadataKey = docType === 'payslip' ? 'payslip' : 'timesheet';
-            const m = doc.metadata?.[metadataKey]?.month;
-            const y = doc.metadata?.[metadataKey]?.year;
-            if (m && y) {
-              const monthName = m > 9 ? m : `0${m}`;
-              return `${y}-${monthName}`;
+        specificColumns = [
+          { key: "fileName", label: "File Name" },
+          {
+            key: "monthYear",
+            label: "Year-Month",
+            render: (doc: IDocument) => {
+                if (docType === 'payslip' && doc.metadata?.payslip) {
+                    const { month, year } = doc.metadata.payslip;
+                    if (month && year) return `${year}-${month > 9 ? month : `0${month}`}`;
+                }
+                if (docType === 'timesheet' && doc.metadata?.timesheet) {
+                    const { month, year } = doc.metadata.timesheet;
+                    if (month && year) return `${year}-${month > 9 ? month : `0${month}`}`;
+                }
+                return "-";
             }
-            return "-";
           }
-        });
+        ];
         break;
+
       case 'tax':
-        baseColumns.push({
-          key: "financialYear",
-          label: "Financial Year",
-          // @ts-expect-error HACK: This is a temporary workaround to bypass strict object literal checks.
-          // The root cause is that `baseColumns` is inferred as `Array<{key: string, label: string}>`
-          // and does not include the optional `render` property. The correct fix is to explicitly
-          // type `baseColumns` at its declaration.
-          render: (doc: IDocument) => doc.metadata?.form16?.financialYear || "-",
-        });
+        specificColumns = [
+          { key: "fileName", label: "File Name" },
+          {
+            key: "financialYear",
+            label: "Financial Year",
+            render: (doc: IDocument) => doc.metadata?.form16?.financialYear || "-",
+          }
+        ];
         break;
+
       default:
-        baseColumns.push({
-          key: "uploadDate",
-          label: "Upload Date",
-          // @ts-expect-error HACK: This is a temporary workaround to bypass strict object literal checks.
-          // The root cause is that `baseColumns` is inferred as `Array<{key: string, label: string}>`
-          // and does not include the optional `render` property. The correct fix is to explicitly
-          // type `baseColumns` at its declaration.
-          render: (doc: IDocument) => new Date(doc.uploadDate).toLocaleDateString(),
-        });
+        specificColumns = [
+          { key: "fileName", label: "File Name" },
+          {
+            key: "uploadDate",
+            label: "Upload Date",
+            render: (doc: IDocument) => new Date(doc.uploadDate).toLocaleDateString(),
+          }
+        ];
     }
 
-    return baseColumns;
+    return [...base, ...specificColumns];
   }
 
   // Get access-specific columns
-  function getAccessColumns() {
-    const columns = [];
+  function getAccessColumns(): Column[] {
+    const columns: Column[] = [];
     
     if (accessType === 'team' || accessType === 'global') {
       columns.push({ key: "username", label: "Employee" });
@@ -157,8 +190,8 @@ $: shouldShowAddSkill = showAddSkill &&
   }
 
   // Get action columns
-  function getActionColumns() {
-    const actionColumns = [];
+  function getActionColumns(): Column[] {
+    const actionColumns: Column[] = [];
 
     // Status column
     actionColumns.push({

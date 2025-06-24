@@ -2,6 +2,10 @@
   import IndexPageTemplate from '$lib/components/templates/IndexPageTemplate.svelte';
   import DocumentViewer from '$lib/components/documentCenter/DocumentViewer.svelte';
   import { getAccessConfig } from '$lib/utils/document';
+  import Modal from '$lib/components/common/Modal.svelte';
+  import SkillCertificateForm from '$lib/components/documentCenter/SkillCertificateForm.svelte';
+  import { documentsApi } from '$lib/services/api';
+  import { toast } from '$lib/components/common/stores/toast.store';
 
   // Props to control the component behavior
   export let access: 'own' | 'team' | 'global' = 'own';
@@ -9,14 +13,76 @@
   // Configuration based on access type
   $: config = getAccessConfig(access);
 
+  let showAddSkillModal = false;
+  let isSubmittingSkill = false;
+  let refreshKey = 0;
+
 
   // Event handlers
   function handleAddSkill(event:CustomEvent) {
-    const { documentType } = event.detail;
-    console.log('Add skill clicked for:', documentType);
-
-    
+    console.log('Add skill clicked for:', event.detail.documentType);
+    showAddSkillModal = true;
   }
+
+  async function handleSkillSubmit(event: CustomEvent) {
+    isSubmittingSkill = true;
+    const { file, certificateData } = event.detail;
+
+    const documentPayload = {
+      type: 'Certificate',
+      category: 'Certification',
+      fileName: file.name,
+      accessLevel: 'Private',
+      metadata: {
+        certificate: {
+          ...certificateData,
+          certificateType: 'Skill',
+        }
+      }
+    };
+    console.log(documentPayload,"documentPayload")
+    /*
+    {
+    "type": "Certificate",
+    "category": "Certification",
+    "fileName": "GCP_Sample.webp",
+    "accessLevel": "Private",
+    "metadata": {
+        "certificate": {
+            "title": "GCP Associate",
+            "issuingAuthority": "Google Cloud",
+            "issueDate": "2025-07-01",
+            "skillDetails": {
+                "skillName": "GCP Associate",
+                "proficiencyLevel": "Expert",
+                "category": "Technical"
+            },
+            "certificateType": "Skill"
+        }
+    }
+}
+    */
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('documentData', JSON.stringify(documentPayload));
+
+    try {
+      const result = await documentsApi.addCertificate(formData);
+      if (result.success) {
+        toast.success('Skill certificate added successfully!');
+        showAddSkillModal = false;
+        refreshKey++; // Trigger a refresh in the viewer
+      } else {
+        toast.error(result.error || 'Failed to add certificate.');
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred.');
+      console.error(error);
+    } finally {
+      isSubmittingSkill = false;
+    }
+  }
+
 
   function handlePreview(event:CustomEvent) {
     const { docId, documentType } = event.detail;
@@ -49,12 +115,24 @@
     enabledTabs={config.enabledTabs}
     showAddSkill={config.showAddSkill}
     rowActions={config.rowActions}
+    {refreshKey}
     on:addSkill={handleAddSkill}
     on:preview={handlePreview}
     on:customAction={handleCustomAction}
     on:dataLoaded={handleDataLoaded}
     on:error={handleError}
   />
+
+  {#if showAddSkillModal}
+    <Modal show={showAddSkillModal} title="Add Skill Certificate" onClose={() => showAddSkillModal = false}>
+      <SkillCertificateForm
+        loading={isSubmittingSkill}
+        on:submit={handleSkillSubmit}
+        on:cancel={() => showAddSkillModal = false}
+      />
+    </Modal>
+  {/if}
+
 </IndexPageTemplate>
 
 
