@@ -4,6 +4,7 @@ export function getAccessConfig(accessType: 'own' | 'team' | 'global') {
         return {
           enabledTabs: ['payslip', 'timesheet', 'tax', 'certificates'],
           showAddSkill: false, // Always false for global
+          showAddCertificate:true,
           rowActions: {
             preview: false, // Enable preview for payslip in global
             download: true,

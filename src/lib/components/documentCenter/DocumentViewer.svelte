@@ -20,6 +20,7 @@
   export let accessType: 'own' | 'team' | 'global' = 'own';
   export let enabledTabs: string[] = ['payslip', 'timesheet', 'tax', 'certificates'];
   export let showAddSkill: boolean = false;
+  export let showAddCertificate:boolean= false;
   export let rowActions: {
     preview?: boolean;
     download?: boolean;
@@ -59,6 +60,10 @@ $: selectedItem = items.find(item => item.key === selectedItemKey) ?? items[0];
 $: shouldShowAddSkill = showAddSkill &&
                         selectedItemKey === 'certificates' &&
                         accessType === 'own';
+
+$: shouldShowAddCertificate = showAddCertificate &&
+                        selectedItemKey === 'certificates' &&
+                        accessType === 'global';
 
   // Local state variables
   let filtersOpen = false;
@@ -428,6 +433,11 @@ if(employeeId){
         Add Skill
       </Button>
     {/if}
+    {#if shouldShowAddCertificate}
+    <Button on:click={() => dispatch('addCertificate')} variant="primary">
+      Add Certificate
+    </Button>
+  {/if}
     {#if selectedItem?.filtersEnabled}
     <Button 
       on:click={() => filtersOpen = true} 
