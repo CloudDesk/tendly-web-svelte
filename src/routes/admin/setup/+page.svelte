@@ -21,7 +21,7 @@
     { id: "salary", label: "Salary Structure" },
     { id: "taxslab", label: "Tax Slab" },
     { id: "holiday", label: "Holiday Calendar" },
-    { id: "documents", label: "Document Center" },
+    { id: "form16", label: "Form16" },
     { id: "org", label: "Org Chart" },
   ];
 
@@ -71,7 +71,7 @@
         <TaxSlabManagement />
       {:else if $activeTab === "holiday"}
         <HolidayCalendar />
-      {:else if $activeTab === "documents"}
+      {:else if $activeTab === "form16"}
         <Form16Upload />
         <!-- {:else if $activeTab === "weekends"}
           <WeekendCalendar /> -->

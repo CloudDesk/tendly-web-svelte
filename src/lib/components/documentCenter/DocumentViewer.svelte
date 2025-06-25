@@ -16,6 +16,7 @@
   };
 
   // Props
+  export let employeeId:null|undefined
   export let accessType: 'own' | 'team' | 'global' = 'own';
   export let enabledTabs: string[] = ['payslip', 'timesheet', 'tax', 'certificates'];
   export let showAddSkill: boolean = false;
@@ -380,7 +381,9 @@ $: shouldShowAddSkill = showAddSkill &&
         delete query.designation;
         delete query.location;
       }
-
+if(employeeId){
+  query.employeeId = employeeId
+}
       const result = await documentsApi.getDocuments(query);
       documents = result;
       
@@ -419,7 +422,7 @@ $: shouldShowAddSkill = showAddSkill &&
 
 <div class="document-viewer">
   <!-- Header with buttons -->
-  <div class="flex justify-end gap-4 mb-6">
+  <div class="flex justify-end gap-4 ">
     {#if shouldShowAddSkill}
       <Button on:click={handleAddSkill} variant="primary">
         Add Skill

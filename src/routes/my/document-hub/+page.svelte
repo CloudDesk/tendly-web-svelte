@@ -6,10 +6,11 @@
   import SkillCertificateForm from '$lib/components/documentCenter/SkillCertificateForm.svelte';
   import { documentsApi } from '$lib/services/api';
   import { toast } from '$lib/components/common/stores/toast.store';
-
+  import { auth } from '$lib/stores/auth';
   // Props to control the component behavior
   export let access: 'own' | 'team' | 'global' = 'own';
 
+  const user = $auth?.user;
   // Configuration based on access type
   $: config = getAccessConfig(access);
 
@@ -62,10 +63,16 @@
     }
 }
     */
+
     const formData = new FormData();
+    if (!user?._id) {
+      toast.error('User ID is required to add certificate.');
+      return;
+    }
+    
     formData.append('file', file);
     formData.append('documentData', JSON.stringify(documentPayload));
-
+    formData.append('employeeId', user._id);
     try {
       const result = await documentsApi.addCertificate(formData);
       if (result.success) {
@@ -109,8 +116,9 @@
   }
 </script>
 
-<IndexPageTemplate title="Document Hub" hasContainerShadow={false}>
+<IndexPageTemplate title="Document Hub" subtitle='Access your payslips, timesheets, Form 16, and certificates in one place' hasContainerShadow={false}>
   <DocumentViewer
+  employeeId={null}
     accessType={access}
     enabledTabs={config.enabledTabs}
     showAddSkill={config.showAddSkill}

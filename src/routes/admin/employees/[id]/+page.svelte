@@ -17,6 +17,7 @@
   import InfoBanner from "$lib/components/common/InfoBanner.svelte";
   import { Edit, Mail } from "lucide-svelte";
   import LoaderNew from "$lib/components/common/LoaderNew.svelte";
+  import EmployeeDocument from "$lib/components/employee/EmployeeDocument.svelte";
 
   export let data: { employee?: any } | undefined;
 
@@ -34,6 +35,7 @@
     { id: "training", label: "Training" },
     { id: "salary", label: "Employee Salary" },
     { id: "it-declaration", label: "IT Declaration" },
+    { id: "document", label: "Document" },
   ];
 
   $: activeTab = $page.url.searchParams.get("tab") || tabs[0]?.id;
@@ -177,9 +179,9 @@
           {:else if activeTab === "it-declaration"}
               <ITDeclarationApproval employeeId={employee._id} />
           {:else if activeTab === "shifts"}
-            <!-- <div class="p-6"> -->
               <EmployeeShiftAssignment employeeId={employee._id} />
-            <!-- </div> -->
+          {:else if activeTab==="document"}
+          <EmployeeDocument employeeId={employee._id} access='global'/>
           {/if}
         </Tabs>
       </div>

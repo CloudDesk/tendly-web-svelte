@@ -7,7 +7,7 @@ export default defineConfig({
     sveltekit(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'Tendly_T_logo_192.png', 'Tendly_T_logo_512.png', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.ico', 'T_logo_192.png', 'T_logo_512.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'Tendly',
         short_name: 'Tendly',
@@ -18,18 +18,20 @@ export default defineConfig({
         scope: '/',
         start_url: '/',
         icons: [
+          // static/T_Fav_192.png
+          // static/T_logo_192.png
           {
-            src: '/Tendly_T_logo_192.png',
+            src: '/T_logo_192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: '/Tendly_T_logo_512.png',
+            src: '/T_logo_512.png',
             sizes: '512x512',
             type: 'image/png'
           },
           {
-            src: '/Tendly_T_logo_512.png',
+            src: '/T_logo_512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'

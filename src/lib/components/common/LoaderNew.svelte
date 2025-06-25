@@ -1,5 +1,5 @@
 <script lang="ts">
-  import logoSmall from "$lib/assets/Tendly_T_logo.png";
+    import logoSmall from "$lib/assets/T_Fav_1024.png";
 </script>
 
 <div class="flex flex-col gap-4 w-full items-center justify-center">

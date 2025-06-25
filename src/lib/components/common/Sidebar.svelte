@@ -2,8 +2,10 @@
   import { page } from "$app/stores";
   import { auth } from "$lib/stores/auth";
   import type { ComponentType } from "svelte";
-  import logo from "$lib/assets/Tendly_logo_Full.png";
-  import logoSmall from "$lib/assets/Tendly_T_logo.png";
+  // import logo from "$lib/assets/Tendly_logo_Full.png";
+  // import logoSmall from "$lib/assets/Tendly_T_logo.png";
+  import logo from "$lib/assets/T_logo_Full.png";
+  import logoSmall from "$lib/assets/T_Fav_1024.png";
   import {
     LayoutDashboard,
     Users,
@@ -408,8 +410,13 @@ border-r border-surface-border shadow-sm transition-all duration-300 ease-in-out
           src={logo}
           alt="Tendly"
           class="w-full"
-          style="aspect-ratio: 568/439;"
         />
+        <!--  <img
+          src={logo}
+          alt="Tendly"
+          class="w-full"
+          style="aspect-ratio: 568/439;"
+        /> -->
       {:else}
         <img
           src={logoSmall}

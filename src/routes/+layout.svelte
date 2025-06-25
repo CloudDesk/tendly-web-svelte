@@ -11,7 +11,7 @@
   import { getFCMToken } from "$lib/firebase/getFCMToken";
   import { employeesApi } from "$lib/services/api";
   import { Menu, ChevronLeft } from "lucide-svelte";
-  import logo from "$lib/assets/Tendly_logo_Full.png";
+  import logo from "$lib/assets/T_logo_Full.png";
 
   export let data;
   $: ({ isAuthenticated } = data);

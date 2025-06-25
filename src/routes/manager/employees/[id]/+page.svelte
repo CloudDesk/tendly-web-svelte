@@ -7,15 +7,24 @@
   import ContentCard from "$lib/components/common/ContentCard.svelte";
   import LeavesList from "$lib/components/leave/LeavesList.svelte";
   import EmployeeTrainingAttendance from "$lib/components/attendance/EmployeeTrainingAttendance.svelte";
+  import EmployeeDocument from "$lib/components/employee/EmployeeDocument.svelte";
+  import { auth } from '$lib/stores/auth';
+
 
   const employeeId = $page.params.id;
   export let data: { employee?: any } | undefined;
+
+
+  // Safely get user and determine access type
+  const user = $auth?.user;
+  let access: 'global' | 'team' = (user && typeof user.role === 'string' && user.role.toUpperCase() === "ADMIN") ? 'global' : 'team';
 
   const tabs = [
     { id: "details", label: "Employee Details" },
     { id: "leaves", label: "Leaves" },
     { id: "attendance", label: "Attendance" },
     { id: "training", label: "Training" },
+    { id: "document", label: "Document" },
   ];
 
   $: activeTab = $page.url.searchParams.get("tab") || tabs[0]?.id;
@@ -54,10 +63,13 @@
       {:else if activeTab === "attendance"}
         <EmployeeAttendance {employeeId} />
       {:else if activeTab === "leaves"}
-        <!-- <EmployeeLeaves {employeeId} /> -->
         <LeavesList userId={employeeId} />
       {:else if activeTab === "training"}
         <EmployeeTrainingAttendance {employeeId} />
+        {:else if activeTab === "document"}
+        <EmployeeDocument employeeId={employeeId}
+        access={access}/>
+
       {/if}
     </Tabs>
   </ContentCard>
