@@ -59,6 +59,20 @@
     { value: 'Other', label: 'Other' }
   ];
 
+  // Dynamic help text for Title based on certificate type
+  $: titleHelpText = (() => {
+    switch (certificateType) {
+      case 'Academic':
+        return 'e.g. B.Tech Computer Science, M.Sc Physics';
+      case 'Experience':
+        return 'e.g. Software Engineer, Project Manager';
+      case 'IdentityProof':
+        return 'e.g. Aadhaar Card, PAN Card, Passport';
+      default:
+        return 'Enter certificate title';
+    }
+  })();
+
   // Helper to determine if a field is required for the current certificate type
   function isRequired(field: string) {
     if (["title", "issuingAuthority", "issueDate"].includes(field)) return true;
@@ -70,7 +84,7 @@
     }
     if (certificateType === "IdentityProof") {
       if (field === "uanNumber") return form.idType === "PF";
-      return ["idType", "idNumber", "certificateId"].includes(field);
+      return ["idType", "idNumber"].includes(field); // Removed certificateId for IdentityProof
     }
     return false;
   }
@@ -117,7 +131,7 @@
       if (!form.idType) errors.idType = 'Required';
       if (!form.idNumber) errors.idNumber = 'Required';
       if (form.idType === 'PF' && !form.uanNumber) errors.uanNumber = 'UAN Number is required for PF';
-      if (!form.certificateId) errors.certificateId = 'Certificate ID is required';
+      // Removed certificateId validation for IdentityProof
     }
     return Object.keys(errors).length === 0 && !fileError;
   }
@@ -130,7 +144,8 @@
       issueDate: form.issueDate,
       expiryDate: form.expiryDate || undefined,
       certificateType,
-      certificateId: form.certificateId,
+      // Only include certificateId for Academic
+      ...(certificateType === 'Academic' && { certificateId: form.certificateId })
     };
     if (certificateType === 'Academic') {
       certificateData.academicDetails = {
@@ -161,7 +176,7 @@
     dispatch('submit', { file, certificateData });
   }
 
-  function handleFileSelect(event) {
+  function handleFileSelect(event: CustomEvent) {
     file = event.detail.files[0];
     fileError = '';
   }
@@ -186,7 +201,7 @@
           <label class="form-label">
             Title {#if isRequired('title')}<span class="required">*</span>{/if}
           </label>
-          <input class="input" type="text" bind:value={form.title} placeholder="e.g. B.Tech Computer Science" required on:input={() => { if (errors.title && form.title) errors.title = ''; }} />
+          <input class="input" type="text" bind:value={form.title} placeholder={titleHelpText} required on:input={() => { if (errors.title && form.title) errors.title = ''; }} />
           {#if errors.title}
             <div class="error-msg">{errors.title}</div>
           {/if}
@@ -209,7 +224,7 @@
           <label class="form-label">Expiry Date (optional)</label>
           <input class="input" type="date" bind:value={form.expiryDate} />
         </div>
-        {#if certificateType === 'Academic' || certificateType === 'IdentityProof'}
+        {#if certificateType === 'Academic'}
           <div class="form-group">
             <label class="form-label">
               Certificate ID {#if isRequired('certificateId')}<span class="required">*</span>{/if}

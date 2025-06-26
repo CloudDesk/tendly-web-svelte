@@ -1,10 +1,13 @@
 <script lang="ts">
+  import { documentsApi } from "$lib/services/api";
+  import { auth } from "$lib/stores/auth";
   import { getAccessConfig } from "$lib/utils/document";
   import Modal from "../common/Modal.svelte";
+  import { toast } from "../common/stores/toast.store";
   import AdminCertificateForm from "../documentCenter/AdminCertificateForm.svelte";
   import DocumentViewer from "../documentCenter/DocumentViewer.svelte";
 
-
+  const user = $auth?.user;
  export let access: 'own' | 'team' | 'global' = 'global';
 export let employeeId;
   // Configuration based on access type
@@ -48,17 +51,38 @@ let isLoading=false;
       const { file, certificateData } = event.detail;
 
       console.log(event.detail,"handleAdminCertSubmit")
-
-      // Call your API here to upload the document
-      // await documentsApi.uploadCertificate({ file, certificateData, employeeId });
-      // For now, just simulate:
-      await new Promise(r => setTimeout(r, 1000));
-      showAddCertificateModal = false;
-      refreshKey += 1;
-    } catch (e) {
-      // handle error
+      const formData = new FormData();
+    if (!user?._id) {
+      toast.error('User ID is required to add certificate.');
+      return;
+    }
+    // Manipulate certificateData as per BE requirements
+    const documentData = {
+      type: 'Certificate',
+      category: 'Certification',
+      accessLevel: 'Private',
+      metadata: {
+        certificate: certificateData
+      }
+    };
+    console.log(documentData,"documentData")
+    formData.append('file', file);
+    formData.append('documentData', JSON.stringify(documentData));
+    formData.append('employeeId', user._id);
+    const result = await documentsApi.addCertificate(formData);
+    console.log(result,"result")
+      if (result.success) {
+        toast.success('Certificate added successfully!');
+        isLoading = false;
+        refreshKey++; // Trigger a refresh in the viewer
+      } else {
+        toast.error(result.error || 'Failed to add certificate.');
+      }
+    } catch (error:any) {
+      toast.error(error.message || 'Failed to add certificate.');
     } finally {
       isLoading = false;
+      showAddCertificateModal=false;
     }
   }
 
