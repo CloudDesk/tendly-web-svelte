@@ -103,6 +103,21 @@
     // Handle custom actions
   }
 
+  function handleView(event: CustomEvent) {
+    const { docId, documentType } = event.detail;
+    console.log('View document:', docId, 'Type:', documentType);
+  }
+
+  function handleEdit(event: CustomEvent) {
+    const { docId, documentType } = event.detail;
+    console.log('Edit document:', docId, 'Type:', documentType);
+  }
+
+  function handleDelete(event: CustomEvent) {
+    const { docId, documentType } = event.detail;
+    console.log('Delete document:', docId, 'Type:', documentType);
+  }
+
   function handleDataLoaded(event:CustomEvent) {
     const { documents, documentType } = event.detail;
     console.log('Data loaded for:', documentType, 'Count:', documents?.data?.length || 0);
@@ -129,6 +144,9 @@
     on:customAction={handleCustomAction}
     on:dataLoaded={handleDataLoaded}
     on:error={handleError}
+    on:view={handleView}
+    on:edit={handleEdit}
+    on:delete={handleDelete}
   />
 
   {#if showAddSkillModal}

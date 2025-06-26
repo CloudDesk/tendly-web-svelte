@@ -8,6 +8,7 @@
   import type { filterSchema } from '$lib/types';
   import { onMount, createEventDispatcher } from 'svelte';
   import { documentsApi, type IDocument } from '$lib/services/api';
+  import { Eye, Pencil, Trash2, CheckCircle, XCircle } from 'lucide-svelte';
 
   type Column = {
     key: string;
@@ -24,6 +25,10 @@
   export let rowActions: {
     preview?: boolean;
     download?: boolean;
+    view?: boolean;
+    edit?: boolean;
+    delete?: boolean;
+    verify?: boolean;
     customActions?: Array<{
       label: string;
       action: string;
@@ -125,11 +130,11 @@ $: shouldShowAddCertificate = showAddCertificate &&
                 label: "Title",
                 render: (doc: IDocument) => doc.metadata?.certificate?.title || "-"
             },
-            { 
-                key: "verificationStatus", 
-                label: "Verification Status",
-                render: (doc: IDocument) => doc.metadata?.certificate?.verificationStatus || "Pending"
-            },
+            // { 
+            //     key: "verificationStatus", 
+            //     label: "Verification Status",
+            //     render: (doc: IDocument) => doc.metadata?.certificate?.verificationStatus || "Pending"
+            // },
         ];
         break;
       
@@ -207,35 +212,63 @@ $: shouldShowAddCertificate = showAddCertificate &&
     });
 
     // Actions column
-    let actionsHtml = '';
-    
-    if (rowActions.download) {
-      actionsHtml += `<a href="{filePath}" target="_blank" rel="noopener" class="text-blue-600 hover:text-blue-800 underline mr-2">Open</a>`;
-    }
-    
-    if (rowActions.preview && selectedItemKey === 'payslip' && accessType === 'global') {
-      actionsHtml += `<button class="text-green-600 hover:text-green-800 underline mr-2" onclick="handlePreview('{_id}')">Preview</button>`;
-    }
-
-    if (rowActions.customActions) {
-      rowActions.customActions.forEach(action => {
-        actionsHtml += `<button class="text-purple-600 hover:text-purple-800 underline mr-2" onclick="handleCustomAction('${action.action}', '{_id}')">${action.label}</button>`;
-      });
-    }
-
     actionColumns.push({
       key: "actions",
       label: "Actions",
       render: (doc: IDocument) => {
-        let html = actionsHtml;
-        html = html.replace(/\{filePath\}/g, doc.filePath || '#');
-        html = html.replace(/\{_id\}/g, doc._id || '');
-        
-        if (!doc.filePath && rowActions.download) {
-          html = html.replace(/<a[^>]*>Open<\/a>/, `<span class="text-gray-400">No file</span>`);
+        let actionsHtml = '';
+        const docId = doc._id || '';
+        const certificateType = doc.metadata?.certificate?.certificateType;
+
+        const addButton = (action: string, icon: any, className: string = 'text-blue-600 hover:text-blue-800') => {
+          const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-${action}">${icon.render().html}</svg>`;
+          actionsHtml += `<button class="${className} underline mr-2" onclick="handleAction('${action}', '${docId}')">${iconSvg}</button>`;
+        };
+
+        if (selectedItemKey === 'certificates') {
+          if (accessType === 'own') {
+            if (certificateType?.toLowerCase() === 'skill') {
+              if (rowActions.preview) addButton('preview', Eye);
+              if (rowActions.view) addButton('view', Eye);
+              if (rowActions.edit) addButton('edit', Pencil);
+              if (rowActions.delete) addButton('delete', Trash2, 'text-red-600 hover:text-red-800');
+            } else {
+              if (rowActions.preview) addButton('preview', Eye);
+            }
+          } else if (accessType === 'team') {
+            if (rowActions.preview) addButton('preview', Eye);
+          } else if (accessType === 'global') {
+            if (rowActions.preview) addButton('preview', Eye);
+            if (rowActions.view) addButton('view', Eye);
+            if (rowActions.edit) addButton('edit', Pencil);
+            if (rowActions.delete) addButton('delete', Trash2, 'text-red-600 hover:text-red-800');
+            if (rowActions.verify) {
+              const approveIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle">${CheckCircle.render().html}</svg>`;
+              const rejectIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-circle">${XCircle.render().html}</svg>`;
+              actionsHtml += `<button class="text-green-600 hover:text-green-800 underline mr-2" onclick="handleAction('verify', '${docId}', 'Approved')">${approveIcon}</button>`;
+              actionsHtml += `<button class="text-red-600 hover:text-red-800 underline mr-2" onclick="handleAction('verify', '${docId}', 'Rejected')">${rejectIcon}</button>`;
+            }
+          }
+        } else {
+            if (rowActions.download && doc.filePath) {
+              actionsHtml += `<a href="${doc.filePath}" target="_blank" rel="noopener" class="text-blue-600 hover:text-blue-800 underline mr-2">Open</a>`;
+            } else if (rowActions.download) {
+                actionsHtml += `<span class="text-gray-400 mr-2">No file</span>`;
+            }
+            if (rowActions.preview) {
+                 addButton('preview', Eye);
+            }
+        }
+
+        if (rowActions.customActions) {
+          rowActions.customActions.forEach(action => {
+             if (!action.condition || action.condition(doc)) {
+                actionsHtml += `<button class="text-purple-600 hover:text-purple-800 underline mr-2" onclick="handleAction('${action.action}', '${docId}')">${action.label}</button>`;
+             }
+          });
         }
         
-        return html;
+        return actionsHtml;
       },
     });
 
@@ -356,10 +389,16 @@ $: shouldShowAddCertificate = showAddCertificate &&
     dispatch('customAction', { action, docId, documentType: selectedItemKey });
   }
 
+  function handleAction(action: string, docId: string, value?: any) {
+    console.log(`Action: ${action}, DocID: ${docId}, Value: ${value}`);
+    dispatch(action, { docId, documentType: selectedItemKey, value });
+  }
+
   // Make functions available globally for HTML onclick handlers
   if (typeof window !== 'undefined') {
     (window as any).handlePreview = handlePreview;
     (window as any).handleCustomAction = handleCustomAction;
+    (window as any).handleAction = handleAction;
   }
 
   // Fetch documents based on current filters and selected document type

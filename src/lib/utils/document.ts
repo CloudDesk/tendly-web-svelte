@@ -6,7 +6,11 @@ export function getAccessConfig(accessType: 'own' | 'team' | 'global') {
           showAddSkill: false, // Always false for global
           showAddCertificate:true,
           rowActions: {
-            preview: false, // Enable preview for payslip in global
+            preview: true,
+            view: true,
+            edit: true,
+            delete: true,
+            verify: true,
             download: true,
             customActions: []
           }
@@ -17,7 +21,7 @@ export function getAccessConfig(accessType: 'own' | 'team' | 'global') {
           enabledTabs: ['timesheet', 'certificates'],
           showAddSkill: false, // Always false for team
           rowActions: {
-            preview: false,
+            preview: true,
             download: true,
             customActions: []
           }
@@ -29,7 +33,7 @@ export function getAccessConfig(accessType: 'own' | 'team' | 'global') {
           enabledTabs: ['payslip', 'timesheet', 'tax', 'certificates'],
           showAddSkill: true, // Can be true, but will only show for certificates
           rowActions: {
-            preview: false,
+            preview: true,
             download: true,
             customActions: []
           }
