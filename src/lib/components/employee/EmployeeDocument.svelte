@@ -5,6 +5,7 @@
     import Modal from "../common/Modal.svelte";
     import { toast } from "../common/stores/toast.store";
     import AdminCertificateForm from "../documentCenter/AdminCertificateForm.svelte";
+    import SkillCertificateForm from "../documentCenter/SkillCertificateForm.svelte";
     import DocumentViewer from "../documentCenter/DocumentViewer.svelte";
 
     const user = $auth?.user;
@@ -19,6 +20,12 @@
     let refreshKey = 0;
     let showAddCertificateModal = false;
     let isLoading = false;
+
+    // Edit modal state
+    let showEditModal = false;
+    let isSubmittingEdit = false;
+    let editingDocument = null;
+    let editFormType = null; // 'skill' or 'admin'
 
     async function getDocument(docId: string) {
         if (!docId) return;
@@ -42,6 +49,9 @@
             console.log(res, "res handlePreview");
             isShowModal = true;
             actionType = action;
+            //make sure the res.category==="Certification"
+            //if the document type is skill - bind SkillCertificateForm
+            // else bind AdminCertificateForm
         } catch (error) {
             toast.error("Failed to fetch document");
         }
@@ -77,7 +87,52 @@
         // Handle error (show toast, etc.)
     }
 
-    function handleDocumentAction(event: CustomEvent) {
+    async function getDocRecord(docId: string) {
+        try {
+            const result: any = await documentsApi.getById(docId);
+            if (result.success && result.data) {
+                return result.data;
+            } else {
+                toast.error("Failed to fetch document details");
+                return null;
+            }
+        } catch (error) {
+            console.error("Error fetching document:", error);
+            toast.error("Failed to fetch document details");
+            return null;
+        }
+    }
+
+    async function handleEditDocument(docId: string) {
+        try {
+            const document = await getDocRecord(docId);
+            if (!document) return;
+            console.log(document, "handleEditDocument");
+            // Make sure the document category is "Certification"
+            if (document.category !== "Certification") {
+                toast.error(
+                    "This document is not a certification and cannot be edited",
+                );
+                return;
+            }
+
+            editingDocument = document;
+
+            // Determine form type based on certificate type
+            if (document.metadata?.certificate?.certificateType === "Skill") {
+                editFormType = "skill";
+            } else {
+                editFormType = "admin";
+            }
+
+            showEditModal = true;
+        } catch (error) {
+            console.error("Error preparing edit:", error);
+            toast.error("Failed to open document for editing");
+        }
+    }
+
+    async function handleDocumentAction(event: CustomEvent) {
         const { action, docId, documentType } = event.detail;
 
         console.log(
@@ -97,7 +152,7 @@
                 handlePreview(event);
                 break;
             case "edit":
-                handlePreview(event);
+                await handleEditDocument(docId);
                 break;
             case "delete":
                 handleDeleteDocument(docId);
@@ -182,6 +237,8 @@
             formData.append("file", file);
             formData.append("documentData", JSON.stringify(documentData));
             formData.append("employeeId", user._id);
+
+            console.log(formData, "appendFormData");
             const result = await documentsApi.addCertificate(formData);
             console.log(result, "result");
             if (result.success) {
@@ -196,6 +253,106 @@
         } finally {
             isLoading = false;
             showAddCertificateModal = false;
+        }
+    }
+
+    async function handleEditSkillSubmit(event: CustomEvent) {
+        isSubmittingEdit = true;
+        const { file, certificateData } = event.detail;
+
+        try {
+            // Preserve complete document structure with updated certificate data
+            const documentPayload = {
+                ...editingDocument, // Preserve all existing document fields
+                type: "Certificate",
+                category: "Certification",
+                fileName: file?.name || editingDocument.fileName,
+                accessLevel: editingDocument.accessLevel || "Private",
+                metadata: {
+                    ...editingDocument.metadata, // Preserve all existing metadata
+                    certificate: certificateData, // Use complete certificate data from form
+                },
+            };
+
+            const formData = new FormData();
+            if (!user?._id) {
+                toast.error("User ID is required to update certificate.");
+                return;
+            }
+
+            if (file) {
+                formData.append("file", file);
+            }
+            formData.append("documentData", JSON.stringify(documentPayload));
+            formData.append("employeeId", user._id);
+
+            const result = await documentsApi.updateCertificate(
+                editingDocument._id,
+                formData,
+            );
+            if (result.success) {
+                toast.success("Skill certificate updated successfully!");
+                showEditModal = false;
+                editingDocument = null;
+                refreshKey++;
+            } else {
+                toast.error(result.error || "Failed to update certificate.");
+            }
+        } catch (error) {
+            toast.error("An unexpected error occurred.");
+            console.error(error);
+        } finally {
+            isSubmittingEdit = false;
+        }
+    }
+
+    async function handleEditAdminSubmit(event: CustomEvent) {
+        console.log("handleEditAdminSubmit", event);
+        isSubmittingEdit = true;
+        console.log(editingDocument, "editingDocument");
+
+        try {
+            const { file, certificateData } = event.detail;
+            const formData = new FormData();
+            if (!user?._id) {
+                toast.error("User ID is required to add certificate.");
+                return;
+            }
+            if (!editingDocument._id) {
+                toast.error("Document ID is required to update certificate.");
+                return;
+            }
+
+            // Manipulate certificateData as per BE requirements
+            const documentData = {
+                type: "Certificate",
+                category: "Certification",
+                accessLevel: "Private",
+                metadata: {
+                    certificate: certificateData,
+                },
+            };
+            console.log(documentData, "documentData");
+            formData.append("file", file);
+            formData.append("documentData", JSON.stringify(documentData));
+            formData.append("employeeId", user._id);
+            console.log(formData, "appendFormData");
+            const result = await documentsApi.updateCertificate(
+                editingDocument._id,
+                formData,
+            );
+            console.log(result, "result");
+            if (result.success) {
+                toast.success("Certificate added successfully!");
+                isLoading = false;
+                refreshKey++; // Trigger a refresh in the viewer
+            } else {
+                toast.error(result.error || "Failed to add certificate.");
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Failed to update certificate.");
+        } finally {
+            isSubmittingEdit = false;
         }
     }
 </script>
@@ -229,6 +386,44 @@
             on:submit={handleAdminCertSubmit}
             on:cancel={() => (showAddCertificateModal = false)}
         />
+    </Modal>
+{/if}
+
+{#if showEditModal && editingDocument}
+    <Modal
+        show={showEditModal}
+        title={`Edit ${editFormType === "skill" ? "Skill" : "Admin"} Certificate`}
+        onClose={() => {
+            showEditModal = false;
+            editingDocument = null;
+            editFormType = null;
+        }}
+    >
+        {#if editFormType === "skill"}
+            <SkillCertificateForm
+                loading={isSubmittingEdit}
+                initialData={editingDocument.metadata?.certificate}
+                currentFilePath={editingDocument.filePath}
+                on:submit={handleEditSkillSubmit}
+                on:cancel={() => {
+                    showEditModal = false;
+                    editingDocument = null;
+                    editFormType = null;
+                }}
+            />
+        {:else if editFormType === "admin"}
+            <AdminCertificateForm
+                loading={isSubmittingEdit}
+                initialData={editingDocument.metadata?.certificate}
+                currentFilePath={editingDocument.filePath}
+                on:submit={handleEditAdminSubmit}
+                on:cancel={() => {
+                    showEditModal = false;
+                    editingDocument = null;
+                    editFormType = null;
+                }}
+            />
+        {/if}
     </Modal>
 {/if}
 

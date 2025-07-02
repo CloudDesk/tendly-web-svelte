@@ -263,6 +263,13 @@ export const documentsApi = {
     return uploadFiles(`/documents/certifications`, formData);
   },
 
+  updateCertificate: async (
+    id: string,
+    formData: FormData,
+  ): Promise<DocumentResponse> => {
+    return uploadFiles(`/documents/certifications/${id}`, formData, "PUT");
+  },
+
   /*
     type:Payslip
     accessLevel

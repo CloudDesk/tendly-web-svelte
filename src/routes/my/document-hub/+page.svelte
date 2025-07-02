@@ -4,6 +4,7 @@
     import { getAccessConfig } from "$lib/utils/document";
     import Modal from "$lib/components/common/Modal.svelte";
     import SkillCertificateForm from "$lib/components/documentCenter/SkillCertificateForm.svelte";
+    import AdminCertificateForm from "$lib/components/documentCenter/AdminCertificateForm.svelte";
     import { documentsApi } from "$lib/services/api";
     import { toast } from "$lib/components/common/stores/toast.store";
     import { auth } from "$lib/stores/auth";
@@ -17,6 +18,12 @@
     let showAddSkillModal = false;
     let isSubmittingSkill = false;
     let refreshKey = 0;
+
+    // Edit modal state
+    let showEditModal = false;
+    let isSubmittingEdit = false;
+    let editingDocument = null;
+    let editFormType = null; // 'skill' or 'admin'
 
     // Event handlers
     function handleAddSkill(event: CustomEvent) {
@@ -89,10 +96,20 @@
         }
     }
 
-    function handlePreview(event: CustomEvent) {
-        const { docId, documentType } = event.detail;
-        console.log("Preview document:", docId, "Type:", documentType);
-        // Open preview modal or navigate to preview page
+    async function handlePreview(docId) {
+        try {
+            const result = await documentsApi.getDocumentById(docId);
+            if (result.success && result.data) {
+                return result.data;
+            } else {
+                toast.error("Failed to fetch document details");
+                return null;
+            }
+        } catch (error) {
+            console.error("Error fetching document:", error);
+            toast.error("Failed to fetch document details");
+            return null;
+        }
     }
 
     function handleCustomAction(event: CustomEvent) {
@@ -125,7 +142,7 @@
         // Handle error (show toast, etc.)
     }
 
-    function handleDocumentAction(event: CustomEvent) {
+    async function handleDocumentAction(event: CustomEvent) {
         const { action, docId, documentType } = event.detail;
         console.log(
             "Document action:",
@@ -137,16 +154,12 @@
         );
 
         switch (action) {
-            case "preview":
-                handlePreview(event);
-                break;
-            case "view":
-                toast.info(`Opening document ${docId} for viewing`);
-                // Add your view logic here
+            case "open":
+                toast.info(`Opening document ${docId}`);
+                // Add your open logic here
                 break;
             case "edit":
-                toast.info(`Opening document ${docId} for editing`);
-                // Add your edit logic here
+                await handleEditDocument(docId);
                 break;
             case "delete":
                 handleDeleteDocument(docId);
@@ -165,6 +178,35 @@
         } catch (error) {
             console.error("Error deleting document:", error);
             toast.error("Failed to delete document");
+        }
+    }
+
+    async function handleEditDocument(docId: string) {
+        try {
+            const document = await handlePreview(docId);
+            if (!document) return;
+
+            // Make sure the document category is "Certification"
+            if (document.category !== "Certification") {
+                toast.error(
+                    "This document is not a certification and cannot be edited",
+                );
+                return;
+            }
+
+            editingDocument = document;
+
+            // Determine form type based on certificate type
+            if (document.metadata?.certificate?.certificateType === "Skill") {
+                editFormType = "skill";
+            } else {
+                editFormType = "admin";
+            }
+
+            showEditModal = true;
+        } catch (error) {
+            console.error("Error preparing edit:", error);
+            toast.error("Failed to open document for editing");
         }
     }
 
@@ -202,6 +244,105 @@
             toast.error(`Failed to ${action} certificate`);
         }
     }
+
+    async function handleEditSkillSubmit(event: CustomEvent) {
+        isSubmittingEdit = true;
+        const { file, certificateData } = event.detail;
+
+        try {
+            // Preserve complete document structure with updated certificate data
+            const documentPayload = {
+                ...editingDocument, // Preserve all existing document fields
+                type: "Certificate",
+                category: "Certification",
+                fileName: file?.name || editingDocument.fileName,
+                accessLevel: editingDocument.accessLevel || "Private",
+                metadata: {
+                    ...editingDocument.metadata, // Preserve all existing metadata
+                    certificate: certificateData, // Use complete certificate data from form
+                },
+            };
+
+            const formData = new FormData();
+            if (!user?._id) {
+                toast.error("User ID is required to update certificate.");
+                return;
+            }
+
+            if (file) {
+                formData.append("file", file);
+            }
+            formData.append("documentData", JSON.stringify(documentPayload));
+            formData.append("employeeId", user._id);
+
+            const result = await documentsApi.updateCertificate(
+                editingDocument._id,
+                formData,
+            );
+            if (result.success) {
+                toast.success("Skill certificate updated successfully!");
+                showEditModal = false;
+                editingDocument = null;
+                refreshKey++;
+            } else {
+                toast.error(result.error || "Failed to update certificate.");
+            }
+        } catch (error) {
+            toast.error("An unexpected error occurred.");
+            console.error(error);
+        } finally {
+            isSubmittingEdit = false;
+        }
+    }
+
+    async function handleEditAdminSubmit(event: CustomEvent) {
+        isSubmittingEdit = true;
+        const { file, certificateData } = event.detail;
+
+        try {
+            // Preserve complete document structure with updated certificate data
+            const documentData = {
+                ...editingDocument, // Preserve all existing document fields
+                type: "Certificate",
+                category: "Certification",
+                fileName: file?.name || editingDocument.fileName,
+                accessLevel: editingDocument.accessLevel || "Private",
+                metadata: {
+                    ...editingDocument.metadata, // Preserve all existing metadata
+                    certificate: certificateData, // Use complete certificate data from form
+                },
+            };
+
+            const formData = new FormData();
+            if (!user?._id) {
+                toast.error("User ID is required to update certificate.");
+                return;
+            }
+
+            if (file) {
+                formData.append("file", file);
+            }
+            formData.append("documentData", JSON.stringify(documentData));
+            formData.append("employeeId", user._id);
+
+            const result = await documentsApi.updateCertificate(
+                editingDocument._id,
+                formData,
+            );
+            if (result.success) {
+                toast.success("Certificate updated successfully!");
+                showEditModal = false;
+                editingDocument = null;
+                refreshKey++;
+            } else {
+                toast.error(result.error || "Failed to update certificate.");
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Failed to update certificate.");
+        } finally {
+            isSubmittingEdit = false;
+        }
+    }
 </script>
 
 <IndexPageTemplate
@@ -236,6 +377,44 @@
                 on:submit={handleSkillSubmit}
                 on:cancel={() => (showAddSkillModal = false)}
             />
+        </Modal>
+    {/if}
+
+    {#if showEditModal && editingDocument}
+        <Modal
+            show={showEditModal}
+            title={`Edit ${editFormType === "skill" ? "Skill" : "Admin"} Certificate`}
+            onClose={() => {
+                showEditModal = false;
+                editingDocument = null;
+                editFormType = null;
+            }}
+        >
+            {#if editFormType === "skill"}
+                <SkillCertificateForm
+                    loading={isSubmittingEdit}
+                    initialData={editingDocument.metadata?.certificate}
+                    currentFilePath={editingDocument.filePath}
+                    on:submit={handleEditSkillSubmit}
+                    on:cancel={() => {
+                        showEditModal = false;
+                        editingDocument = null;
+                        editFormType = null;
+                    }}
+                />
+            {:else if editFormType === "admin"}
+                <AdminCertificateForm
+                    loading={isSubmittingEdit}
+                    initialData={editingDocument.metadata?.certificate}
+                    currentFilePath={editingDocument.filePath}
+                    on:submit={handleEditAdminSubmit}
+                    on:cancel={() => {
+                        showEditModal = false;
+                        editingDocument = null;
+                        editFormType = null;
+                    }}
+                />
+            {/if}
         </Modal>
     {/if}
 </IndexPageTemplate>
