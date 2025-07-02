@@ -10,7 +10,8 @@
     const user = $auth?.user;
     export let access: "own" | "team" | "global" = "global";
     export let employeeId;
-
+    let isShowModal = false;
+    let actionType: string;
     console.log(access, "Access employeeDoc");
     // Configuration based on access type
     $: config = getAccessConfig(access);
@@ -19,10 +20,31 @@
     let showAddCertificateModal = false;
     let isLoading = false;
 
-    function handlePreview(event: CustomEvent) {
-        const { docId, documentType } = event.detail;
+    async function getDocument(docId: string) {
+        if (!docId) return;
+        try {
+            const response: any = await documentsApi.getById(docId);
+            console.log(response, "getDocument");
+            if (response.success) {
+                return response.data;
+            }
+        } catch (error) {
+            toast.error("Failed to fetch documents");
+            return;
+        }
+    }
+    async function handlePreview(event: CustomEvent) {
+        const { docId, documentType, action } = event.detail;
         console.log("Preview document:", docId, "Type:", documentType);
         // Open preview modal or navigate to preview page
+        try {
+            let res = await getDocument(docId);
+            console.log(res, "res handlePreview");
+            isShowModal = true;
+            actionType = action;
+        } catch (error) {
+            toast.error("Failed to fetch document");
+        }
     }
 
     function handleCustomAction(event: CustomEvent) {
@@ -57,6 +79,7 @@
 
     function handleDocumentAction(event: CustomEvent) {
         const { action, docId, documentType } = event.detail;
+
         console.log(
             "Document action:",
             action,
@@ -71,12 +94,10 @@
                 handlePreview(event);
                 break;
             case "view":
-                toast.info(`Opening document ${docId} for viewing`);
-                // Add your view logic here
+                handlePreview(event);
                 break;
             case "edit":
-                toast.info(`Opening document ${docId} for editing`);
-                // Add your edit logic here
+                handlePreview(event);
                 break;
             case "delete":
                 handleDeleteDocument(docId);
@@ -209,4 +230,13 @@
             on:cancel={() => (showAddCertificateModal = false)}
         />
     </Modal>
+{/if}
+
+{#if isShowModal}
+    <Modal
+        title={`${actionType} Certifcates`}
+        show={showAddCertificateModal}
+        onClose={() => (showAddCertificateModal = false)}
+        wide={false}
+    ></Modal>
 {/if}
