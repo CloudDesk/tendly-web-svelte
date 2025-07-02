@@ -32,9 +32,9 @@ export interface IDocumentQuery {
     designation?: string;
     location?: string;
 }
-  
+
 export interface IDocument {
-    _id?:string;
+    _id?: string;
     employeeId: string; // Types.ObjectId as string
     type: 'Payslip' | 'TimesheetFile' | 'Form16' | 'OfferLetter' | 'HikeLetter' | 'Certificate';
     category: 'Payroll' | 'Timesheet' | 'Tax' | 'EmployeeLifecycle' | 'Certification';
@@ -137,7 +137,7 @@ export interface IDocument {
         details?: string;
     }>;
 }
-  
+
 export interface DocumentResponse {
     success: boolean;
     data: IDocument[];
@@ -189,37 +189,38 @@ export const documentsApi = {
             }
         );
     },
-    uploadForm16Zip: async(formData:FormData)=>{
-        return uploadFiles(`/documents/form16/upload`,formData)
+    uploadForm16Zip: async (formData: FormData) => {
+        return uploadFiles(`/documents/form16/upload`, formData)
     },
-    getDocuments:async (query: IDocumentQuery): Promise<DocumentResponse> => {
+    getDocuments: async (query: IDocumentQuery): Promise<DocumentResponse> => {
         const queryParams = Object.entries(query)
-    .filter(([_, value]) => value !== undefined && value !== null)
-    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-    .join('&');
-  const url = `/documents${queryParams ? `?${queryParams}` : ''}`;
-        return fetchApi(url,{            method:'GET'        })
+            .filter(([_, value]) => value !== undefined && value !== null)
+            .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+            .join('&');
+        const url = `/documents${queryParams ? `?${queryParams}` : ''}`;
+        return fetchApi(url, { method: 'GET' })
     },
+
     addCertificate: async (formData: FormData): Promise<DocumentResponse> => {
         return uploadFiles(`/documents/certifications`, formData);
     }
 
-/*
-type:Payslip
-accessLevel
-metadata.payslip.year
-metadata.payslip.month
-
-
-type:TimesheetFile
-accessLevel
-metadata.timesheet.month
-metadata.timesheet.year
-
-type:Form16
-accessLevel
-metadata.form16.financialYear
-*/
+    /*
+    type:Payslip
+    accessLevel
+    metadata.payslip.year
+    metadata.payslip.month
+    
+    
+    type:TimesheetFile
+    accessLevel
+    metadata.timesheet.month
+    metadata.timesheet.year
+    
+    type:Form16
+    accessLevel
+    metadata.form16.financialYear
+    */
 }
 
 /*

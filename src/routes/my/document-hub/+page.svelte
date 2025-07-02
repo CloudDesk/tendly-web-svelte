@@ -1,48 +1,47 @@
 <script lang="ts">
-  import IndexPageTemplate from '$lib/components/templates/IndexPageTemplate.svelte';
-  import DocumentViewer from '$lib/components/documentCenter/DocumentViewer.svelte';
-  import { getAccessConfig } from '$lib/utils/document';
-  import Modal from '$lib/components/common/Modal.svelte';
-  import SkillCertificateForm from '$lib/components/documentCenter/SkillCertificateForm.svelte';
-  import { documentsApi } from '$lib/services/api';
-  import { toast } from '$lib/components/common/stores/toast.store';
-  import { auth } from '$lib/stores/auth';
-  // Props to control the component behavior
-  export let access: 'own' | 'team' | 'global' = 'own';
+    import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
+    import DocumentViewer from "$lib/components/documentCenter/DocumentViewer.svelte";
+    import { getAccessConfig } from "$lib/utils/document";
+    import Modal from "$lib/components/common/Modal.svelte";
+    import SkillCertificateForm from "$lib/components/documentCenter/SkillCertificateForm.svelte";
+    import { documentsApi } from "$lib/services/api";
+    import { toast } from "$lib/components/common/stores/toast.store";
+    import { auth } from "$lib/stores/auth";
+    // Props to control the component behavior
+    export let access: "own" | "team" | "global" = "own";
 
-  const user = $auth?.user;
-  // Configuration based on access type
-  $: config = getAccessConfig(access);
+    const user = $auth?.user;
+    // Configuration based on access type
+    $: config = getAccessConfig(access);
 
-  let showAddSkillModal = false;
-  let isSubmittingSkill = false;
-  let refreshKey = 0;
+    let showAddSkillModal = false;
+    let isSubmittingSkill = false;
+    let refreshKey = 0;
 
+    // Event handlers
+    function handleAddSkill(event: CustomEvent) {
+        console.log("Add skill clicked for:", event.detail.documentType);
+        showAddSkillModal = true;
+    }
 
-  // Event handlers
-  function handleAddSkill(event:CustomEvent) {
-    console.log('Add skill clicked for:', event.detail.documentType);
-    showAddSkillModal = true;
-  }
+    async function handleSkillSubmit(event: CustomEvent) {
+        isSubmittingSkill = true;
+        const { file, certificateData } = event.detail;
 
-  async function handleSkillSubmit(event: CustomEvent) {
-    isSubmittingSkill = true;
-    const { file, certificateData } = event.detail;
-
-    const documentPayload = {
-      type: 'Certificate',
-      category: 'Certification',
-      fileName: file.name,
-      accessLevel: 'Private',
-      metadata: {
-        certificate: {
-          ...certificateData,
-          certificateType: 'Skill',
-        }
-      }
-    };
-    console.log(documentPayload,"documentPayload")
-    /*
+        const documentPayload = {
+            type: "Certificate",
+            category: "Certification",
+            fileName: file.name,
+            accessLevel: "Private",
+            metadata: {
+                certificate: {
+                    ...certificateData,
+                    certificateType: "Skill",
+                },
+            },
+        };
+        console.log(documentPayload, "documentPayload");
+        /*
     {
     "type": "Certificate",
     "category": "Certification",
@@ -64,103 +63,182 @@
 }
     */
 
-    const formData = new FormData();
-    if (!user?._id) {
-      toast.error('User ID is required to add certificate.');
-      return;
+        const formData = new FormData();
+        if (!user?._id) {
+            toast.error("User ID is required to add certificate.");
+            return;
+        }
+
+        formData.append("file", file);
+        formData.append("documentData", JSON.stringify(documentPayload));
+        formData.append("employeeId", user._id);
+        try {
+            const result = await documentsApi.addCertificate(formData);
+            if (result.success) {
+                toast.success("Skill certificate added successfully!");
+                showAddSkillModal = false;
+                refreshKey++; // Trigger a refresh in the viewer
+            } else {
+                toast.error(result.error || "Failed to add certificate.");
+            }
+        } catch (error) {
+            toast.error("An unexpected error occurred.");
+            console.error(error);
+        } finally {
+            isSubmittingSkill = false;
+        }
     }
-    
-    formData.append('file', file);
-    formData.append('documentData', JSON.stringify(documentPayload));
-    formData.append('employeeId', user._id);
-    try {
-      const result = await documentsApi.addCertificate(formData);
-      if (result.success) {
-        toast.success('Skill certificate added successfully!');
-        showAddSkillModal = false;
-        refreshKey++; // Trigger a refresh in the viewer
-      } else {
-        toast.error(result.error || 'Failed to add certificate.');
-      }
-    } catch (error) {
-      toast.error('An unexpected error occurred.');
-      console.error(error);
-    } finally {
-      isSubmittingSkill = false;
+
+    function handlePreview(event: CustomEvent) {
+        const { docId, documentType } = event.detail;
+        console.log("Preview document:", docId, "Type:", documentType);
+        // Open preview modal or navigate to preview page
     }
-  }
 
+    function handleCustomAction(event: CustomEvent) {
+        const { action, docId, documentType } = event.detail;
+        console.log(
+            "Custom action:",
+            action,
+            "Document:",
+            docId,
+            "Type:",
+            documentType,
+        );
+        // Handle custom actions
+    }
 
-  function handlePreview(event:CustomEvent) {
-    const { docId, documentType } = event.detail;
-    console.log('Preview document:', docId, 'Type:', documentType);
-    // Open preview modal or navigate to preview page
-  }
+    function handleDataLoaded(event: CustomEvent) {
+        const { documents, documentType } = event.detail;
+        console.log(
+            "Data loaded for:",
+            documentType,
+            "Count:",
+            documents?.data?.length || 0,
+        );
+        // Optional: Handle data loaded event
+    }
 
-  function handleCustomAction(event:CustomEvent) {
-    const { action, docId, documentType } = event.detail;
-    console.log('Custom action:', action, 'Document:', docId, 'Type:', documentType);
-    // Handle custom actions
-  }
+    function handleError(event: CustomEvent) {
+        const { error, documentType } = event.detail;
+        console.error("Error loading documents for:", documentType, error);
+        // Handle error (show toast, etc.)
+    }
 
-  function handleView(event: CustomEvent) {
-    const { docId, documentType } = event.detail;
-    console.log('View document:', docId, 'Type:', documentType);
-  }
+    function handleDocumentAction(event: CustomEvent) {
+        const { action, docId, documentType } = event.detail;
+        console.log(
+            "Document action:",
+            action,
+            "Document:",
+            docId,
+            "Type:",
+            documentType,
+        );
 
-  function handleEdit(event: CustomEvent) {
-    const { docId, documentType } = event.detail;
-    console.log('Edit document:', docId, 'Type:', documentType);
-  }
+        switch (action) {
+            case "preview":
+                handlePreview(event);
+                break;
+            case "view":
+                toast.info(`Opening document ${docId} for viewing`);
+                // Add your view logic here
+                break;
+            case "edit":
+                toast.info(`Opening document ${docId} for editing`);
+                // Add your edit logic here
+                break;
+            case "delete":
+                handleDeleteDocument(docId);
+                break;
+            default:
+                console.log("Unhandled document action:", action);
+        }
+    }
 
-  function handleDelete(event: CustomEvent) {
-    const { docId, documentType } = event.detail;
-    console.log('Delete document:', docId, 'Type:', documentType);
-  }
+    async function handleDeleteDocument(docId: string) {
+        try {
+            // Here you would call your API to delete the document
+            // const result = await documentsApi.deleteDocument(docId);
+            toast.success(`Document ${docId} deleted successfully`);
+            refreshKey++; // Refresh the document list
+        } catch (error) {
+            console.error("Error deleting document:", error);
+            toast.error("Failed to delete document");
+        }
+    }
 
-  function handleDataLoaded(event:CustomEvent) {
-    const { documents, documentType } = event.detail;
-    console.log('Data loaded for:', documentType, 'Count:', documents?.data?.length || 0);
-    // Optional: Handle data loaded event
-  }
+    async function handleVerifyAction(event: CustomEvent) {
+        const { action, docId, documentType } = event.detail;
+        console.log(
+            "Verify action:",
+            action,
+            "Document:",
+            docId,
+            "Type:",
+            documentType,
+        );
 
-  function handleError(event:CustomEvent) {
-    const { error, documentType } = event.detail;
-    console.error('Error loading documents for:', documentType, error);
-    // Handle error (show toast, etc.)
-  }
+        try {
+            let result;
+            switch (action) {
+                case "approve":
+                    // Call API to approve certificate
+                    // result = await documentsApi.approveCertificate(docId);
+                    toast.success(`Certificate ${docId} approved successfully`);
+                    refreshKey++; // Refresh the data
+                    break;
+                case "reject":
+                    // Call API to reject certificate
+                    // result = await documentsApi.rejectCertificate(docId);
+                    toast.error(`Certificate ${docId} rejected`);
+                    refreshKey++; // Refresh the data
+                    break;
+                default:
+                    console.log("Unhandled verify action:", action);
+            }
+        } catch (error) {
+            console.error("Error processing verify action:", error);
+            toast.error(`Failed to ${action} certificate`);
+        }
+    }
 </script>
 
-<IndexPageTemplate title="Document Hub" subtitle='Access your payslips, timesheets, Form 16, and certificates in one place' hasContainerShadow={false}>
-  <DocumentViewer
-  employeeId={null}
-    accessType={access}
-    enabledTabs={config.enabledTabs}
-    showAddSkill={config.showAddSkill}
-    rowActions={config.rowActions}
-    {refreshKey}
-    on:addSkill={handleAddSkill}
-    on:preview={handlePreview}
-    on:customAction={handleCustomAction}
-    on:dataLoaded={handleDataLoaded}
-    on:error={handleError}
-    on:view={handleView}
-    on:edit={handleEdit}
-    on:delete={handleDelete}
-  />
+<IndexPageTemplate
+    title="Document Hub"
+    subtitle="Access your payslips, timesheets, Form 16, and certificates in one place"
+    hasContainerShadow={false}
+>
+    <DocumentViewer
+        employeeId={null}
+        accessType={access}
+        enabledTabs={config.enabledTabs}
+        showAddSkill={config.showAddSkill}
+        rowActions={config.rowActions}
+        {refreshKey}
+        on:addSkill={handleAddSkill}
+        on:preview={handlePreview}
+        on:customAction={handleCustomAction}
+        on:dataLoaded={handleDataLoaded}
+        on:error={handleError}
+        on:documentAction={handleDocumentAction}
+        on:verifyAction={handleVerifyAction}
+    />
 
-  {#if showAddSkillModal}
-    <Modal show={showAddSkillModal} title="Add Skill Certificate" onClose={() => showAddSkillModal = false}>
-      <SkillCertificateForm
-        loading={isSubmittingSkill}
-        on:submit={handleSkillSubmit}
-        on:cancel={() => showAddSkillModal = false}
-      />
-    </Modal>
-  {/if}
-
+    {#if showAddSkillModal}
+        <Modal
+            show={showAddSkillModal}
+            title="Add Skill Certificate"
+            onClose={() => (showAddSkillModal = false)}
+        >
+            <SkillCertificateForm
+                loading={isSubmittingSkill}
+                on:submit={handleSkillSubmit}
+                on:cancel={() => (showAddSkillModal = false)}
+            />
+        </Modal>
+    {/if}
 </IndexPageTemplate>
-
 
 <!-- <script lang="ts">
   import Filter from '$lib/components/common/Filter.svelte';
@@ -285,10 +363,10 @@
   // Handle filter reset
   function handleFilterReset() {
     const resetValues: Record<string, any> = {};
-    
+
     // Preserve the current document type
     resetValues.type = filterValues.type;
-    
+
     for (const filter of filtersSchema) {
       if (filter.disabled && filter.type === 'select' && filter.options?.length) {
         // Keep disabled fields with their default values
@@ -298,7 +376,7 @@
         resetValues[filter.key] = '';
       }
     }
-    
+
     filterValues = resetValues;
 
     filtersOpen = false;
@@ -306,7 +384,7 @@
       filtersOpen = true;
     }, 10);
   }
-  
+
   // Handle filter change
   function handleFilterChange(event: CustomEvent) {
     const { values } = event.detail;
@@ -319,8 +397,8 @@
     loading = true;
     try {
       // Build query based on selected document type and current filters
-      const query: Record<string, any> = { 
-        ...filterValues, 
+      const query: Record<string, any> = {
+        ...filterValues,
         access,
         page,
         limit
@@ -451,7 +529,7 @@
 // Common Toggle Component for Document Types
   <Toggle items={toggleItems} bind:value={selectedItemKey} on:change={e => handleToggleChange(e.detail)} />
 
-  // Filters Panel 
+  // Filters Panel
   <Filter
     filters={filtersSchema}
     values={filterValues}
@@ -478,7 +556,7 @@
         serverSide={true}
         on:page={handlePage}
         searchable={false}
-       
+
       />
     {:else}
       <div class="flex items-center justify-center h-32 text-gray-400">
