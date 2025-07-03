@@ -10,13 +10,13 @@
 
     const user = $auth?.user;
     export let access: "own" | "team" | "global" = "global";
-    export let employeeId;
+    export let employeeId: string;
     let isShowModal = false;
     let actionType: string;
     console.log(access, "Access employeeDoc");
     // Configuration based on access type
     $: config = getAccessConfig(access);
-
+    console.log(employeeId, "employeeId employeeDoc");
     let refreshKey = 0;
     let showAddCertificateModal = false;
     let isLoading = false;
@@ -227,7 +227,8 @@
 
             console.log(event.detail, "handleAdminCertSubmit");
             const formData = new FormData();
-            if (!user?._id) {
+            console.log(employeeId, "employeeId handleAdminCertSubmit");
+            if (!employeeId) {
                 toast.error("User ID is required to add certificate.");
                 return;
             }
@@ -243,7 +244,7 @@
             console.log(documentData, "documentData");
             formData.append("file", file);
             formData.append("documentData", JSON.stringify(documentData));
-            formData.append("employeeId", user._id);
+            formData.append("employeeId", employeeId);
 
             console.log(formData, "appendFormData");
             const result = await documentsApi.addCertificate(formData);

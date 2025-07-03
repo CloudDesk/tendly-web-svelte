@@ -26,7 +26,7 @@
   let loading = false;
   let errorMessage: string | null = null;
   let employeeBankdetailsData;
-
+console.log(employee,"employee form page [id]")
   const tabs = [
     { id: "overview", label: "Overview" },
     { id: "shifts", label: "Shifts" },

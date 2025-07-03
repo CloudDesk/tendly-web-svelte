@@ -171,8 +171,8 @@
           href: "/admin/setup?tab=holiday",
         },
         {
-          label: "Document Center",
-          href: "/admin/setup?tab=documents",
+          label: "Form16",
+          href: "/admin/setup?tab=form16",
         },
         {
           label: "Org Chart",

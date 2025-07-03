@@ -12,7 +12,8 @@
   }>();
 
   // Tab management
-  const tabs = ["Basic Info", "Bank Information", "Document Details"];
+  const tabs = ["Basic Info", "Bank Information"];
+  //  const tabs = ["Basic Info", "Bank Information", "Document Details"];
   let activeTab = tabs[0];
 
   // Format date utility
@@ -111,9 +112,9 @@
   {/if}
 
   <!-- Document Details Section -->
-  {#if activeTab === "Document Details"}
+  <!-- {#if activeTab === "Document Details"}
     <DocumentDetails {employeeId} {employee} />
-  {/if}
+  {/if} -->
 </div>
 
 <style>
