@@ -11,7 +11,7 @@ import type { UserRole } from "$lib/types";
 export const ssr = false;
 export const prerender = false;
 
-export const load = async ({ fetch, url }) => {
+export const load = async ({ fetch, url }:any) => {
   if (!browser) {
     // Set the custom fetch function
     setCustomFetch(fetch);
@@ -33,7 +33,7 @@ export const load = async ({ fetch, url }) => {
       console.log(1.1);
       try {
         console.log(1.2);
-        const userInfo = await employeesApi.me();
+        const userInfo:any = await employeesApi.me();
         console.log(1.3);
         auth.setAuth(userInfo.data);
         console.log(1.4);

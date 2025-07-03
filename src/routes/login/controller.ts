@@ -25,7 +25,7 @@ export const loginController = {
       // }
 
       // // Update store
-      const { token, user } = response.data
+      const { token, user }:any = response.data
       auth.setAuth(user);
 
 

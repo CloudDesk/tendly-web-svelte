@@ -13,8 +13,8 @@ function createLOVStore() {
         subscribe,
         loadType: async (type: string) => {
             try {
-                const response = await lovsApi.getByType(type);
-                const values = response.data.values.filter(v => v.isActive);
+                const response:any = await lovsApi.getByType(type);
+                const values = response.data.values.filter((v:any) => v.isActive);
                 update(store => ({
                     ...store,
                     [type]: values

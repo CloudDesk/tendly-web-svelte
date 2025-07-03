@@ -17,7 +17,7 @@ export const load: PageLoad = async ({ url, params }) => {
     const sortBy = url.searchParams.get('sortBy');
     const sortOrder = url.searchParams.get('sortOrder') as 'asc' | 'desc' | undefined;
 
-    const [summaryResponse, leavesResponse, leaveTypeIdResponse] = await Promise.all([
+    const [summaryResponse, leavesResponse, leaveTypeIdResponse]:any = await Promise.all([
       leavesApi.getSummary(user._id || ''),
       leavesApi.list({
         ...filters,
