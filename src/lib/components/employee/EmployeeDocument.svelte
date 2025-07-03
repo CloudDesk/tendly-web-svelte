@@ -174,6 +174,31 @@
         }
     }
 
+    // Unified verify function to call the API
+    async function handleVerifyFunction(
+        id: string,
+        status: "approve" | "reject",
+    ) {
+        const payload = {
+            status: status === "approve" ? "Verified" : "Rejected",
+            comments:
+                status === "approve"
+                    ? "Document Approved"
+                    : "Document Rejected",
+        };
+
+        try {
+            const result = await documentsApi.verifyCertificate(id, payload);
+            console.log(result, "result");
+            toast.success(`Certificate ${id} ${status}d successfully`);
+            refreshKey++; // Trigger refresh
+        } catch (error) {
+            console.error(`Error while trying to ${status} certificate`, error);
+            toast.error(`Failed to ${status} certificate`);
+        }
+    }
+
+    // Event handler for UI interaction (e.g., dropdown click)
     async function handleVerifyAction(event: CustomEvent) {
         const { action, docId, documentType } = event.detail;
         console.log(
@@ -185,27 +210,10 @@
             documentType,
         );
 
-        try {
-            let result;
-            switch (action) {
-                case "approve":
-                    // Call API to approve certificate
-                    // result = await documentsApi.approveCertificate(docId);
-                    toast.success(`Certificate ${docId} approved successfully`);
-                    refreshKey++; // Refresh the data
-                    break;
-                case "reject":
-                    // Call API to reject certificate
-                    // result = await documentsApi.rejectCertificate(docId);
-                    toast.error(`Certificate ${docId} rejected`);
-                    refreshKey++; // Refresh the data
-                    break;
-                default:
-                    console.log("Unhandled verify action:", action);
-            }
-        } catch (error) {
-            console.error("Error processing verify action:", error);
-            toast.error(`Failed to ${action} certificate`);
+        if (action === "approve" || action === "reject") {
+            await handleVerifyFunction(docId, action);
+        } else {
+            console.warn("Unhandled verify action:", action);
         }
     }
 
@@ -341,7 +349,7 @@
                 editingDocument._id,
                 formData,
             );
-            console.log(result, "result");
+            console.log(result, "result updateCertificate");
             if (result.success) {
                 toast.success("Certificate added successfully!");
                 isLoading = false;
@@ -353,6 +361,8 @@
             toast.error(error.message || "Failed to update certificate.");
         } finally {
             isSubmittingEdit = false;
+            showEditModal = false;
+            editingDocument = null;
         }
     }
 </script>

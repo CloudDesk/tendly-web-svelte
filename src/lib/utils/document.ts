@@ -255,6 +255,7 @@ function getActionColumns(
         const certificateType = doc.metadata?.certificate?.certificateType;
         const verificationStatus =
           doc.metadata?.certificate?.verificationStatus;
+        // console.log(verificationStatus, "verificationStatus");
         const actions = getCertificateActions(
           accessType,
           certificateType,

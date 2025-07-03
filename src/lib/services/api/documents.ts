@@ -269,6 +269,16 @@ export const documentsApi = {
   ): Promise<DocumentResponse> => {
     return uploadFiles(`/documents/certifications/${id}`, formData, "PUT");
   },
+  verifyCertificate: async (
+    id: string,
+    data: { status: string; comments: string },
+    // /certifications/:id/verify
+  ): Promise<DocumentResponse> => {
+    return await fetchApi(`/documents/certifications/${id}/verify`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
 
   /*
     type:Payslip
