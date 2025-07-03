@@ -279,6 +279,11 @@ export const documentsApi = {
       body: JSON.stringify(data),
     });
   },
+  deleteCertificate: async (id: string): Promise<DocumentResponse> => {
+    return await fetchApi(`/documents/certifications/${id}`, {
+      method: "DELETE",
+    });
+  },
 
   /*
     type:Payslip

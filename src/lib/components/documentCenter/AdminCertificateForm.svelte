@@ -18,8 +18,36 @@
         initialData.verificationStatus !== "Pending";
     console.log("initialData", initialData);
     console.log("isReadOnly", isReadOnly);
+
+    const statusConfig = {
+        Pending: {
+            class: "status-pending",
+            icon: "⏳",
+            gradient: "from-amber-50 to-orange-50",
+            ring: "ring-amber-200/50",
+            glow: "shadow-amber-100/50",
+        },
+        Verified: {
+            class: "status-verified",
+            icon: "✓",
+            gradient: "from-emerald-50 to-green-50",
+            ring: "ring-emerald-200/50",
+            glow: "shadow-emerald-100/50",
+        },
+        Rejected: {
+            class: "status-rejected",
+            icon: "✕",
+            gradient: "from-red-50 to-rose-50",
+            ring: "ring-red-200/50",
+            glow: "shadow-red-100/50",
+        },
+    };
+
+    $: statusInfo = statusConfig[initialData?.verificationStatus] || "";
+
     let file: File | null = null;
     let fileError = "";
+    let showFileUpload = false;
     let form = {
         // Common
         title: initialData?.title || "",
@@ -272,6 +300,25 @@
 </script>
 
 <div class="admin-cert-form">
+    {#if isEditMode && initialData?.verificationStatus}
+        <div class="flex justify-end p-2">
+            <div
+                class={`
+                inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium
+                transition-all duration-300 hover:scale-105 hover:shadow-lg
+                backdrop-blur-sm bg-gradient-to-r
+                ${statusInfo.gradient} ${statusInfo.ring} ${statusInfo.glow} ${statusInfo.class}
+            `}
+            >
+                <span class="text-xs font-bold opacity-80"
+                    >{statusInfo.icon}</span
+                >
+                <span class="tracking-wide"
+                    >{initialData.verificationStatus}</span
+                >
+            </div>
+        </div>
+    {/if}
     <form on:submit|preventDefault={handleSubmit}>
         <fieldset class="form-section">
             <legend class="section-title">Certificate Info</legend>
@@ -820,26 +867,75 @@
                     </div>
                 {/if}
 
-                <FileUpload
-                    maxFiles={1}
-                    maxSize={10 * 1024 * 1024}
-                    on:upload={handleFileSelect}
-                />
-
-                {#if file}
-                    <p class="file-info" style="color: #059669;">
-                        New file selected: {file.name}
-                    </p>
-                    {#if file.type && file.type.startsWith("image/")}
-                        <img
-                            src={URL.createObjectURL(file)}
-                            alt="Preview"
-                            class="file-preview"
+                {#if !isReadOnly}
+                    {#if !isEditMode}
+                        <!-- Show file upload directly for new documents -->
+                        <FileUpload
+                            maxFiles={1}
+                            maxSize={10 * 1024 * 1024}
+                            on:upload={handleFileSelect}
                         />
+                    {:else}
+                        <!-- Show toggle button for edit mode -->
+                        {#if !showFileUpload}
+                            <button
+                                type="button"
+                                class="upload-toggle-btn"
+                                on:click={() => (showFileUpload = true)}
+                            >
+                                <svg
+                                    class="w-4 h-4 mr-2"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                                    />
+                                </svg>
+                                Upload New File
+                            </button>
+                        {:else}
+                            <!-- Show file upload when toggle is active -->
+                            <div class="file-upload-container">
+                                <FileUpload
+                                    maxFiles={1}
+                                    maxSize={10 * 1024 * 1024}
+                                    on:upload={handleFileSelect}
+                                />
+                                <button
+                                    type="button"
+                                    class="cancel-upload-btn"
+                                    on:click={() => {
+                                        showFileUpload = false;
+                                        file = null;
+                                        fileError = "";
+                                    }}
+                                >
+                                    Cancel Upload
+                                </button>
+                            </div>
+                        {/if}
                     {/if}
-                {/if}
-                {#if fileError}
-                    <p class="error-msg mt-2">{fileError}</p>
+
+                    {#if file}
+                        <p class="file-info" style="color: #059669;">
+                            New file selected: {file.name}
+                        </p>
+                        {#if file.type && file.type.startsWith("image/")}
+                            <img
+                                src={URL.createObjectURL(file)}
+                                alt="Preview"
+                                class="file-preview"
+                            />
+                        {/if}
+                    {/if}
+                    {#if fileError}
+                        <p class="error-msg mt-2">{fileError}</p>
+                    {/if}
                 {/if}
             </div>
         </fieldset>
@@ -1061,6 +1157,61 @@
         color: #6b7280;
         cursor: not-allowed;
     }
+
+    .upload-toggle-btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background-color: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        color: #374151;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .upload-toggle-btn:hover {
+        background-color: #e5e7eb;
+        border-color: #9ca3af;
+    }
+
+    .file-upload-container {
+        background-color: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .cancel-upload-btn {
+        margin-top: 0.5rem;
+        padding: 0.5rem 1rem;
+        background-color: #fff;
+        border: 1px solid #d1d5db;
+        border-radius: 0.25rem;
+        color: #6b7280;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .cancel-upload-btn:hover {
+        background-color: #f9fafb;
+        border-color: #9ca3af;
+    }
+
+    .status-bar {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        z-index: 10;
+    }
+
+    .admin-cert-form {
+        position: relative;
+    }
     @keyframes fadeIn {
         from {
             opacity: 0;
@@ -1069,6 +1220,78 @@
         to {
             opacity: 1;
             transform: none;
+        }
+    }
+
+    .status-pending {
+        border-color: rgba(245, 158, 11, 0.3);
+        color: #b45309;
+        position: relative;
+    }
+
+    .status-pending::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(
+            135deg,
+            rgba(245, 158, 11, 0.1),
+            rgba(217, 119, 6, 0.05)
+        );
+        pointer-events: none;
+    }
+
+    .status-verified {
+        border-color: rgba(16, 185, 129, 0.3);
+        color: #047857;
+        position: relative;
+    }
+
+    .status-verified::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(
+            135deg,
+            rgba(16, 185, 129, 0.1),
+            rgba(5, 150, 105, 0.05)
+        );
+        pointer-events: none;
+    }
+
+    .status-rejected {
+        border-color: rgba(239, 68, 68, 0.3);
+        color: #dc2626;
+        position: relative;
+    }
+
+    .status-rejected::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(
+            135deg,
+            rgba(239, 68, 68, 0.1),
+            rgba(220, 38, 38, 0.05)
+        );
+        pointer-events: none;
+    }
+
+    /* Optional: Add subtle animation for pending status */
+    .status-pending {
+        animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+        0%,
+        100% {
+            box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.3);
+        }
+        50% {
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
         }
     }
 </style>

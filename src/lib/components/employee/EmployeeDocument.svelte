@@ -164,8 +164,7 @@
 
     async function handleDeleteDocument(docId: string) {
         try {
-            // Here you would call your API to delete the document
-            // const result = await documentsApi.deleteDocument(docId);
+            await documentsApi.deleteCertificate(docId);
             toast.success(`Document ${docId} deleted successfully`);
             refreshKey++; // Refresh the document list
         } catch (error) {

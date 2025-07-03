@@ -19,12 +19,20 @@ export async function fetchApi<T>(
   // Determine if we're sending FormData
   const isFormData = options.body instanceof FormData;
 
-  const headers = {
-    ...(!isFormData ? { "Content-Type": "application/json" } : {}),
-    reqRole: reqRole,
-    ...(options.headers || {}),
-  };
+  // Build headers properly - create object with only defined values
+  const headers: Record<string, string> = {};
 
+  // const headers = {
+  //   ...(!isFormData ? { "Content-Type": "application/json" } : {}),
+  //   reqRole: reqRole,
+  //   ...(options.headers || {}),
+  // };
+  if (!isFormData) {
+    // Don't set Content-Type for DELETE requests
+    if (!options.method || options.method.toLowerCase() !== "delete") {
+      headers["Content-Type"] = "application/json";
+    }
+  }
   // Include credentials to send cookies
   const fetchOptions: RequestInit = {
     ...options,
