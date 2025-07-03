@@ -24,6 +24,11 @@
     // Check if we're in edit mode
     $: isEditMode = !!initialData;
 
+    // Check if form should be read-only based on verification status
+    $: isReadOnly =
+        initialData?.verificationStatus &&
+        initialData.verificationStatus !== "Pending";
+
     function handleSubmit() {
         fileError = "";
         if (!file && !isEditMode) {
@@ -89,6 +94,7 @@
                 id="title"
                 bind:value={title}
                 required
+                disabled={isReadOnly}
                 class="input"
             />
         </div>
@@ -103,6 +109,7 @@
                 id="issuingAuthority"
                 bind:value={issuingAuthority}
                 required
+                disabled={isReadOnly}
                 class="input"
             />
         </div>
@@ -118,6 +125,7 @@
                     id="issueDate"
                     bind:value={issueDate}
                     required
+                    disabled={isReadOnly}
                     class="input"
                 />
             </div>
@@ -131,6 +139,7 @@
                     type="date"
                     id="expiryDate"
                     bind:value={expiryDate}
+                    disabled={isReadOnly}
                     class="input"
                 />
             </div>
@@ -148,6 +157,7 @@
                 id="skillName"
                 bind:value={skillName}
                 required
+                disabled={isReadOnly}
                 class="input"
             />
         </div>
@@ -161,6 +171,7 @@
                 <select
                     id="proficiencyLevel"
                     bind:value={proficiencyLevel}
+                    disabled={isReadOnly}
                     class="select"
                 >
                     <option value="Beginner">Beginner</option>
@@ -175,7 +186,12 @@
                     class="block text-sm font-medium text-gray-700"
                     >Category</label
                 >
-                <select id="category" bind:value={category} class="select">
+                <select
+                    id="category"
+                    bind:value={category}
+                    disabled={isReadOnly}
+                    class="select"
+                >
                     <option value="Technical">Technical</option>
                     <option value="Soft">Soft</option>
                 </select>
@@ -310,21 +326,30 @@
                 </div>
             {/if}
 
-            <FileUpload
-                maxFiles={1}
-                maxSize={2 * 1024 * 1024}
-                multiple={false}
-                confirmBeforeUpload={false}
-                on:upload={handleFileSelect}
-                accept="application/pdf,image/*"
-            />
-            {#if file}
-                <p class="text-sm text-green-600 mt-2">
-                    New file selected: {file.name}
-                </p>
-            {/if}
-            {#if fileError}
-                <p class="text-sm text-red-600 mt-2">{fileError}</p>
+            {#if !isReadOnly}
+                <FileUpload
+                    maxFiles={1}
+                    maxSize={2 * 1024 * 1024}
+                    multiple={false}
+                    confirmBeforeUpload={false}
+                    on:upload={handleFileSelect}
+                    accept="application/pdf,image/*"
+                />
+                {#if file}
+                    <p class="text-sm text-green-600 mt-2">
+                        New file selected: {file.name}
+                    </p>
+                {/if}
+                {#if fileError}
+                    <p class="text-sm text-red-600 mt-2">{fileError}</p>
+                {/if}
+            {:else}
+                <div class="read-only-message">
+                    <p class="text-sm text-gray-600">
+                        This document has been {initialData?.verificationStatus?.toLowerCase()}
+                        and cannot be modified.
+                    </p>
+                </div>
             {/if}
         </div>
     </div>
@@ -334,13 +359,15 @@
             variant="outline"
             on:click={() => dispatch("cancel")}>Cancel</Button
         >
-        <Button type="submit" variant="primary" {loading}>
-            {#if loading}{isEditMode
-                    ? "Updating..."
-                    : "Submitting..."}{:else}{isEditMode
-                    ? "Update"
-                    : "Submit"}{/if}
-        </Button>
+        {#if !isReadOnly}
+            <Button type="submit" variant="primary" {loading}>
+                {#if loading}{isEditMode
+                        ? "Updating..."
+                        : "Submitting..."}{:else}{isEditMode
+                        ? "Update"
+                        : "Submit"}{/if}
+            </Button>
+        {/if}
     </div>
 </form>
 
@@ -401,5 +428,20 @@
     .fallback-content {
         text-align: center;
         padding: 2rem;
+    }
+
+    .read-only-message {
+        padding: 1rem;
+        background-color: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        text-align: center;
+    }
+
+    .input:disabled,
+    .select:disabled {
+        background-color: #f9fafb;
+        color: #6b7280;
+        cursor: not-allowed;
     }
 </style>

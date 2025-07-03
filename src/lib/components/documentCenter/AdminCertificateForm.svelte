@@ -11,6 +11,13 @@
 
     let certificateType: "Academic" | "Experience" | "IdentityProof" =
         initialData?.certificateType || "Academic";
+
+    // Check if form should be read-only based on verification status
+    $: isReadOnly =
+        initialData?.verificationStatus &&
+        initialData.verificationStatus !== "Pending";
+    console.log("initialData", initialData);
+    console.log("isReadOnly", isReadOnly);
     let file: File | null = null;
     let fileError = "";
     let form = {
@@ -275,7 +282,11 @@
                                 class="required">*</span
                             >{/if}
                     </label>
-                    <select class="input" bind:value={certificateType}>
+                    <select
+                        class="input"
+                        bind:value={certificateType}
+                        disabled={isReadOnly}
+                    >
                         <option value="Academic">Academic</option>
                         <option value="Experience">Experience</option>
                         <option value="IdentityProof">Identity Proof</option>
@@ -293,6 +304,7 @@
                         bind:value={form.title}
                         placeholder={titleHelpText}
                         required
+                        disabled={isReadOnly}
                         on:input={() => {
                             if (errors.title && form.title) errors.title = "";
                         }}
@@ -312,6 +324,7 @@
                         type="text"
                         bind:value={form.issuingAuthority}
                         required
+                        disabled={isReadOnly}
                         on:input={() => {
                             if (
                                 errors.issuingAuthority &&
@@ -335,6 +348,7 @@
                         type="date"
                         bind:value={form.issueDate}
                         required
+                        disabled={isReadOnly}
                         on:input={() => {
                             if (errors.issueDate && form.issueDate)
                                 errors.issueDate = "";
@@ -347,9 +361,10 @@
                 <div class="form-group">
                     <label class="form-label">Expiry Date (optional)</label>
                     <input
-                        class="input"
                         type="date"
-                        bind:value={form.expiryDate}
+                        class="input"
+                        bind:value={form.endDate}
+                        disabled={isReadOnly}
                     />
                 </div>
                 {#if certificateType === "Academic"}
@@ -364,6 +379,7 @@
                             type="text"
                             bind:value={form.certificateId}
                             required
+                            disabled={isReadOnly}
                             on:input={() => {
                                 if (errors.certificateId && form.certificateId)
                                     errors.certificateId = "";
@@ -391,6 +407,7 @@
                             class="input"
                             bind:value={form.qualificationType}
                             required
+                            disabled={isReadOnly}
                             on:change={() => {
                                 if (
                                     errors.qualificationType &&
@@ -421,6 +438,7 @@
                             type="text"
                             bind:value={form.fieldOfStudy}
                             required
+                            disabled={isReadOnly}
                             on:input={() => {
                                 if (errors.fieldOfStudy && form.fieldOfStudy)
                                     errors.fieldOfStudy = "";
@@ -436,6 +454,7 @@
                             class="input"
                             type="text"
                             bind:value={form.grade}
+                            disabled={isReadOnly}
                         />
                     </div>
                     <div class="form-group">
@@ -449,6 +468,7 @@
                             type="text"
                             bind:value={form.institution}
                             required
+                            disabled={isReadOnly}
                             on:input={() => {
                                 if (errors.institution && form.institution)
                                     errors.institution = "";
@@ -471,6 +491,7 @@
                             max="2100"
                             bind:value={form.yearOfCompletion}
                             required
+                            disabled={isReadOnly}
                             on:input={() => {
                                 if (
                                     errors.yearOfCompletion &&
@@ -502,6 +523,7 @@
                             type="text"
                             bind:value={form.companyName}
                             required
+                            disabled={isReadOnly}
                             on:input={() => {
                                 if (errors.companyName && form.companyName)
                                     errors.companyName = "";
@@ -522,6 +544,7 @@
                             type="text"
                             bind:value={form.role}
                             required
+                            disabled={isReadOnly}
                             on:input={() => {
                                 if (errors.role && form.role) errors.role = "";
                             }}
@@ -541,6 +564,7 @@
                             type="date"
                             bind:value={form.startDate}
                             required
+                            disabled={isReadOnly}
                             on:input={() => {
                                 if (errors.startDate && form.startDate)
                                     errors.startDate = "";
@@ -556,6 +580,7 @@
                             class="input"
                             type="date"
                             bind:value={form.endDate}
+                            disabled={isReadOnly}
                         />
                     </div>
                     <div class="form-group">
@@ -564,6 +589,7 @@
                             class="input"
                             type="text"
                             bind:value={form.duration}
+                            disabled={isReadOnly}
                         />
                     </div>
                 </div>
@@ -584,6 +610,7 @@
                             class="input"
                             bind:value={form.idType}
                             required
+                            disabled={isReadOnly}
                             on:change={() => {
                                 if (errors.idType && form.idType)
                                     errors.idType = "";
@@ -611,6 +638,7 @@
                             type="text"
                             bind:value={form.idNumber}
                             required
+                            disabled={isReadOnly}
                             on:input={() => {
                                 if (errors.idNumber && form.idNumber)
                                     errors.idNumber = "";
@@ -626,6 +654,7 @@
                             class="input"
                             type="text"
                             bind:value={form.country}
+                            disabled={isReadOnly}
                         />
                     </div>
                     {#if form.idType === "PF"}
@@ -640,6 +669,7 @@
                                 type="text"
                                 bind:value={form.uanNumber}
                                 required
+                                disabled={isReadOnly}
                                 on:input={() => {
                                     if (errors.uanNumber && form.uanNumber)
                                         errors.uanNumber = "";
@@ -792,9 +822,10 @@
 
                 <FileUpload
                     maxFiles={1}
+                    maxSize={10 * 1024 * 1024}
                     on:upload={handleFileSelect}
-                    accept="application/pdf,image/*"
                 />
+
                 {#if file}
                     <p class="file-info" style="color: #059669;">
                         New file selected: {file.name}
@@ -819,13 +850,15 @@
                 variant="outline"
                 on:click={() => dispatch("cancel")}>Cancel</Button
             >
-            <Button type="submit" variant="primary" {loading}>
-                {#if loading}{isEditMode
-                        ? "Updating..."
-                        : "Submitting..."}{:else}{isEditMode
-                        ? "Update"
-                        : "Submit"}{/if}
-            </Button>
+            {#if !isReadOnly}
+                <Button type="submit" variant="primary" {loading}>
+                    {#if loading}{isEditMode
+                            ? "Updating..."
+                            : "Submitting..."}{:else}{isEditMode
+                            ? "Update"
+                            : "Submit"}{/if}
+                </Button>
+            {/if}
         </div>
     </form>
 </div>
@@ -1012,6 +1045,21 @@
     .fallback-content {
         text-align: center;
         padding: 2rem;
+    }
+
+    .read-only-message {
+        padding: 1rem;
+        background-color: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        text-align: center;
+    }
+
+    .input:disabled,
+    .input[disabled] {
+        background-color: #f9fafb;
+        color: #6b7280;
+        cursor: not-allowed;
     }
     @keyframes fadeIn {
         from {
