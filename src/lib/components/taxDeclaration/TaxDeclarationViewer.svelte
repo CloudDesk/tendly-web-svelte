@@ -7,12 +7,15 @@
   import ItDeclarationSection from "./ITDeclarationSection.svelte";
   import { createEventDispatcher } from "svelte";
   import ItDeclarationDetails from "../employee/ITDeclarationDetails.svelte";
+  import Form12BSection from "./Form12BSection.svelte";
 
   export let taxDeclaration;
   export let taxSlabs;
 
   const dispatch = createEventDispatcher();
   $: showITDeclaration = taxDeclaration?.regime === "old";
+
+  $: showForm12B = taxDeclaration?.isForm12BApplicable;
 
   console.log(taxSlabs, taxDeclaration, showITDeclaration);
 
@@ -46,13 +49,21 @@
     },
     {
       id: 3,
+      title: "Form 12B",
+      isOpen: false,
+      component: Form12BSection,
+      props: { taxDeclaration },
+      visible: showForm12B,
+    },
+    {
+      id: 4,
       title: "Taxable Income Summary",
       isOpen: false,
       component: TaxableIncomeSummarySection,
       props: { taxDeclaration },
     },
     {
-      id: 4,
+      id: 5,
       title: "IT Declaration",
       isOpen: false,
       subtitle: "Section 80C, 80D, HRA, and other deductions",
@@ -61,7 +72,7 @@
       visible: showITDeclaration,
     },
     {
-      id: 5,
+      id: 6,
       title: "Proof of Investment",
       isOpen: false,
       subtitle: "Upload and track proof documents",
@@ -70,7 +81,7 @@
       visible: showITDeclaration,
     },
     {
-      id: 6,
+      id: 7,
       title: "Tax & Statutory Deductions",
       isOpen: false,
       subtitle: "Monthly projection and payment schedule",

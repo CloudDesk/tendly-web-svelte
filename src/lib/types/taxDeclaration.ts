@@ -77,6 +77,17 @@ export type TaxDeclaration = {
     isDeclared?: boolean;
     isPOISubmitted?: boolean,
     isResubmitted?: boolean,
+
+    form12B: string, //{ type: Schema.Types.ObjectId, ref: 'Form12B' }
+    salaryAssignments: {
+        assignmentId:string, //{ type: Schema.Types.ObjectId, ref: 'SalaryAssignment' },
+        validFrom: string, //{ type: Date, required: true },
+        validTill: string, //{ type: Date, required: true },
+        monthlyGross: number, //{ type: Number, required: true },
+        isActive: boolean, //{ type: Boolean, default: false }
+    }[],
+    isForm12BApplicable: boolean, //{ type: Boolean, default: false }
+
     _id?: string;
     createdAt?: string;
     updatedAt?: string;
