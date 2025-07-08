@@ -297,8 +297,8 @@ export const documentsApi = {
       body: JSON.stringify(data),
     });
   },
-  deleteCertificate: async (id: string): Promise<DocumentResponse> => {
-    return await fetchApi(`/documents/certifications/${id}`, {
+  delete: async (id: string): Promise<DocumentResponse> => {
+    return await fetchApi(`/documents/${id}`, {
       method: "DELETE",
     });
   },
@@ -306,6 +306,14 @@ export const documentsApi = {
   uploadForm12B: async (formData: FormData): Promise<DocumentResponse> => {
     return uploadFiles(`/documents/form12b`, formData);
   },
+
+  statusUpdateForm12B:async(id:string,status:string):Promise<DocumentResponse>=>{
+    return await fetchApi (`/documents/form12b/${id}/status`,{
+      method:'PUT',
+      body:JSON.stringify(status)
+    })
+  }
+
 
 
   /*
