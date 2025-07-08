@@ -31,3 +31,27 @@ export function getFinancialYears(count = 5): string[] {
   
     return true;
   }
+
+  export function isJoiningDateInCurrentFY(joiningDate: Date | string): {
+    isValid: boolean;
+    financialYear: string | null;
+  } {
+    console.log(joiningDate,"isJoiningDateInCurrentFY")
+    const date = new Date(joiningDate);
+    if (isNaN(date.getTime())) {
+      return { isValid: false, financialYear: null };
+    }
+  
+    const fy = getCurrentFinancialYear(); // e.g., "2025-2026"
+    const [startYear, endYear] = fy.split('-').map(Number);
+  
+    const fyStart = new Date(`${startYear}-04-01T00:00:00.000Z`);
+    const fyEnd = new Date(`${endYear}-03-31T23:59:59.999Z`);
+  
+    if (date >= fyStart && date <= fyEnd) {
+      return { isValid: true, financialYear: fy };
+    }
+  
+    return { isValid: false, financialYear: null };
+  }
+  

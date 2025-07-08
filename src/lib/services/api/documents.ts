@@ -20,6 +20,7 @@ export interface IDocumentQuery {
     | "Payslip"
     | "TimesheetFile"
     | "Form16"
+    | "Form12B"
     | "OfferLetter"
     | "HikeLetter"
     | "Certificate";
@@ -50,6 +51,7 @@ export interface IDocument {
     | "Payslip"
     | "TimesheetFile"
     | "Form16"
+    | "Form12B"
     | "OfferLetter"
     | "HikeLetter"
     | "Certificate";
@@ -106,6 +108,22 @@ export interface IDocument {
       financialYear: string;
       pan: string;
       tdsAmount: number;
+    };
+    form12b?: {
+        previousEmployer: {
+            name: string;
+            pan: string;
+            tan: string;
+        };
+        employmentPeriod: {
+            startDate: Date;
+            endDate: Date;
+        };
+        salaryEarned: number;
+        tdsDeducted: number;
+        financialYear: string;
+        status: 'Pending' | 'Verified' | 'Rejected' | 'ResubmissionRequested';
+        isLocked: boolean;
     };
     offerLetter?: {
       offerDate: string; // Date as ISO string
@@ -284,6 +302,11 @@ export const documentsApi = {
       method: "DELETE",
     });
   },
+
+  uploadForm12B: async (formData: FormData): Promise<DocumentResponse> => {
+    return uploadFiles(`/documents/form12b`, formData);
+  },
+
 
   /*
     type:Payslip
