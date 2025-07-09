@@ -16,7 +16,9 @@ export interface ITaxBreakdown {
     isRebateApplicable: boolean; // Flag for rebate eligibility
     marginalReliefAmount: number; // Added for Marginal Relief 87A(b)
     isMarginalReliefApplicable: boolean; // Flag for marginal relief eligibility
-    finalTaxWithCess: number; // Final tax after rebate/relief and cess
+    taxWithCess: number; // Tax before Form12B TDS deduction
+    form12bTDSAmount?: number; // TDS from Form12B
+    finalTaxWithCess: number;
 }
 export interface IDocument {
     documentName: string;

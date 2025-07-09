@@ -16,7 +16,7 @@
   $: showITDeclaration = taxDeclaration?.regime === "old";
 
   $: showForm12B = taxDeclaration?.isForm12BApplicable;
-
+console.log(showForm12B,"showForm12B")
   console.log(taxSlabs, taxDeclaration, showITDeclaration);
 
   let openAccordion = 1;

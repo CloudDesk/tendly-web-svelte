@@ -443,6 +443,12 @@ console.log(filePath,"filePath",fileName)
           </a>
         </div>
       {/if}
+      {#if !readonly}
+      <div class="flex justify-end gap-3 mt-8">
+        <Button type="secondary" on:click={handleCancel}>Cancel</Button>
+        <Button type="primary" as="submit">Submit</Button>
+        </div>
+{/if}
     </form>
   </div>
 </Modal>

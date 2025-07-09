@@ -202,16 +202,42 @@
               {formatCurrency(taxDeclaration.initialTaxBreakdown.cessAmount)}
             </span>
           </div>
-          <div
-            class="pt-4 mt-4 border-t border-gray-100 flex justify-between items-center"
-          >
-            <span class="text-sm font-semibold text-gray-700">Total Tax</span>
-            <span class="text-base font-bold text-gray-900">
-              {formatCurrency(
-                taxDeclaration.initialTaxBreakdown.finalTaxWithCess
-              )}
-            </span>
+          <div class="pt-4 mt-4 border-t border-gray-100">
+            {#if taxDeclaration.isForm12BApplicable}
+              <div class="flex justify-between items-center py-1">
+                <span class="text-sm font-semibold text-gray-700">Total Tax before Form12B TDS</span>
+                <span class="text-base font-bold text-gray-900">
+                  {formatCurrency(taxDeclaration.initialTaxBreakdown.taxWithCess)}
+                </span>
+              </div>
+              <div class="flex justify-between items-center py-1">
+                <span class="text-sm font-semibold text-gray-700">Verified Form12B TDS</span>
+                <span class="text-base font-bold text-red-600">
+               -   {formatCurrency(
+                    taxDeclaration.initialTaxBreakdown.form12bTDSAmount
+                  )}
+                </span>
+              </div>
+              <div class="flex justify-between items-center py-1">
+                <span class="text-sm font-semibold text-gray-700">Final Tax</span>
+                <span class="text-base font-bold text-gray-900">
+                  {formatCurrency(
+                    taxDeclaration.initialTaxBreakdown.finalTaxWithCess
+                  )}
+                </span>
+              </div>
+            {:else}
+              <div class="flex justify-between items-center py-1">
+                <span class="text-sm font-semibold text-gray-700">Total Tax</span>
+                <span class="text-base font-bold text-gray-900">
+                  {formatCurrency(
+                    taxDeclaration.initialTaxBreakdown.finalTaxWithCess
+                  )}
+                </span>
+              </div>
+            {/if}
           </div>
+          
         </div>
       </div>
     </div>

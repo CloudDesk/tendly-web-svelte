@@ -165,7 +165,7 @@
     form12BRecord={modalMode === 'add' ? null : form12BRecord}
     readonly={modalMode === 'view'}
     isAdmin={isAdmin}
-    approvalMode={true}
+    approvalMode={false}
     approvalStatus={approvalStatus}
     approvalComments={approvalComments}
     filePath={form12BRecord?.filePath}
