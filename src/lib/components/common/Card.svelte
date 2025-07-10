@@ -48,7 +48,7 @@
     .join(" ");
 
   $: headerClasses = ["mb-3", headerBgColor].filter(Boolean).join(" ");
-
+console.log(headerClasses,"headerClasses")
   $: footerClasses = [
     "mt-3 pt-3",
     divider ? "border-t border-gray-200" : "",

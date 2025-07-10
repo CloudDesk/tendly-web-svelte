@@ -6,6 +6,7 @@
   import TaxableIncomeSummarySection from "../taxDeclaration/TaxableIncomeSummarySection.svelte";
   import Card from "../common/Card.svelte";
   import ItDeclarationDetails from "./ITDeclarationDetails.svelte";
+  import TaxComputationSection from "../taxDeclaration/TaxComputationSection.svelte";
 
   export let employeeId;
   let taxDeclaration: TaxDeclaration | null;
@@ -33,7 +34,7 @@
   });
 </script>
 
-<div class="">
+<div >
   {#if isLoading === true}
     <Loader />
   {:else if taxDeclaration}
@@ -51,24 +52,31 @@
           class:active={activeTab === "declaration"}
           on:click={() => setActiveTab("declaration")}
         >
-          View Declaration
+           Declaration
         </button>
+        <button
+        class="tab-item"
+        class:active={activeTab === "deduction"}
+        on:click={() => setActiveTab("deduction")}
+      >
+        Monthly Deduction Plan
+      </button>
       </nav>
     </div>
 
-    <div class="tab-content">
+    <div class="tab-">
       {#if activeTab === "tax"}
-        <div class="card">
           <TaxableIncomeSummarySection {taxDeclaration} />
-        </div>
       {:else if activeTab === "declaration"}
-        <div class="card">
           <ItDeclarationDetails
             {taxDeclaration}
             adminOnly={true}
             on:approvals={getTaxDeclarationCurrentFY}
           />
-        </div>
+      {:else if activeTab === "deduction"}
+      <TaxComputationSection
+      {taxDeclaration}
+      />
       {/if}
     </div>
   {:else}
@@ -93,6 +101,6 @@
     font-weight: bold;
   }
   .tab-content {
-    margin-top: 10px;
+    /* margin-top: 10px; */
   }
 </style>
