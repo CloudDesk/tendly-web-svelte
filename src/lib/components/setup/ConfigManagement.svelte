@@ -84,6 +84,7 @@
   }
 
   function handleTableAction(e: CustomEvent) {
+    console.log("handleTableAction",e)
     const { action, id } = e.detail;
     const lov = lovs.find((l) => l._id === id);
     if (!lov) return;

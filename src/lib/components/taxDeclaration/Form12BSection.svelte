@@ -6,7 +6,7 @@
   import { isJoiningDateInCurrentFY } from '$lib/utils/financialYear';
   import Form12BCreate from './Form12BCreate.svelte';
   import InfoBanner from '../common/InfoBanner.svelte';
-  import Form12BTable from './Form12BTable.svelte';
+  import Table from '../common/Table.svelte';
   import type { IDocument } from '$lib/services/api';
   import { format } from 'date-fns';
 
@@ -15,7 +15,6 @@
   export let employeeId: string | null = null;
 
   let currentEmployee: any = null;
-
   const user = $auth.user;
   let showFormModal = false;
   let isLoading = false;
@@ -25,70 +24,79 @@
   let modalMode: 'add' | 'view'  = 'add';
   let approvalStatus: 'Verified' | 'Rejected' | 'ResubmissionRequested' | '' = '';
   let approvalComments: string = '';
-  function formatDate(dateStr: string) {
-      return format(new Date(dateStr), 'dd MMM yyyy');
-    }
 
-  const columns =[
-    {key:"name",
-      label:"Previous Employer",
-      render:(doc:IDocument)=>`
-      <div class="full-name">${doc.metadata?.form12B?.previousEmployer.name}</div>
-      `
-    },
-    {key:"pan",
-      label:"PAN",
-      render:(doc:IDocument)=>`
-      <div class="full-name">${doc.metadata?.form12B?.previousEmployer.pan}</div>
-      `
-    },
-    {key:"tan",
-      label:"TAN",
-      render:(doc:IDocument)=>`
-      <div class="full-name">${doc.metadata?.form12B?.previousEmployer.tan ?? '-'}</div>
-      `
-    },
-    {key:"tdsDeducted",
-      label:"TDS Deducted",
-      render:(doc:IDocument)=>`
-      <div class="full-name">${doc.metadata?.form12B?.tdsDeducted}</div>
-      `
-    },
-    {key:"employermentPeriod",
-      label:"Employment Period",
-      render:(doc:IDocument)=>`
-      <div class="full-name">
-       ${formatDate(form12BRecord.metadata.form12B.employmentPeriod.startDate)} -<br />
-            ${formatDate(form12BRecord.metadata.form12B.employmentPeriod.endDate)}
-            </div>
-      `
+  function formatDate(dateStr: string | Date | undefined): string {
+    if (!dateStr) return '-';
+    try {
+      const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+      return format(date, 'dd MMM yyyy');
+    } catch {
+      return '-';
     }
-    ,{key:"status",
-      label:"Status",
-      render:(doc:IDocument)=>`
-      <div class="full-name">${doc.metadata?.form12B?.status}</div>
-      `
+  }
+
+  const columns = [
+    {
+      key: "previousEmployer",
+      label: "Previous Employer",
+      render: (doc: IDocument) => doc.metadata?.form12B?.previousEmployer.name || '-'
     },
     {
-      key: "_id",
-      label: "Actions",
-      render: (doc: IDocument) => `
-        <div class="actions">
-          <button class="btn-action view" title="View Details">
-            <i class="fas fa-eye"></i>
-          </button>
-          <button class="btn-action edit" title="Edit">
-            <i class="fas fa-pencil"></i>
-          </button>
-        </div>
-      `,
+      key: "pan",
+      label: "PAN",
+      render: (doc: IDocument) => doc.metadata?.form12B?.previousEmployer.pan || '-'
     },
-  ]
-
+    {
+      key: "tan",
+      label: "TAN",
+      render: (doc: IDocument) => doc.metadata?.form12B?.previousEmployer.tan || '-'
+    },
+    {
+      key: "tdsDeducted",
+      label: "TDS Deducted",
+      render: (doc: IDocument) => `₹${doc.metadata?.form12B?.tdsDeducted?.toLocaleString() || '0'}`
+    },
+    {
+      key: "employmentPeriod",
+      label: "Employment Period",
+      render: (doc: IDocument) => {
+        const startDate = doc.metadata?.form12B?.employmentPeriod?.startDate;
+        const endDate = doc.metadata?.form12B?.employmentPeriod?.endDate;
+        return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+      }
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (doc: IDocument) => doc.metadata?.form12B?.status || '-'
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      render: (doc: IDocument) => {
+        const isVerified = doc.metadata?.form12B?.status === 'Verified';
+        const isLocked = doc.metadata?.form12B?.isLocked;
+        const showDelete = mode === 'admin' && !isVerified && !isLocked;
+        
+        return `
+          <div class="flex items-center justify-center gap-4">
+            <button class="text-blue-600 hover:text-blue-800t" data-action="view" data-id="${doc._id}">
+              <i class="fas fa-eye"></i>
+            </button>
+            ${showDelete ? `
+              <button class="text-red-600 hover:text-red-800" data-action="delete" data-id="${doc._id}">
+                <i class="fas fa-trash"></i>
+              </button>
+            ` : ''}
+          </div>
+        `;
+      }
+    }
+  ];
 
   // Replaces internal role check
   const isAdminMode = mode === 'admin';
-
+  console.log("isAdminMode", isAdminMode);
   let currentFYStatus = user?.joiningDate
     ? isJoiningDateInCurrentFY(user.joiningDate)
     : { isValid: false, financialYear: null };
@@ -143,12 +151,14 @@
     }
   }
 
-  function handleTableAction(event: CustomEvent<{ action: string }>) {
-    const { action } = event.detail;
-    if (action === 'edit' || action === 'view') {
+  function handleTableAction(event: CustomEvent) {
+    const { action, id } = event.detail;
+    console.log("handleTableAction", action, id);
+    if (action === 'view') {
       modalMode = 'view';
       showFormModal = true;
-    }  else if (action === 'delete' && !isAdminMode) {
+    } else if (action === 'delete' && isAdminMode) {
+      console.log("delete", id);
       handleDelete();
     }
   }
@@ -220,6 +230,14 @@
   });
 </script>
 
+<svelte:head>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+  />
+</svelte:head>
+
+
 <div class="bg-white rounded-lg shadow-sm max-w-5xl mx-auto">
   {#if isLoading}
     <div class="text-center py-4">Loading...</div>
@@ -232,10 +250,12 @@
           </button>
         {/if}
       {:else}
-        <Form12BTable
-          form12BRecord={form12BRecord}
-          isAdmin={isAdminMode}
+        <Table
+          columns={columns}
+          data={[form12BRecord]}
           on:action={handleTableAction}
+          searchable={false}
+          meta={null}
         />
         {#if form12BRecord.metadata.form12B.status === 'ResubmissionRequested' && mode === 'own'}
           <button class="btn btn-primary mt-4" on:click={() => { showFormModal = true; modalMode = 'add'; }}>
@@ -245,13 +265,14 @@
       {/if}
     </div>
   {:else}
-  <InfoBanner
-  type="warning"
-  message={
-    mode === 'admin'
-      ? 'This employee is not eligible for Form 12B. Their joining date is outside the current financial year.'
-      : 'You cannot upload Form 12B. Your joining date is not within the current financial year.'
-  }/>
+    <InfoBanner
+      type="warning"
+      message={
+        mode === 'admin'
+          ? 'This employee is not eligible for Form 12B. Their joining date is outside the current financial year.'
+          : 'You cannot upload Form 12B. Your joining date is not within the current financial year.'
+      }
+    />
   {/if}
 
   <Form12BCreate
@@ -278,5 +299,13 @@
 
   .btn-primary {
     @apply bg-blue-600 text-white hover:bg-blue-700;
+  }
+
+  :global(.fas.fa-eye) {
+    @apply w-4 h-4;
+  }
+
+  :global(.fas.fa-trash) {
+    @apply w-4 h-4;
   }
 </style>
