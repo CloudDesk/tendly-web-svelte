@@ -7,6 +7,8 @@
   import Card from "../common/Card.svelte";
   import ItDeclarationDetails from "./ITDeclarationDetails.svelte";
   import TaxComputationSection from "../taxDeclaration/TaxComputationSection.svelte";
+  import Form12BSection from "../taxDeclaration/Form12BSection.svelte";
+  import Form12BbGenerate from "../taxDeclaration/Form12BBGenerate.svelte";
 
   export let employeeId;
   let taxDeclaration: TaxDeclaration | null;
@@ -61,6 +63,20 @@
       >
         Monthly Deduction Plan
       </button>
+      <button
+      class="tab-item"
+      class:active={activeTab === "form12b"}
+      on:click={() => setActiveTab("form12b")}
+    >
+      Form 12B
+    </button>
+    <button
+    class="tab-item"
+    class:active={activeTab === "form12bb"}
+    on:click={() => setActiveTab("form12bb")}
+  >
+    Form 12BB
+  </button>
       </nav>
     </div>
 
@@ -77,6 +93,14 @@
       <TaxComputationSection
       {taxDeclaration}
       />
+      {:else if activeTab ==='form12b'}
+      <Form12BSection {taxDeclaration} mode='admin'
+      {employeeId}/>
+      {:else if activeTab ==='form12bb'}
+      <Form12BbGenerate 
+      {taxDeclaration} mode='admin'
+      {employeeId}
+      selectedFY={"2025-2026"}/>
       {/if}
     </div>
   {:else}

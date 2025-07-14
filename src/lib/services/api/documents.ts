@@ -21,6 +21,7 @@ export interface IDocumentQuery {
     | "TimesheetFile"
     | "Form16"
     | "Form12B"
+    | "Form12BB"
     | "OfferLetter"
     | "HikeLetter"
     | "Certificate";
@@ -52,6 +53,7 @@ export interface IDocument {
     | "TimesheetFile"
     | "Form16"
     | "Form12B"
+    | "Form12BB"
     | "OfferLetter"
     | "HikeLetter"
     | "Certificate";
@@ -109,7 +111,7 @@ export interface IDocument {
       pan: string;
       tdsAmount: number;
     };
-    form12b?: {
+    form12B?: {
         previousEmployer: {
             name: string;
             pan: string;
@@ -125,6 +127,16 @@ export interface IDocument {
         status: 'Pending' | 'Verified' | 'Rejected' | 'ResubmissionRequested';
         isLocked: boolean;
     };
+    form12BB?:{
+      financialYear: string; // e.g., '2024-25'
+      regime: string
+      taxDeclarationId: string; // Reference to TaxDeclaration collection
+      totalIncome: number; // Total income for the financial year
+      deductions: number; // Total deductions claimed
+      taxPayable: number; // Total tax payable after deductions
+      isLocked: boolean; // Prevents further modifications once submitted
+      tdsPaid: number; // Total TDS paid for the financial year
+    }
     offerLetter?: {
       offerDate: string; // Date as ISO string
       joiningDate: string; // Date as ISO string
@@ -196,7 +208,11 @@ export interface IDocument {
       | "Send"
       | "Generate"
       | "Acknowledge"
-      | "Verify";
+      | "Verify"
+      | "Update"
+      | "Re-upload"
+      | "Re-Generate" ;
+
     performedBy: string; // Types.ObjectId as string
     timestamp: string; // Date as ISO string
     details?: string;
@@ -312,7 +328,13 @@ export const documentsApi = {
       method:'PUT',
       body:JSON.stringify(status)
     })
-  }
+  },
+  generateForm12BB : async(data:any):Promise<DocumentResponse>=>{
+    return await fetchApi (`/documents/generate-form12bb`,{
+      method:'POST',
+      body:JSON.stringify(data)
+    })
+  },
 
 
 

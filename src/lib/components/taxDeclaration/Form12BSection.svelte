@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { documentsApi } from '$lib/services/api';
+  import { documentsApi, employeesApi } from '$lib/services/api';
   import { toast } from '../common/stores/toast.store';
   import { auth } from '$lib/stores/auth';
   import { isJoiningDateInCurrentFY } from '$lib/utils/financialYear';
@@ -9,6 +9,10 @@
   import Form12BTable from './Form12BTable.svelte';
 
   export let taxDeclaration: any;
+  export let mode: 'admin'| 'own' = 'own';  
+  export let employeeId: string | null = null;
+
+  let currentEmployee: any = null;
 
   const user = $auth.user;
   let showFormModal = false;
@@ -20,9 +24,10 @@
   let approvalStatus: 'Verified' | 'Rejected' | 'ResubmissionRequested' | '' = '';
   let approvalComments: string = '';
 
-  const isAdmin = user?.role === 'admin';
+  // Replaces internal role check
+  const isAdminMode = mode === 'admin';
 
-  const currentFYStatus = user?.joiningDate
+  let currentFYStatus = user?.joiningDate
     ? isJoiningDateInCurrentFY(user.joiningDate)
     : { isValid: false, financialYear: null };
 
@@ -31,19 +36,19 @@
     isLoading = true;
     try {
       const response = await documentsApi.getDocuments({
-        employeeId: user._id,
+        employeeId: currentEmployee._id,
         category: 'Tax',
         type: 'Form12B',
-        financialYear: currentFYStatus.financialYear ?? undefined
+        financialYear: currentFYStatus.financialYear ?? undefined,
+        access:mode ==='admin'?'global':'own'
       });
-      console.log(response, "Response fetchForm12B");
+      console.log(response,"response fetchForm12B")
       if (response.success && response.data?.length > 0) {
         form12BRecord = response.data[0];
       } else {
         form12BRecord = null;
       }
     } catch (error) {
-      console.error('Failed to fetch Form 12B:', error);
       toast.error('Failed to fetch Form 12B');
     } finally {
       isLoading = false;
@@ -59,18 +64,17 @@
 
     const formData = new FormData();
     formData.append('documentData', JSON.stringify(payload));
-    formData.append('file', documents[0]); // single file only
+    formData.append('file', documents[0]);
 
     try {
       const response = await documentsApi.uploadForm12B(formData);
       if (response.success) {
         toast.success('Form 12B submitted successfully');
-        await fetchForm12B(); // refresh
+        await fetchForm12B();
       } else {
         toast.error('Form 12B submission failed');
       }
     } catch (error) {
-      console.error('Form 12B submission error:', error);
       toast.error('Form 12B submission failed');
     } finally {
       showFormModal = false;
@@ -82,12 +86,12 @@
     if (action === 'edit' || action === 'view') {
       modalMode = 'view';
       showFormModal = true;
-    } else if (action === 'admin-approval') {
+    } else if (action === 'admin-approval' && isAdminMode) {
       modalMode = 'admin-approval';
       approvalStatus = '';
       approvalComments = '';
       showFormModal = true;
-    } else if (action === 'delete') {
+    } else if (action === 'delete' && !isAdminMode) {
       handleDelete();
     }
   }
@@ -125,9 +129,37 @@
       showFormModal = false;
     }
   }
+  async function loadCurrentEmployee() {
+    console.log("loadCurrentEmployee",mode,employeeId)
+  if (mode === 'admin' && employeeId) {
+    try {
+      const res = await employeesApi.getById(employeeId);
+      if (res.success && res.data) {
+        currentEmployee = res.data;
+      } else {
+        toast.error('Failed to load employee details');
+      }
+    } catch (e) {
+      toast.error('Error fetching employee details');
+    }
+  } else {
+    currentEmployee = $auth.user;
+  }
+  const joiningDate = currentEmployee?.joiningDate;
+  console.log(joiningDate,"joiningDate")
+  let status;
+  if (joiningDate) {
+    status = isJoiningDateInCurrentFY(joiningDate);
+  } else {
+    status = { isValid: false, financialYear: null };
+  }
+  console.log(status,"status")
+  currentFYStatus = status;
 
+  await fetchForm12B();
+  }
   onMount(() => {
-    fetchForm12B();
+    loadCurrentEmployee()
   });
 </script>
 
@@ -137,26 +169,32 @@
   {:else if currentFYStatus.isValid}
     <div class="flex flex-col items-center text-center">
       {#if !form12BRecord}
-        <button class="btn btn-primary" on:click={() => { showFormModal = true; modalMode = 'add'; }}>
-          + Add Form 12B
-        </button>
+        {#if mode === 'own'}
+          <button class="btn btn-primary" on:click={() => { showFormModal = true; modalMode = 'add'; }}>
+            + Add Form 12B
+          </button>
+        {/if}
       {:else}
-        <Form12BTable form12BRecord={form12BRecord} isAdmin={isAdmin} on:action={handleTableAction} />
-        {#if form12BRecord.metadata.form12B.status === 'ResubmissionRequested'}
-          <button
-            class="btn btn-primary mt-4"
-            on:click={() => { showFormModal = true; modalMode = 'add'; }}
-          >
+        <Form12BTable
+          form12BRecord={form12BRecord}
+          isAdmin={isAdminMode}
+          on:action={handleTableAction}
+        />
+        {#if form12BRecord.metadata.form12B.status === 'ResubmissionRequested' && mode === 'own'}
+          <button class="btn btn-primary mt-4" on:click={() => { showFormModal = true; modalMode = 'add'; }}>
             Re-Upload Form 12B
           </button>
         {/if}
       {/if}
     </div>
   {:else}
-    <InfoBanner
-      type="warning"
-      message="You cannot upload Form 12B. Your joining date is not within the current financial year."
-    />
+  <InfoBanner
+  type="warning"
+  message={
+    mode === 'admin'
+      ? 'This employee is not eligible for Form 12B. Their joining date is outside the current financial year.'
+      : 'You cannot upload Form 12B. Your joining date is not within the current financial year.'
+  }/>
   {/if}
 
   <Form12BCreate
@@ -164,8 +202,8 @@
     taxDeclaration={taxDeclaration}
     form12BRecord={modalMode === 'add' ? null : form12BRecord}
     readonly={modalMode === 'view'}
-    isAdmin={isAdmin}
-    approvalMode={false}
+    isAdmin={isAdminMode}
+    approvalMode={mode === 'admin'}
     approvalStatus={approvalStatus}
     approvalComments={approvalComments}
     filePath={form12BRecord?.filePath}
