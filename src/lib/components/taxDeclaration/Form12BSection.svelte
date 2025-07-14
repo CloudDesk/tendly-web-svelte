@@ -7,6 +7,8 @@
   import Form12BCreate from './Form12BCreate.svelte';
   import InfoBanner from '../common/InfoBanner.svelte';
   import Form12BTable from './Form12BTable.svelte';
+  import type { IDocument } from '$lib/services/api';
+  import { format } from 'date-fns';
 
   export let taxDeclaration: any;
   export let mode: 'admin'| 'own' = 'own';  
@@ -20,9 +22,69 @@
   let form12BRecord: any = null;
 
   // Modal state
-  let modalMode: 'add' | 'view' | 'admin-approval' = 'add';
+  let modalMode: 'add' | 'view'  = 'add';
   let approvalStatus: 'Verified' | 'Rejected' | 'ResubmissionRequested' | '' = '';
   let approvalComments: string = '';
+  function formatDate(dateStr: string) {
+      return format(new Date(dateStr), 'dd MMM yyyy');
+    }
+
+  const columns =[
+    {key:"name",
+      label:"Previous Employer",
+      render:(doc:IDocument)=>`
+      <div class="full-name">${doc.metadata?.form12B?.previousEmployer.name}</div>
+      `
+    },
+    {key:"pan",
+      label:"PAN",
+      render:(doc:IDocument)=>`
+      <div class="full-name">${doc.metadata?.form12B?.previousEmployer.pan}</div>
+      `
+    },
+    {key:"tan",
+      label:"TAN",
+      render:(doc:IDocument)=>`
+      <div class="full-name">${doc.metadata?.form12B?.previousEmployer.tan ?? '-'}</div>
+      `
+    },
+    {key:"tdsDeducted",
+      label:"TDS Deducted",
+      render:(doc:IDocument)=>`
+      <div class="full-name">${doc.metadata?.form12B?.tdsDeducted}</div>
+      `
+    },
+    {key:"employermentPeriod",
+      label:"Employment Period",
+      render:(doc:IDocument)=>`
+      <div class="full-name">
+       ${formatDate(form12BRecord.metadata.form12B.employmentPeriod.startDate)} -<br />
+            ${formatDate(form12BRecord.metadata.form12B.employmentPeriod.endDate)}
+            </div>
+      `
+    }
+    ,{key:"status",
+      label:"Status",
+      render:(doc:IDocument)=>`
+      <div class="full-name">${doc.metadata?.form12B?.status}</div>
+      `
+    },
+    {
+      key: "_id",
+      label: "Actions",
+      render: (doc: IDocument) => `
+        <div class="actions">
+          <button class="btn-action view" title="View Details">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn-action edit" title="Edit">
+            <i class="fas fa-pencil"></i>
+          </button>
+        </div>
+      `,
+    },
+  ]
+
 
   // Replaces internal role check
   const isAdminMode = mode === 'admin';
@@ -86,12 +148,7 @@
     if (action === 'edit' || action === 'view') {
       modalMode = 'view';
       showFormModal = true;
-    } else if (action === 'admin-approval' && isAdminMode) {
-      modalMode = 'admin-approval';
-      approvalStatus = '';
-      approvalComments = '';
-      showFormModal = true;
-    } else if (action === 'delete' && !isAdminMode) {
+    }  else if (action === 'delete' && !isAdminMode) {
       handleDelete();
     }
   }
