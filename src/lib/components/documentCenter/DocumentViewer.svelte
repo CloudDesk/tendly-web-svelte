@@ -4,10 +4,18 @@
     import Toggle from "$lib/components/common/Toggle.svelte";
     import ConfirmDialog from "$lib/components/common/ConfirmDialog.svelte";
     import { auth } from "$lib/stores/auth";
-    import { getFinancialYears } from "$lib/utils/financialYear";
+    import {
+        getCurrentFinancialYear,
+        getFinancialYears,
+        getFYOptionsFromJoiningDate,
+    } from "$lib/utils/financialYear";
     import type { filterSchema, DialogConfig } from "$lib/types";
     import { onMount, createEventDispatcher } from "svelte";
-    import { documentsApi, type IDocument } from "$lib/services/api";
+    import {
+        documentsApi,
+        employeesApi,
+        type IDocument,
+    } from "$lib/services/api";
     import Table from "$lib/components/common/Table.svelte";
     import { getColumns, type DocumentAction } from "$lib/utils/document";
 
@@ -108,7 +116,19 @@
     }
 
     function getFinancialYearOptions() {
-        return getFinancialYears(5).map((fy) => ({ label: fy, value: fy }));
+        let user = $auth?.user;
+        let joiningDate = user?.joiningDate;
+
+        if (employeeId) {
+            let result: any = employeesApi.getById(employeeId);
+            console.log(result, "Result employeeid");
+            joiningDate = result?.data.joiningDate;
+        }
+        let getOptions = joiningDate
+            ? getFYOptionsFromJoiningDate(joiningDate)
+            : [getCurrentFinancialYear()];
+        console.log(getOptions, "getOptionsgetOptions");
+        return getOptions.map((fy) => ({ label: fy, value: fy }));
     }
 
     const typeCategoryMap: Record<string, { type: string; category: string }> =
