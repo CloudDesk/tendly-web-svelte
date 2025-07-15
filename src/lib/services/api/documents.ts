@@ -112,31 +112,32 @@ export interface IDocument {
       tdsAmount: number;
     };
     form12B?: {
-        previousEmployer: {
-            name: string;
-            pan: string;
-            tan: string;
-        };
-        employmentPeriod: {
-            startDate: Date;
-            endDate: Date;
-        };
-        salaryEarned: number;
-        tdsDeducted: number;
-        financialYear: string;
-        status: 'Pending' | 'Verified' | 'Rejected' | 'ResubmissionRequested';
-        isLocked: boolean;
+      previousEmployer: {
+        name: string;
+        pan: string;
+        tan: string;
+      };
+      employmentPeriod: {
+        startDate: Date;
+        endDate: Date;
+      };
+      salaryEarned: number;
+      tdsDeducted: number;
+      financialYear: string;
+      status: "Pending" | "Verified" | "Rejected" | "ResubmissionRequested";
+      isLocked: boolean;
     };
-    form12BB?:{
+    form12BB?: {
       financialYear: string; // e.g., '2024-25'
-      regime: string
+      regime: string;
       taxDeclarationId: string; // Reference to TaxDeclaration collection
       totalIncome: number; // Total income for the financial year
       deductions: number; // Total deductions claimed
       taxPayable: number; // Total tax payable after deductions
       isLocked: boolean; // Prevents further modifications once submitted
       tdsPaid: number; // Total TDS paid for the financial year
-    }
+      isPreviewEnabled: boolean;
+    };
     offerLetter?: {
       offerDate: string; // Date as ISO string
       joiningDate: string; // Date as ISO string
@@ -211,7 +212,7 @@ export interface IDocument {
       | "Verify"
       | "Update"
       | "Re-upload"
-      | "Re-Generate" ;
+      | "Re-Generate";
 
     performedBy: string; // Types.ObjectId as string
     timestamp: string; // Date as ISO string
@@ -323,20 +324,31 @@ export const documentsApi = {
     return uploadFiles(`/documents/form12b`, formData);
   },
 
-  statusUpdateForm12B:async(id:string,status:string):Promise<DocumentResponse>=>{
-    return await fetchApi (`/documents/form12b/${id}/status`,{
-      method:'PUT',
-      body:JSON.stringify(status)
-    })
+  statusUpdateForm12B: async (
+    id: string,
+    status: string,
+  ): Promise<DocumentResponse> => {
+    return await fetchApi(`/documents/form12b/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify(status),
+    });
   },
-  generateForm12BB : async(data:any):Promise<DocumentResponse>=>{
-    return await fetchApi (`/documents/generate-form12bb`,{
-      method:'POST',
-      body:JSON.stringify(data)
-    })
+  generateForm12BB: async (data: any): Promise<DocumentResponse> => {
+    return await fetchApi(`/documents/generate-form12bb`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
   },
-
-
+  updateForm12BBPreviewStatus: async (
+    id: string,
+    data: { isPreviewEnabled: boolean },
+  ): Promise<DocumentResponse> => {
+    return fetchApi(`/documents/form12bb/${id}/preview-status`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+  // /form12bb/:id/preview-status
 
   /*
     type:Payslip

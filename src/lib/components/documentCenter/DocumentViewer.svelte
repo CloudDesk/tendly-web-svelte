@@ -121,7 +121,7 @@
 
     // Dynamic columns using utility function
     $: columns = getColumns(selectedItemKey, accessType, rowActions);
-
+    console.log(columns, "Columns");
     // Filter schema
     $: filtersSchema = (() => {
         const user = $auth?.user;
@@ -196,7 +196,11 @@
                         key: "type",
                         label: "Type",
                         type: "select",
-                        options: [{ label: "Form16", value: "Form16" }],
+                        options: [
+                            { label: "Form16", value: "Form16" },
+                            { label: "Form12B", value: "Form12B" },
+                            { label: "Form12BB", value: "Form12BB" },
+                        ],
                         disabled: true,
                     },
                     {
@@ -403,7 +407,8 @@
                 page,
                 limit,
             };
-
+            (console.log(query, "query"),
+                console.log(filterValues, "filterValues"));
             if (accessType === "own") {
                 query.employeeId = $auth.user?._id;
             }
@@ -418,6 +423,9 @@
             if (employeeId) {
                 query.employeeId = employeeId;
             }
+            //for all Delete the Type now
+
+            delete query.type;
             const result = await documentsApi.getDocuments(query);
             documents = result;
 

@@ -116,10 +116,15 @@ export function getAccessConfig(accessType: "own" | "team" | "global") {
 
 // New column logic
 function getBaseColumns(docType: string): Column[] {
-  const base: Column[] = [
-    // { key: "type", label: "Type" },
-    { key: "category", label: "Category" },
-  ];
+  console.log(docType, "DocType base");
+  let base: Column[] = [];
+  if (docType === "tax") {
+    base = [{ key: "type", label: "Type" }];
+  } else if (docType == "certificates") {
+    base = [];
+  } else {
+    base = [{ key: "category", label: "Category" }];
+  }
 
   let specificColumns: Column[] = [];
 
@@ -189,8 +194,17 @@ function getBaseColumns(docType: string): Column[] {
         {
           key: "financialYear",
           label: "Financial Year",
-          render: (doc: IDocument) =>
-            doc.metadata?.form16?.financialYear || "-",
+          render: (doc: IDocument) => {
+            if (doc.type === "Form16") {
+              return doc.metadata?.form16?.financialYear || "-";
+            } else if (doc.type === "Form12B") {
+              return doc.metadata?.form12B?.financialYear || "-";
+            } else if (doc.type === "Form12BB") {
+              return doc.metadata?.form12BB?.financialYear || "-";
+            } else {
+              return "-";
+            }
+          },
         },
       ];
       break;
