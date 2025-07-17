@@ -16,6 +16,7 @@ export const salaryAssignmentApi = {
             method: 'POST',
             body: JSON.stringify(data)
         });
+        console.log("response", response);
         return response
     },
     update: async (id: string, data: Partial<SalaryAssignment>) => {

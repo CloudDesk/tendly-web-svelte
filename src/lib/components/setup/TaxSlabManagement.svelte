@@ -91,11 +91,9 @@
 
       await loadTaxSlabs();
       toast.success("Tax slab saved successfully");
-    } catch (err) {
+    } catch (err:any) {
       console.log("error", err);
-      // error = "Failed to save tax slab";
-      console.error(err);
-      toast.error("Failed to save tax slab");
+      toast.error(err.message || "Failed to save tax slab");
     } finally {
       showForm = false;
       loading = false;

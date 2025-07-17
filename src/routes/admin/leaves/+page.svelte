@@ -139,9 +139,9 @@
         replaceState: true,
         invalidateAll: true, // This will force SvelteKit to refetch the page data
       });
-    } catch (error) {
+    } catch (error:any) {
       console.error("Error submitting leave:", error);
-      toast.error("Failed to apply leave");
+      toast.error(error.message || "Failed to apply leave");
       // Handle error (show toast, etc.)
     } finally {
       closeApplyForm();

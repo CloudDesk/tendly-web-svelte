@@ -116,8 +116,8 @@
                 if (res.success) {
                     currentEmployee = res.data;
                 }
-            } catch (err) {
-                toast.error("Failed to load employee");
+            } catch (err:any) {
+                toast.error(err.message || "Failed to load employee");
             }
         } else if (mode === "admin" && employee) {
             currentEmployee = employee;
@@ -166,8 +166,8 @@
             tableData = [...form12bbData];
             // Update key to force Table re-render
             tableKey = Date.now();
-        } catch (e) {
-            toast.error("Failed to fetch Form 12BB");
+        } catch (e:any) {
+            toast.error(e.message || "Failed to fetch Form 12BB");
             form12bbData = [];
             tableData = [];
             // Update key to force Table re-render
@@ -190,10 +190,10 @@
                 toast.success("Form 12BB generated successfully");
                 await fetchForm12BB(); // Refresh the table data
             } else {
-                toast.error("Failed to generate Form 12BB");
+                toast.error(res.error || "Failed to generate Form 12BB");
             }
-        } catch (err) {
-            toast.error("Error while generating Form 12BB");
+        } catch (err:any) {
+            toast.error(err.message || "Error while generating Form 12BB");
         } finally {
             isLoading = false;
         }
@@ -284,8 +284,8 @@
             } else {
                 toast.error("Failed to update preview status");
             }
-        } catch (err) {
-            toast.error("Error updating preview status");
+        } catch (err:any) {
+            toast.error(err.message || "Error updating preview status");
         } finally {
             // Always fetch fresh data after any action
             await fetchForm12BB();
@@ -301,8 +301,8 @@
             isUpdatingPreview = true;
             // Fetch fresh data to ensure correct state
             await fetchForm12BB();
-        } catch (err) {
-            toast.error("Error refreshing data");
+        } catch (err:any) {
+            toast.error(err.message || "Error refreshing data");
         } finally {
             isUpdatingPreview = false;
             pendingCheckboxChange = null;
@@ -316,8 +316,8 @@
             isInitialLoading = true;
             await loadEmployee();
             await fetchForm12BB();
-        } catch (err) {
-            toast.error("Error loading data");
+        } catch (err:any) {
+            toast.error(err.message || "Error loading data");
         } finally {
             isInitialLoading = false;
             // Update key to force Table re-render

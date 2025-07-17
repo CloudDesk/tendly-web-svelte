@@ -193,9 +193,9 @@
         replaceState: true,
         invalidateAll: true,
       });
-    } catch (error) {
+    } catch (error:any) {
       console.log("Error submitting leave:", error);
-      toast.error("Failed to apply leave");
+      toast.error(error.message || "Failed to apply leave");
     } finally {
       setTimeout(() => {
         closeApplyForm();

@@ -8,6 +8,7 @@
   import RegularizationCalendar from "./RegularizationCalendar.svelte";
   import RegularizationForm from "./RegularizationFormBulk.svelte";
   import { formatDate, getMonthBoundaries } from "$lib/utils/date";
+    import type { ApiResponse } from "$lib/types";
 
   interface LeaveRecord {
     _id: string;
@@ -101,9 +102,9 @@
           regularizationRecords.set(newRecords);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch attendance records:", error);
-      toast.error("Failed to fetch attendance records");
+      toast.error(error.message || "Failed to fetch attendance records");
     } finally {
       isLoading.set(false);
     }
@@ -123,9 +124,9 @@
       if (response.success && response.data) {
         leaveRecords.set(response.data);
       }
-    } catch (error) {
+    } catch (error:any) {
       console.error("Failed to fetch leave days:", error);
-      toast.error("Failed to fetch leave days");
+      toast.error( error.message|| "Failed to fetch leave days");
     }
   };
 
@@ -219,9 +220,9 @@
           result.error.message || "Failed to submit regularization requests"
         );
       }
-    } catch (e) {
+    } catch (e:any) {
       console.error(e, "error handleFormSubmit");
-      toast.error(
+      toast.error(e.message||
         "Unable to submit regularization requests. Please try again later."
       );
     } finally {

@@ -96,8 +96,8 @@
           query: response.data.query,
         };
       }
-    } catch (err) {
-      toast.error("Failed to fetch report details");
+    } catch (err:any) {
+      toast.error(err.message || "Failed to fetch report details");
     } finally {
       isLoading = false;
     }

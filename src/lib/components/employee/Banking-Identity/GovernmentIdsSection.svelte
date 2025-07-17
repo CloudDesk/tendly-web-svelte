@@ -223,12 +223,13 @@
       if (fieldResponse.success) {
         toast.success("Government IDs updated successfully");
       } else {
-        toast.error("Failed to update Government IDs");
+        toast.error(fieldResponse.error.message || "Failed to update Government IDs");
       }
       dispatch("refresh");
     } catch (error: any) {
       formErrors["submit"] = error.message || "Submission failed.";
       console.error("Submission error:", error);
+      toast.error(error.message || "Submission failed.");
     } finally {
       loading = false;
     }

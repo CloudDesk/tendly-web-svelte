@@ -323,18 +323,18 @@
     if (!recordId) return;
     processing = true;
     try {
-      let result = await attendanceRegularizeApi.withdraw(recordId);
+      let result:any = await attendanceRegularizeApi.withdraw(recordId);
       if (result.success) {
         toast.success(
           result.message ?? "Regularization request withdrawn successfully"
         );
       } else {
-        toast.error("Failed to withdraw regularization request");
+        toast.error(result.error.message || "Failed to withdraw regularization request");
       }
       await fetchRegularizations();
-    } catch (e) {
+    } catch (e:any) {
       console.error("Error withdrawing request:", e);
-      toast.error("Failed to withdraw regularization request");
+      toast.error(e.message || "Failed to withdraw regularization request");
     } finally {
       processing = false;
       showWithdrawConfirm = false;

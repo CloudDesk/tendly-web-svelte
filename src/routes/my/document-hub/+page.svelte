@@ -88,8 +88,8 @@
             } else {
                 toast.error(result.error || "Failed to add certificate.");
             }
-        } catch (error) {
-            toast.error("An unexpected error occurred.");
+        } catch (error:any) {
+            toast.error(error.message || "An unexpected error occurred.");
             console.error(error);
         } finally {
             isSubmittingSkill = false;
@@ -105,9 +105,9 @@
                 toast.error("Failed to fetch document details");
                 return null;
             }
-        } catch (error) {
+        } catch (error:any) {
             console.error("Error fetching document:", error);
-            toast.error("Failed to fetch document details");
+            toast.error(error.message || "Failed to fetch document details");
             return null;
         }
     }
@@ -175,9 +175,9 @@
             // const result = await documentsApi.deleteDocument(docId);
             toast.success(`Document ${docId} deleted successfully`);
             refreshKey++; // Refresh the document list
-        } catch (error) {
+        } catch (error:any) {
             console.error("Error deleting document:", error);
-            toast.error("Failed to delete document");
+            toast.error(error.message || "Failed to delete document");
         }
     }
 
@@ -204,9 +204,9 @@
             }
 
             showEditModal = true;
-        } catch (error) {
+        } catch (error:any) {
             console.error("Error preparing edit:", error);
-            toast.error("Failed to open document for editing");
+            toast.error(error.message || "Failed to open document for editing");
         }
     }
 
@@ -239,9 +239,9 @@
                 default:
                     console.log("Unhandled verify action:", action);
             }
-        } catch (error) {
+        } catch (error:any) {
             console.error("Error processing verify action:", error);
-            toast.error(`Failed to ${action} certificate`);
+            toast.error(error.message || `Failed to ${action} certificate`);
         }
     }
 
@@ -287,8 +287,8 @@
             } else {
                 toast.error(result.error || "Failed to update certificate.");
             }
-        } catch (error) {
-            toast.error("An unexpected error occurred.");
+        } catch (error:any) {
+            toast.error(error.message || "An unexpected error occurred.");
             console.error(error);
         } finally {
             isSubmittingEdit = false;

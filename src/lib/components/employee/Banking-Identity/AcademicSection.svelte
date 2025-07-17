@@ -86,7 +86,7 @@
       );
       console.log("Field update response:", response);
       if (response.error) {
-        toast.error("Failed to update academic details");
+        toast.error(response.error.message || "Failed to update academic details");
       } else {
         toast.success("Academic details updated successfully");
       }
@@ -95,6 +95,7 @@
     } catch (error: any) {
       formErrors["submit"] = error.message || "Submission failed.";
       console.error("Submission error:", error);
+      toast.error(error.message || "Submission failed.");
     } finally {
       loading = false;
     }

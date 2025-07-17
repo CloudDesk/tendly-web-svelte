@@ -22,11 +22,6 @@ export async function fetchApi<T>(
   // Build headers properly - create object with only defined values
   const headers: Record<string, string> = {};
 
-  // const headers = {
-  //   ...(!isFormData ? { "Content-Type": "application/json" } : {}),
-  //   reqRole: reqRole,
-  //   ...(options.headers || {}),
-  // };
   if (!isFormData) {
     // Don't set Content-Type for DELETE requests
     if (!options.method || options.method.toLowerCase() !== "delete") {
@@ -45,28 +40,36 @@ export async function fetchApi<T>(
       `${API_BASE_URL}${endpoint}`,
       fetchOptions,
     );
-    console.log("response", response);
+
     // Handle 401 (Unauthorized) - Token expired or invalid
     if (response.status === 401) {
       auth.clearAuth();
       goto("/login");
+      throw new Error("Unauthorized access");
     }
+
+    // Parse response JSON once
+    const data = await response.json();
 
     // Handle other errors
     if (!response.ok) {
-      const error = await response
-        .json()
-        .catch(() => ({ message: "An error occurred" }));
-      throw new Error(error.message || "An error occurred");
+      // If the error response has a specific structure, use it
+      if (data.error && data.error.message) {
+        throw new Error(data.error.message);
+      } else if (data.message) {
+        throw new Error(data.message);
+      } else {
+        throw new Error("An error occurred");
+      }
     }
 
-    return response.json();
+    return data;
   } catch (error) {
-    console.log("response", error);
-    // Handle network errors or other exceptions
+    // If it's already an Error object, just throw it
     if (error instanceof Error) {
       throw error;
     }
+    // For any other type of error, wrap it in an Error object
     throw new Error("An error occurred while making the request");
   }
 }

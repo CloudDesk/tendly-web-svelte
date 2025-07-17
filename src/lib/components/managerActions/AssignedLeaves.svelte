@@ -138,9 +138,9 @@
           totalPages: response.meta?.totalPages || 1,
         });
       }
-    } catch (error) {
+    } catch (error:any) {
       console.error("Failed to fetch leaves:", error);
-      toast.error("Failed to fetch leave records");
+      toast.error(error.message || "Failed to fetch leave records");
     } finally {
       isLoading.set(false);
     }

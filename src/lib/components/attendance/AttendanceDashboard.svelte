@@ -44,8 +44,9 @@
       } else {
         toast.error("Failed to apply regularization");
       }
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.log("handleApplyRegularization error", e);
+      toast.error(e.message);
     } finally {
       isRegularizationLoading = false;
       isShowModal = false;

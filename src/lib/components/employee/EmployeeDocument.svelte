@@ -35,8 +35,8 @@
             if (response.success) {
                 return response.data;
             }
-        } catch (error) {
-            toast.error("Failed to fetch documents");
+        } catch (error:any) {
+            toast.error(error.message || "Failed to fetch documents");
             return;
         }
     }
@@ -52,8 +52,8 @@
             //make sure the res.category==="Certification"
             //if the document type is skill - bind SkillCertificateForm
             // else bind AdminCertificateForm
-        } catch (error) {
-            toast.error("Failed to fetch document");
+        } catch (error:any) {
+            toast.error(error.message || "Failed to fetch document");
         }
     }
 
@@ -93,12 +93,12 @@
             if (result.success && result.data) {
                 return result.data;
             } else {
-                toast.error("Failed to fetch document details");
+                toast.error(result.error.message || "Failed to fetch document details");
                 return null;
             }
-        } catch (error) {
+        } catch (error:any) {
             console.error("Error fetching document:", error);
-            toast.error("Failed to fetch document details");
+            toast.error(error.message || "Failed to fetch document details");
             return null;
         }
     }
@@ -126,9 +126,9 @@
             }
 
             showEditModal = true;
-        } catch (error) {
+        } catch (error:any) {
             console.error("Error preparing edit:", error);
-            toast.error("Failed to open document for editing");
+            toast.error(error.message || "Failed to open document for editing");
         }
     }
 
@@ -167,9 +167,9 @@
             await documentsApi.delete(docId);
             toast.success(`Document ${docId} deleted successfully`);
             refreshKey++; // Refresh the document list
-        } catch (error) {
+        } catch (error:any) {
             console.error("Error deleting document:", error);
-            toast.error("Failed to delete document");
+            toast.error(error.message || "Failed to delete document");
         }
     }
 
@@ -191,9 +191,9 @@
             console.log(result, "result");
             toast.success(`Certificate ${id} ${status}d successfully`);
             refreshKey++; // Trigger refresh
-        } catch (error) {
+        } catch (error:any) {
             console.error(`Error while trying to ${status} certificate`, error);
-            toast.error(`Failed to ${status} certificate`);
+            toast.error(error.message || `Failed to ${status} certificate`);
         }
     }
 
@@ -306,8 +306,8 @@
             } else {
                 toast.error(result.error || "Failed to update certificate.");
             }
-        } catch (error) {
-            toast.error("An unexpected error occurred.");
+        } catch (error:any) {
+            toast.error(error.message || "An unexpected error occurred.");
             console.error(error);
         } finally {
             isSubmittingEdit = false;

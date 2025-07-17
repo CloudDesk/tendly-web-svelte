@@ -135,10 +135,10 @@
         // Redirect to the new employee page
         await goto(`/admin/employees/${response.data._id}`);
       } else {
-        toast.error("Failed to add employee");
+        toast.error(response.error || "Failed to add employee");
       }
-    } catch (error) {
-      toast.error("Failed to add employee");
+    } catch (error:any) {
+      toast.error(error.message || "Failed to add employee");
       console.error("Error submitting form:", error);
     } finally {
       showApplyForm = false;

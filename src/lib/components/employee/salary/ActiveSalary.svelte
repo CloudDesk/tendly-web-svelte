@@ -22,6 +22,7 @@
     Briefcase,
     Calculator,
   } from "lucide-svelte";
+    import { toast } from "$lib/components/common/stores/toast.store";
 
   interface ProfessionalTaxSlab {
     fromAmount: number;
@@ -177,7 +178,7 @@
     try {
       const result: any =
         await salaryAssignmentApi.getActiveByUserId(employeeId);
-      console.log(result.data);
+      console.log(result);
       if (result.success && result.data) {
         assignedSalary.set(result.data);
         await getSalaryStructure(result.data.salaryStructureId.toString());
@@ -215,8 +216,8 @@
   const handleFormSubmit = async (event: CustomEvent<SalaryAssignment>) => {
     console.log("event", event.detail);
     loading.set(true);
+    
     try {
-      let API = event.detail._id ? true : false;
       const data = event.detail;
       const result: any = data._id
         ? await salaryAssignmentApi.update(data._id.toString(), data)
@@ -224,9 +225,12 @@
 
       if (result.success) {
         await getActiveAssignment();
+        toast.success("Salary updated successfully");
       }
     } catch (err: any) {
+      console.log("handleFormSubmit error", err);
       error.set(err.message);
+      toast.error(err.message);
     } finally {
       loading.set(false);
       handleCloseModal();

@@ -314,9 +314,9 @@
       } else {
         toast.error("Failed to fetch attendance and shift data");
       }
-    } catch (error) {
+    } catch (error:any) {
       console.error("Error fetching records data:", error);
-      toast.error("An error occurred while fetching attendance data");
+      toast.error(error.message || "An error occurred while fetching attendance data");
     } finally {
       isLoading = false;
     }

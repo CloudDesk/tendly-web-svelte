@@ -136,9 +136,9 @@
       } else {
         initializeWeek();
       }
-    } catch (err) {
+    } catch (err:any) {
       console.error("Error fetching timesheet:", err);
-      toast.error("Failed to load timesheet data.");
+      toast.error(err.message || "Failed to load timesheet data.");
     } finally {
       isLoading = false;
     }
@@ -158,9 +158,9 @@
         holidays = holidaysData;
         initializeWeek(); // Reinitialize to apply holiday markers
       }
-    } catch (error) {
+    } catch (error:any) {
       console.error("Error fetching holidays:", error);
-      toast.error("Failed to load holidays.");
+      toast.error(error.message || "Failed to load holidays.");
     }
   }
 
@@ -185,9 +185,9 @@
       }
 
       initializeWeek();
-    } catch (error) {
+    } catch (error:any) {
       console.error("Error fetching weekend days:", error);
-      toast.error("Failed to load weekend configuration.");
+      toast.error(error.message || "Failed to load weekend configuration.");
     }
   }
   console.log(weekendDays, "weekendDays");
@@ -299,9 +299,9 @@
       }
       toast.success("Timesheet submitted successfully!");
       await fetchTimesheetData();
-    } catch (err) {
+    } catch (err:any) {
       console.error("Error submitting timesheet:", err);
-      toast.error("Error submitting timesheet. Please try again.");
+      toast.error(err.message || "Error submitting timesheet. Please try again.");
     } finally {
       isSubmitting = false;
       showConfirmModal = false;

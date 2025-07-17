@@ -118,8 +118,8 @@
       } else {
         form12BRecord = null;
       }
-    } catch (error) {
-      toast.error('Failed to fetch Form 12B');
+    } catch (error:any) {
+      toast.error(error.message || 'Failed to fetch Form 12B');
     } finally {
       isLoading = false;
     }
@@ -144,8 +144,8 @@
       } else {
         toast.error('Form 12B submission failed');
       }
-    } catch (error) {
-      toast.error('Form 12B submission failed');
+    } catch (error:any) {
+      toast.error(error.message || 'Form 12B submission failed');
     } finally {
       showFormModal = false;
     }
@@ -174,8 +174,8 @@
       } else {
         toast.error('Delete failed');
       }
-    } catch (e) {
-      toast.error('Delete failed');
+    } catch (e:any) {
+      toast.error(e.message || 'Delete failed');
     }
   }
 
@@ -190,8 +190,8 @@
       } else {
         toast.error('Approval failed');
       }
-    } catch (e) {
-      toast.error('Approval failed');
+    } catch (e:any) {
+      toast.error(e.message || 'Approval failed');
     } finally {
       showFormModal = false;
     }
@@ -204,10 +204,10 @@
       if (res.success && res.data) {
         currentEmployee = res.data;
       } else {
-        toast.error('Failed to load employee details');
+        toast.error(  'Failed to load employee details');
       }
-    } catch (e) {
-      toast.error('Error fetching employee details');
+    } catch (e:any) {
+      toast.error(e.message || 'Error fetching employee details');
     }
   } else {
     currentEmployee = $auth.user;

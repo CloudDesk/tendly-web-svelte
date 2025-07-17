@@ -51,7 +51,7 @@
   async function handleSwipe(swipeType: "check-in" | "check-out") {
     isLoading.set(true);
     try {
-      const response = await attendanceApi.swipe({ biometricId });
+      const response:any = await attendanceApi.swipe({ biometricId });
       if (response.success) {
         const time = format(new Date(), "hh:mm a");
         toast.success(
@@ -59,11 +59,11 @@
         );
         await getAttendanceData();
       } else {
-        toast.error(response.message || "Failed to record swipe ❌");
+        toast.error(response.error.message || "Failed to record swipe ❌");
       }
-    } catch (error) {
+    } catch (error:any) {
       console.error("Swipe error:", error);
-      toast.error("Failed to record swipe ❌");
+      toast.error(error.message || "Failed to record swipe ❌");
     } finally {
       isLoading.set(false);
     }

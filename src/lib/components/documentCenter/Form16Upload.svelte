@@ -31,10 +31,10 @@
       if (result.success) {
         toast.success(`Form 16 uploaded successfully. ${result.processed.length} employees mapped.`);
       } else {
-        toast.error("Some files had issues. Please check below.");
+        toast.error(result.error.message || "Some files had issues. Please check below.");
       }
-    } catch (error) {
-      toast.error("Upload failed. Please try again.");
+    } catch (error:any) {
+      toast.error(error.message || "Upload failed. Please try again.");
     } finally {
       isSubmitting = false;
     }

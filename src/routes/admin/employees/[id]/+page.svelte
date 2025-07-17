@@ -87,10 +87,10 @@
                 showEditForm = false;
                 employee = response.data;
             } else {
-                toast.error("Failed to update profile");
+                toast.error( "Failed to update profile");
             }
-        } catch (error) {
-            toast.error("Failed to update profile");
+        } catch (error:any) {
+            toast.error(error.message || "Failed to update profile");
             console.error("Error updating profile:", error);
         } finally {
             loading = false;
