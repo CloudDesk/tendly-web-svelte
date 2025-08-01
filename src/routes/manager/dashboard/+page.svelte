@@ -1,443 +1,350 @@
 <script lang="ts">
-  import { onMount, afterUpdate } from "svelte";
+  import { onMount } from "svelte";
   import { Chart, registerables } from "chart.js";
-  import { attendanceApi, employeesApi } from "$lib/services/api";
   import { navigationContext } from "$lib/stores/navigation";
   import { auth } from "$lib/stores/auth";
+  import { 
+    Users, 
+    CalendarX, 
+    Clock, 
+    AlertCircle
+  } from "lucide-svelte";
   import IndexPageTemplate from "$lib/components/templates/IndexPageTemplate.svelte";
+  import DashboardCard from "$lib/components/common/DashboardCard.svelte";
+  import ChartCard from "$lib/components/common/ChartCard.svelte";
 
   Chart.register(...registerables);
 
-  type AttendanceChartData = {
-    labels: string[];
-    present: number[];
-    absent: number[];
-    late: number[];
+  export let data: { 
+    dashboardData: any; 
+    error?: string; 
   };
 
-  type AttendanceTypeData = {
-    labels: string[];
-    data: number[];
-  };
-
-  type TrendData = {
-    labels: string[];
-    data: number[];
-  };
-
-  type ChartDataType = {
-    dailyAttendance: AttendanceChartData | null;
-    attendanceTypes: AttendanceTypeData | null;
-    latenessTrend: TrendData | null;
-    overtimeTrend: TrendData | null;
-  };
-
-  let loading = true;
-  let error: string | null = null;
   let attendanceChart: Chart | null = null;
-  let attendanceTypeChart: Chart | null = null;
-  let latenessTrendChart: Chart | null = null;
-  let overtimeTrendChart: Chart | null = null;
-  let teamMembers: string[] = [];
-  let chartData: ChartDataType = {
-    dailyAttendance: null,
-    attendanceTypes: null,
-    latenessTrend: null,
-    overtimeTrend: null,
+  let attendanceStatusChart: Chart | null = null;
+
+  // Mock data for development - replace with actual API data
+  const mockDashboardData = {
+    teamOverview: {
+      totalEmployees: 24,
+      employeesOnLeaveToday: 3,
+      pendingApprovals: 7
+    },
+    attendanceSummary: {
+      present: 18,
+      onLeave: 3,
+      absent: 2,
+      unknown: 1,
+      total: 24
+    },
+    attendanceStatus: {
+      onTime: 15,
+      late: 3,
+      earlyExit: 0
+    },
+    pendingApprovals: {
+      leaves: 4,
+      regularizations: 2,
+      overtime: 1,
+      resignations: 0
+    }
   };
 
-  onMount(async () => {
+  const dashboardData = data.dashboardData || mockDashboardData;
+
+  onMount(() => {
     navigationContext.set("manager");
-    try {
-      // Get team members
-      const employeesResponse = await employeesApi.list({
-        reportingTo: $auth.user?._id,
-        page: 1,
-        limit: 100,
-      });
-      teamMembers = employeesResponse.data.map((emp) => emp._id);
-
-      // Fetch last 30 days of attendance data
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 30);
-
-      const response: any = await attendanceApi.searchAll({
-        userIds: teamMembers,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-      });
-
-      const dailyAttendance = processAttendanceData(response.data);
-      const attendanceTypes = processAttendanceTypes(response.data);
-      const latenessTrend = processLatenessTrend(response.data);
-      const overtimeTrend = processOvertimeTrend(response.data);
-
-      chartData = {
-        dailyAttendance,
-        attendanceTypes,
-        latenessTrend,
-        overtimeTrend,
-      };
-    } catch (e) {
-      error = "Failed to load dashboard data";
-      console.error(e);
-    } finally {
-      loading = false;
-    }
+    initializeCharts();
   });
 
-  afterUpdate(() => {
-    if (
-      !loading &&
-      !error &&
-      chartData.dailyAttendance &&
-      chartData.attendanceTypes &&
-      chartData.latenessTrend &&
-      chartData.overtimeTrend
-    ) {
-      const attendanceCtx = document.getElementById(
-        "attendanceChart"
-      ) as HTMLCanvasElement;
-      const typeCtx = document.getElementById(
-        "attendanceTypeChart"
-      ) as HTMLCanvasElement;
-      const latenessCtx = document.getElementById(
-        "latenessTrendChart"
-      ) as HTMLCanvasElement;
-      const overtimeCtx = document.getElementById(
-        "overtimeTrendChart"
-      ) as HTMLCanvasElement;
-
-      if (attendanceCtx) {
-        if (attendanceChart) attendanceChart.destroy();
-        const data = chartData.dailyAttendance;
-        attendanceChart = new Chart(attendanceCtx, {
-          type: "line",
-          data: {
-            labels: data.labels,
-            datasets: [
-              {
-                label: "Present",
-                data: data.present,
-                borderColor: "#22c55e",
-                backgroundColor: "#22c55e20",
-                fill: true,
-              },
-              {
-                label: "Late",
-                data: data.late,
-                borderColor: "#eab308",
-                backgroundColor: "#eab30820",
-                fill: true,
-              },
-              {
-                label: "Absent",
-                data: data.absent,
-                borderColor: "#ef4444",
-                backgroundColor: "#ef444420",
-                fill: true,
-              },
+  function initializeCharts() {
+    // Attendance Summary Chart (Present, On Leave, Unknown)
+    const attendanceCtx = document.getElementById("attendanceChart") as HTMLCanvasElement;
+    if (attendanceCtx) {
+      if (attendanceChart) attendanceChart.destroy();
+      
+      attendanceChart = new Chart(attendanceCtx, {
+        type: "doughnut",
+        data: {
+          labels: ["Present", "On Leave", "Absent", "Check-in or Missing-Checkout"],
+          datasets: [{
+            data: [
+              dashboardData.attendanceSummary.present,
+              dashboardData.attendanceSummary.onLeave,
+              dashboardData.attendanceSummary.absent,
+              dashboardData.attendanceSummary.unknown
             ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              title: {
-                display: true,
-                text: "Team Attendance Overview (Last 7 Days)",
-                padding: 20,
-                font: {
-                  size: 16,
-                  weight: "bold",
-                },
-              },
-              legend: {
-                position: "top",
-                labels: {
-                  padding: 20,
-                  usePointStyle: true,
-                  font: {
-                    size: 12,
-                  },
-                },
-              },
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                stacked: true,
-                grid: {
-                  color: "transparent",
-                },
-              },
-              x: {
-                grid: {
-                  display: false,
-                },
-              },
-            },
-            elements: {
-              line: {
-                tension: 0.4,
-              },
-            },
-          },
-        });
-      }
-
-      if (typeCtx) {
-        if (attendanceTypeChart) attendanceTypeChart.destroy();
-        const data = chartData.attendanceTypes;
-        attendanceTypeChart = new Chart(typeCtx, {
-          type: "doughnut",
-          data: {
-            labels: data.labels,
-            datasets: [
-              {
-                data: data.data,
-                backgroundColor: [
-                  "#22c55e",
-                  "#eab308",
-                  "#ef4444",
-                  "#3b82f6",
-                  "#8b5cf6",
-                ],
-              },
+            backgroundColor: [
+              "#10B981", // Green for present
+              "#3B82F6", // Blue for on leave
+              "#EF4444", // Red for absent
+              "#6B7280"  // Gray for unknown
             ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              title: {
-                display: true,
-                text: "Team Attendance Distribution",
+            borderWidth: 0,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: {
                 padding: 20,
+                usePointStyle: true,
                 font: {
-                  size: 16,
-                  weight: "bold",
-                },
-              },
-              legend: {
-                position: "right",
-                labels: {
-                  padding: 20,
-                  usePointStyle: true,
-                  font: {
-                    size: 12,
-                  },
-                },
-              },
+                  size: 12,
+                  weight: "500"
+                }
+              }
             },
-            cutout: "70%",
+            tooltip: {
+              backgroundColor: "rgba(0, 0, 0, 0.8)",
+              titleColor: "#fff",
+              bodyColor: "#fff",
+              borderColor: "rgba(255, 255, 255, 0.1)",
+              borderWidth: 1,
+              cornerRadius: 8,
+              displayColors: true
+            }
           },
-        });
-      }
-
-      if (latenessCtx) {
-        if (latenessTrendChart) latenessTrendChart.destroy();
-        const data = chartData.latenessTrend;
-        latenessTrendChart = new Chart(latenessCtx, {
-          type: "bar",
-          data: {
-            labels: data.labels,
-            datasets: [
-              {
-                label: "Team Late Arrivals",
-                data: data.data,
-                backgroundColor: "#eab308",
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              title: {
-                display: true,
-                text: "Team Lateness Trend (Last 30 Days)",
-                padding: 20,
-                font: {
-                  size: 16,
-                  weight: "bold",
-                },
-              },
-              legend: {
-                display: false,
-              },
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                grid: {
-                  color: "#e5e7eb",
-                  //   borderColor: "transparent",
-                },
-              },
-              x: {
-                grid: {
-                  display: false,
-                },
-              },
-            },
-          },
-        });
-      }
-
-      if (overtimeCtx) {
-        if (overtimeTrendChart) overtimeTrendChart.destroy();
-        const data = chartData.overtimeTrend;
-        overtimeTrendChart = new Chart(overtimeCtx, {
-          type: "line",
-          data: {
-            labels: data.labels,
-            datasets: [
-              {
-                label: "Team Average Overtime Hours",
-                data: data.data,
-                borderColor: "#3b82f6",
-                backgroundColor: "#3b82f620",
-                fill: true,
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              title: {
-                display: true,
-                text: "Team Overtime Trend (Last 30 Days)",
-                padding: 20,
-                font: {
-                  size: 16,
-                  weight: "bold",
-                },
-              },
-              legend: {
-                position: "top",
-                labels: {
-                  padding: 20,
-                  usePointStyle: true,
-                  font: {
-                    size: 12,
-                  },
-                },
-              },
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                grid: {
-                  color: "#e5e7eb",
-                  //   borderColor: "transparent",
-                },
-              },
-              x: {
-                grid: {
-                  display: false,
-                },
-              },
-            },
-            elements: {
-              line: {
-                tension: 0.4,
-              },
-            },
-          },
-        });
-      }
+          cutout: "65%"
+        }
+      });
     }
-  });
 
-  function processAttendanceData(data: any[]) {
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      return date.toLocaleDateString();
-    }).reverse();
-
-    return {
-      labels: last7Days,
-      present: last7Days.map(() => Math.floor(Math.random() * 10 + 35)),
-      absent: last7Days.map(() => Math.floor(Math.random() * 5)),
-      late: last7Days.map(() => Math.floor(Math.random() * 3)),
-    };
+    // Attendance Status Chart (On Time, Late)
+    const statusCtx = document.getElementById("attendanceStatusChart") as HTMLCanvasElement;
+    if (statusCtx) {
+      if (attendanceStatusChart) attendanceStatusChart.destroy();
+      
+      attendanceStatusChart = new Chart(statusCtx, {
+        type: "bar",
+        data: {
+          labels: ["On Time", "Late", "Early Exit"],
+          datasets: [{
+            label: "Employees",
+            data: [
+              dashboardData.attendanceStatus.onTime,
+              dashboardData.attendanceStatus.late,
+              dashboardData.attendanceStatus.earlyExit
+            ],
+            backgroundColor: [
+              "#10B981", // Green for on time
+              "#F59E0B", // Yellow for late
+              "#8B5CF6"  // Purple for early exit
+            ],
+            borderRadius: 8,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              backgroundColor: "rgba(0, 0, 0, 0.8)",
+              titleColor: "#fff",
+              bodyColor: "#fff",
+              borderColor: "rgba(255, 255, 255, 0.1)",
+              borderWidth: 1,
+              cornerRadius: 8
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: {
+                display: false
+              },
+              ticks: {
+                stepSize: 1,
+                font: {
+                  size: 12
+                }
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                font: {
+                  size: 12,
+                  weight: "500"
+                }
+              }
+            }
+          }
+        }
+      });
+    }
   }
 
-  function processAttendanceTypes(data: any[]) {
-    return {
-      labels: ["Present", "Late", "Absent", "Leave", "Holiday"],
-      data: [75, 10, 5, 5, 5],
-    };
+  // Format numbers with proper spacing
+  function formatNumber(num: number): string {
+    return num.toLocaleString();
   }
 
-  function processLatenessTrend(data: any[]) {
-    const last30Days = Array.from({ length: 30 }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      return date.toLocaleDateString();
-    }).reverse();
-
-    return {
-      labels: last30Days,
-      data: last30Days.map(() => Math.floor(Math.random() * 4)),
-    };
+  // Calculate percentage
+  function calculatePercentage(value: number, total: number): number {
+    return total > 0 ? Math.round((value / total) * 100) : 0;
   }
 
-  function processOvertimeTrend(data: any[]) {
-    const last30Days = Array.from({ length: 30 }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      return date.toLocaleDateString();
-    }).reverse();
-
-    return {
-      labels: last30Days,
-      data: last30Days.map(() => Math.floor(Math.random() * 3)),
-    };
+  // Handle card clicks
+  function handleCardClick(type: string) {
+    console.log(`Card clicked: ${type}`);
+    // Add navigation logic here
   }
 </script>
+
 <IndexPageTemplate
-  title="Team Dashboard"
-  subtitle="Manage Team Performance, Attendance, and Requests"
-
+  title="Manager Dashboard"
+  subtitle="Monitor your team's performance and manage requests"
 >
-{#if error}
-    <div class="alert alert-error">{error}</div>
-  {:else if loading}
-    <div class="loading">Loading dashboard data...</div>
-  {:else}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <!-- Daily Attendance Overview -->
-      <div class="card bg-base-100 shadow-lg">
-        <div class="card-body h-[400px]">
-          <canvas id="attendanceChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Attendance Distribution -->
-      <div class="card bg-base-100 shadow-lg">
-        <div class="card-body h-[400px]">
-          <canvas id="attendanceTypeChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Lateness Trend -->
-      <div class="card bg-base-100 shadow-lg">
-        <div class="card-body h-[400px]">
-          <canvas id="latenessTrendChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Overtime Trend -->
-      <div class="card bg-base-100 shadow-lg">
-        <div class="card-body h-[400px]">
-          <canvas id="overtimeTrendChart"></canvas>
-        </div>
+  {#if data.error}
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <div class="flex items-center">
+        <AlertCircle class="w-5 h-5 text-red-500 mr-2" />
+        <span class="text-red-700">{data.error}</span>
       </div>
     </div>
   {/if}
+
+  <!-- Debug Info (Development Only) -->
+  {#if import.meta.env.DEV}
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+      <div class="flex items-center">
+        <span class="text-blue-700 text-sm">
+          <strong>Manager ID:</strong> {$auth.user?._id || 'Not available'} | 
+          <strong>Name:</strong> {$auth.user?.name || 'Not available'} | 
+          <strong>Role:</strong> {$auth.user?.role || 'Not available'}
+        </span>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Header Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <DashboardCard
+      title="Total Employees"
+      value={formatNumber(dashboardData.teamOverview.totalEmployees)}
+      subtitle="Under your management"
+      icon={Users}
+      bgColor="bg-blue-500"
+      gradientFrom="from-blue-50"
+      gradientTo="to-blue-100"
+      borderColor="border-blue-200"
+      textColor="text-blue-600"
+      valueColor="text-blue-900"
+      clickable={true}
+      on:click={() => handleCardClick('employees')}
+    />
+
+    <DashboardCard
+      title="On Leave Today"
+      value={formatNumber(dashboardData.teamOverview.employeesOnLeaveToday)}
+      subtitle="{calculatePercentage(dashboardData.teamOverview.employeesOnLeaveToday, dashboardData.teamOverview.totalEmployees)}% of team"
+      icon={CalendarX}
+      bgColor="bg-orange-500"
+      gradientFrom="from-orange-50"
+      gradientTo="to-orange-100"
+      borderColor="border-orange-200"
+      textColor="text-orange-600"
+      valueColor="text-orange-900"
+      clickable={true}
+      on:click={() => handleCardClick('leaves')}
+    />
+
+    <DashboardCard
+      title="Pending Approvals"
+      value={formatNumber(dashboardData.teamOverview.pendingApprovals)}
+      subtitle="Requires your attention"
+      icon={Clock}
+      bgColor="bg-purple-500"
+      gradientFrom="from-purple-50"
+      gradientTo="to-purple-100"
+      borderColor="border-purple-200"
+      textColor="text-purple-600"
+      valueColor="text-purple-900"
+      clickable={true}
+      on:click={() => handleCardClick('approvals')}
+    />
+  </div>
+
+  <!-- Charts Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <ChartCard
+      title="Team Attendance Today"
+      subtitle="Current day overview"
+      legendItems={[
+        { label: "Present", color: "#10B981" },
+        { label: "On Leave", color: "#3B82F6" }
+      ]}
+    >
+      <canvas id="attendanceChart"></canvas>
+      
+      <svelte:fragment slot="footer">
+        <div class="mt-4 grid grid-cols-2 gap-4">
+          <div class="text-center">
+            <p class="text-2xl font-bold text-green-600">{dashboardData.attendanceSummary.present}</p>
+            <p class="text-xs text-gray-500">Present</p>
+          </div>
+          <div class="text-center">
+            <p class="text-2xl font-bold text-blue-600">{dashboardData.attendanceSummary.onLeave}</p>
+            <p class="text-xs text-gray-500">On Leave</p>
+          </div>
+        </div>
+      </svelte:fragment>
+    </ChartCard>
+
+    <ChartCard
+      title="Attendance Status"
+      subtitle="On time vs late arrivals"
+      legendItems={[
+        { label: "On Time", color: "#10B981" },
+        { label: "Late", color: "#F59E0B" }
+      ]}
+    >
+      <canvas id="attendanceStatusChart"></canvas>
+      
+      <svelte:fragment slot="footer">
+        <div class="mt-4 grid grid-cols-3 gap-4">
+          <div class="text-center">
+            <p class="text-2xl font-bold text-green-600">{dashboardData.attendanceStatus.onTime}</p>
+            <p class="text-xs text-gray-500">On Time</p>
+          </div>
+          <div class="text-center">
+            <p class="text-2xl font-bold text-yellow-600">{dashboardData.attendanceStatus.late}</p>
+            <p class="text-xs text-gray-500">Late</p>
+          </div>
+          <div class="text-center">
+            <p class="text-2xl font-bold text-purple-600">{dashboardData.attendanceStatus.earlyExit}</p>
+            <p class="text-xs text-gray-500">Early Exit</p>
+          </div>
+        </div>
+      </svelte:fragment>
+    </ChartCard>
+  </div>
 </IndexPageTemplate>
+
+<style>
+  /* Custom styles for better visual appeal */
+  .bg-gradient-to-br {
+    background: linear-gradient(to bottom right, var(--tw-gradient-stops));
+  }
+  
+  /* Smooth transitions */
+  .transition-shadow {
+    transition: box-shadow 0.2s ease-in-out;
+  }
+  
+  /* Chart container styling */
+  canvas {
+    max-height: 100%;
+  }
+</style>
