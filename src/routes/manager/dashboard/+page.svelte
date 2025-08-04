@@ -3,6 +3,7 @@
   import { Chart, registerables } from "chart.js";
   import { navigationContext } from "$lib/stores/navigation";
   import { auth } from "$lib/stores/auth";
+  import { goto } from "$app/navigation";
   import { 
     Users, 
     CalendarX, 
@@ -198,7 +199,20 @@
   // Handle card clicks
   function handleCardClick(type: string) {
     console.log(`Card clicked: ${type}`);
-    // Add navigation logic here
+    
+    switch (type) {
+      case 'employees':
+        goto('/manager/employees');
+        break;
+      case 'leaves':
+        goto('/manager/leaves');
+        break;
+      case 'approvals':
+        goto('/manager/actions');
+        break;
+      default:
+        console.log(`No navigation defined for: ${type}`);
+    }
   }
 </script>
 
@@ -256,8 +270,7 @@
       borderColor="border-orange-200"
       textColor="text-orange-600"
       valueColor="text-orange-900"
-      clickable={true}
-      on:click={() => handleCardClick('leaves')}
+      clickable={false}
     />
 
     <DashboardCard
